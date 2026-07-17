@@ -1,6 +1,6 @@
 {
-  "name": "Label \u2014 inventory",
-  "short_name": "Label",
+  "name": "CatCaddy — Produce Inventory",
+  "short_name": "CatCaddy",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#14171A",
@@ -8,10 +8,22 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='38' fill='%2314171A'/%3E%3Cg stroke='%23F5F2E9' stroke-width='9' stroke-linecap='round'%3E%3Cline x1='52' y1='56' x2='52' y2='136'/%3E%3Cline x1='72' y1='56' x2='72' y2='136'/%3E%3Cline x1='92' y1='56' x2='92' y2='136'/%3E%3Cline x1='120' y1='56' x2='120' y2='136'/%3E%3Cline x1='140' y1='56' x2='140' y2='136'/%3E%3C/g%3E%3C/svg%3E",
+      "src": "./icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#14171A">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>Label — Barcode Inventory</title>
+<title>CatCaddy — Produce Inventory</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2314171A'/><g fill='%23F5F2E9'><rect x='20' y='25' width='6' height='50'/><rect x='30' y='25' width='3' height='50'/><rect x='37' y='25' width='8' height='50'/><rect x='49' y='25' width='3' height='50'/><rect x='56' y='25' width='5' height='50'/><rect x='65' y='25' width='9' height='50'/><rect x='78' y='25' width='3' height='50'/></g></svg>">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
@@ -132,13 +132,38 @@
   /* the mic lives in the box, not beside it: tap anywhere to type, tap the
      icon to speak. A green slab next to the field looked bolted on. */
   .sbox{position:relative;flex:1;display:flex}
-  .sbox input{flex:1;padding-right:46px!important}
+  .sbox input{flex:1;padding-right:46px!important;transition:border-color .25s,box-shadow .25s}
+  /* a brief glow says "start typing here" without stealing the screen */
+  .sbox input.armed{border-color:var(--laser);box-shadow:0 0 0 3px rgba(214,64,44,.16)}
   .sbox button{position:absolute;right:4px;top:50%;transform:translateY(-50%);
     width:38px;height:38px;background:none;border:none;color:var(--muted);
     cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
   .sbox button svg{width:18px;height:18px}
   .sbox button:active{color:var(--paper)}
   .sbox button.live{color:var(--laser);animation:micpulse 1s ease-in-out infinite}
+  /* held-open reads as a steady ring, not another pulse — you can tell at a
+     glance whether it's still listening for the next one */
+  .sbox button.cont{color:var(--laser);animation:none;
+    box-shadow:0 0 0 2px var(--laser) inset;border-radius:50%}
+  .mic-fab.cont{box-shadow:0 0 0 3px var(--paper) inset, 0 6px 18px rgba(0,0,0,.4)}
+  /* ---- lock screen ---- */
+  .hidden-until-open{display:none}
+  .lock{position:fixed;inset:0;z-index:200;background:var(--ink);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    padding:28px;text-align:center}
+  .lock.hidden{display:none}
+  .lock-logo{width:132px;height:132px;object-fit:contain;margin-bottom:18px}
+  .lock-name{font-family:var(--sans);font-size:26px;letter-spacing:.18em;
+    color:var(--paper);margin:0 0 6px;font-weight:700}
+  .lock-sub{color:var(--muted);font-size:12px;margin:0 0 22px}
+  .lock input{width:100%;max-width:280px;background:var(--surface-2);
+    border:1px solid var(--line);border-radius:9px;padding:14px;color:var(--paper);
+    font-size:16px;font-family:var(--sans);text-align:center;margin-bottom:12px}
+  .lock input:focus{border-color:var(--laser);outline:none}
+  .lock .btn{width:100%;max-width:280px}
+  .lock-note{color:var(--muted);font-size:11px;margin-top:14px;min-height:16px;
+    max-width:300px;line-height:1.5}
+  .lock-note.bad{color:var(--laser)}
   .look-wrap{margin-bottom:16px}
   .look-h{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
     margin:14px 0 8px}
@@ -727,17 +752,23 @@
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Label">
+  <meta name="apple-mobile-web-app-title" content="CatCaddy">
 </head>
 <body>
+<div id="lockScreen" class="lock">
+  <img src="./logo.png" alt="CatCaddy" class="lock-logo">
+  <h1 class="lock-name">CatCaddy</h1>
+  <p class="lock-sub" id="lockSub">Enter the password to open</p>
+  <input id="lockPass" type="password" placeholder="Password" autocomplete="current-password"
+         enterkeyhint="go" autocapitalize="off" autocorrect="off">
+  <button class="btn btn-primary" id="lockGo">Open</button>
+  <p class="lock-note" id="lockNote"></p>
+</div>
 
+<div id="appWrap" class="hidden-until-open">
 <header>
-  <h1><span class="stripes" aria-hidden="true"></span>LABEL</h1>
+  <h1><span class="stripes" aria-hidden="true"></span>CATCADDY</h1>
   <span class="count" id="hdrCount">0 items</span>
-  <button class="gear" id="btnFind" aria-label="Look something up">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-      <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-  </button>
   <button class="gear" id="btnGear" aria-label="Settings">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="12" cy="12" r="3"/>
@@ -1204,8 +1235,9 @@
 
     <h4 class="sec-h">About</h4>
     <div class="panel">
+      <div class="abt"><span>App</span><b>CatCaddy</b></div>
       <div class="abt"><span>Author</span><b>Faisal</b></div>
-      <div class="abt"><span>Version</span><b>v11</b></div>
+      <div class="abt"><span>Version</span><b>v12</b></div>
       <div class="abt"><span>PLU entries</span><b id="abtPlu">—</b></div>
       <div class="abt"><span>Storage</span><b id="abtSize">—</b></div>
     </div>
@@ -1234,10 +1266,14 @@
     Claims<span class="navdot"></span>
   </button>
   <button id="nav-product" onclick="showView('product')">
-    <svg viewBox="0 0 24 24"><path d="M12 8c-1.5-2.5-4-3-5.5-1.5C4.5 8 5 12 6.5 15c1 2 2.5 4 4 4 .8 0 1-.4 1.5-.4s.7.4 1.5.4c1.5 0 3-2 4-4 1.5-3 2-7 0-8.5C16 5 13.5 5.5 12 8z"/><path d="M12 8c0-2 1-3.5 2.5-4.5"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+         stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/>
+      <line x1="12" y1="7.6" x2="12" y2="7.7"/></svg>
     Info<span class="navdot"></span>
   </button>
 </nav>
+</div>
 
 <div class="overlay hidden" id="detailOverlay">
   <div class="modal" role="dialog" aria-label="Item details">
@@ -1583,7 +1619,21 @@ function showView(name){
   if(name==="list") renderList();
   if(name==="sales"){ renderWeekTabs(); renderSales(); }
   if(name==="scrap") renderLists();
-  if(name==="product") renderProduct();
+  if(name==="product"){
+    renderProduct();
+    // Land in the search box — looking something up is what this tab is for,
+    // and the magnifier that used to do this is gone.
+    const b = document.getElementById("prodSearch");
+    if(b){
+      b.focus({ preventScroll:true });
+      b.select();
+      // Highlight it, but do NOT pop the keyboard on a phone: it would cover
+      // the very results you came to read. Tap the box and it opens normally.
+      if(matchMedia("(hover: none)").matches) b.blur();
+      b.classList.add("armed");
+      setTimeout(()=>b.classList.remove("armed"), 1400);
+    }
+  }
   if(name==="order") renderOrder();
   if(name==="claims") renderClaims();
   if(name==="settings"){
@@ -1870,6 +1920,100 @@ document.getElementById("fRescan").addEventListener("click", ()=>{
    Everything goes through the Apps Script proxy, because the phone's browser
    is not allowed to fetch atlanticsuperstore.ca directly.                    */
 function proxyUrl(){ return localStorage.getItem(KEY_URL) || ""; }
+
+/* ============================================================
+ *  APP LOCK
+ * ============================================================
+ * The password lives in Script Properties, so you change it in one place and
+ * every phone asks for the new one next time it opens. It is NOT the shared
+ * secret: the password says who may OPEN CatCaddy, the secret and device say
+ * who may WRITE to the Sheet.
+ *
+ * What this honestly is: it keeps someone who picks up an unlocked phone out of
+ * your lists. It is not a wall around the code — the files on GitHub Pages are
+ * public and always will be, and anyone determined can read them. Don't confuse
+ * the two.
+ *
+ * Offline, a phone that has unlocked before stays usable: the alternative is an
+ * app that dies in a chest freezer with no signal, which is worse than the risk
+ * it would prevent. The unlock is re-checked the moment there's a connection.
+ */
+const KEY_UNLOCK = "label_unlock_v1";
+
+function lockNeeded(){ return !!localStorage.getItem(KEY_UNLOCK) || navigator.onLine; }
+
+async function openApp(){
+  document.getElementById("lockScreen").classList.add("hidden");
+  document.getElementById("appWrap").classList.remove("hidden-until-open");
+  document.body.style.overflow = "";
+}
+
+function showLock(msg, bad){
+  const l = document.getElementById("lockScreen");
+  l.classList.remove("hidden");
+  document.getElementById("appWrap").classList.add("hidden-until-open");
+  document.body.style.overflow = "hidden";
+  const n = document.getElementById("lockNote");
+  n.textContent = msg || "";
+  n.classList.toggle("bad", !!bad);
+  setTimeout(()=>document.getElementById("lockPass").focus(), 60);
+}
+
+async function tryUnlock(pass){
+  const url = proxyUrl();
+  if(!url) return { ok:true, why:"nourl" };       // not set up yet: don't lock them out
+  const r = await fetch(url, {
+    method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" },
+    // not callProxy: the lock is checked before the device gate, so that an
+    // unapproved phone can still get in and ask to be approved
+    body: JSON.stringify({ action:"unlock", password:pass })
+  });
+  return await r.json();
+}
+
+async function bootLock(){
+  const remembered = localStorage.getItem(KEY_UNLOCK);
+  if(!navigator.onLine){
+    // No signal. A phone that has been unlocked before opens; one that hasn't
+    // can't be checked, so it waits.
+    if(remembered) return openApp();
+    return showLock("No signal — connect once to unlock this phone.");
+  }
+  if(!proxyUrl()) return openApp();              // brand new phone, nothing to check against
+  try{
+    const d = await tryUnlock(remembered || "");
+    if(d && d.ok) return openApp();              // no password set, or the old one still fits
+    // the password changed, or there never was one on this phone
+    localStorage.removeItem(KEY_UNLOCK);
+    showLock(remembered ? "The password has changed." : "");
+  }catch(e){
+    if(remembered) return openApp();             // script unreachable: don't strand them
+    showLock("Couldn't reach the script to check.");
+  }
+}
+
+document.getElementById("lockGo").addEventListener("click", async ()=>{
+  const p = document.getElementById("lockPass").value;
+  if(!p) return;
+  const btn = document.getElementById("lockGo");
+  btn.disabled = true; btn.textContent = "Checking…";
+  try{
+    const d = await tryUnlock(p);
+    if(d && d.ok){
+      localStorage.setItem(KEY_UNLOCK, p);
+      document.getElementById("lockPass").value = "";
+      openApp();
+    } else {
+      showLock(d && d.code === "BADPASS" ? "That's not it." : ((d && d.error) || "Couldn't check."), true);
+      if(navigator.vibrate) navigator.vibrate([40,60,40]);
+    }
+  }catch(e){ showLock("Couldn't reach the script: " + e.message, true); }
+  btn.disabled = false; btn.textContent = "Open";
+});
+document.getElementById("lockPass").addEventListener("keydown", e=>{
+  if(e.key === "Enter") document.getElementById("lockGo").click();
+});
 
 /* ---- who is asking ----
    The app link is public and that's fine: the deployed files hold no secret and
@@ -2178,25 +2322,68 @@ function itemRow(i){
 
 /* say it instead of typing it — same engine as the scrap mic, but this one
    only ever looks things up */
-document.getElementById("btnProdMic").addEventListener("click", ()=>{
+/* ---- lookup by voice ----
+   Tap for one. Hold to keep it open: say "granny smith", read the code, say
+   "cortland", and the answer swaps the moment you speak — no reaching for the
+   phone with full hands. */
+let lookRec = null, lookCont = false, lookWanted = false, lookLast = 0;
+
+function lookHeard(t){
+  t = String(t).trim();
+  // strip the "look up ..." wrapper people naturally say
+  t = t.replace(/^(look ?up|find|search( for)?|show me|what'?s the plu (for|of)|plu for)\s+/i, "");
+  if(!t) return;
+  const fixed = applyFix(t.toLowerCase());
+  document.getElementById("prodSearch").value = fixed || t;
+  lookAll = false;
+  renderProduct();
+}
+
+function startLook(continuous){
   if(!SR){ toast("This browser can't do speech"); return; }
   const btn = document.getElementById("btnProdMic");
-  const r = new SR();
-  r.lang = "en-CA"; r.interimResults = true; r.continuous = false;
+  lookRec = new SR();
+  lookRec.lang = "en-CA"; lookRec.interimResults = true;
+  lookRec.continuous = true;
+  lookCont = continuous; lookWanted = true; lookLast = 0;
   btn.classList.add("live");
-  r.onresult = ev=>{
+  btn.classList.toggle("cont", continuous);
+
+  lookRec.onresult = ev=>{
+    if(lookCont){
+      // Each finished phrase REPLACES the search — one item at a time, which is
+      // how you'd actually use it: ask, read, ask again.
+      for(let i = lookLast; i < ev.results.length; i++){
+        if(!ev.results[i].isFinal) continue;
+        lookHeard(ev.results[i][0].transcript);
+        lookLast = i + 1;
+      }
+      return;
+    }
     let t = "";
     for(let i = 0; i < ev.results.length; i++) t += ev.results[i][0].transcript;
-    t = t.trim();
-    // strip the "look up ..." wrapper people naturally say
-    t = t.replace(/^(look ?up|find|search( for)?|show me|what'?s the plu (for|of)|plu for)\s+/i, "");
-    const fixed = applyFix(t.toLowerCase());
-    document.getElementById("prodSearch").value = fixed || t;
-    renderProduct();
+    lookHeard(t);
   };
-  r.onerror = ()=>{ btn.classList.remove("live"); };
-  r.onend = ()=>{ btn.classList.remove("live"); };
-  try{ r.start(); }catch(e){ btn.classList.remove("live"); }
+  lookRec.onerror = ev=>{
+    if(ev.error === "no-speech" && lookCont && lookWanted) return;
+    btn.classList.remove("live","cont"); lookWanted = false;
+  };
+  lookRec.onend = ()=>{
+    if(lookCont && lookWanted){ try{ lookRec.start(); return; }catch(e){} }
+    btn.classList.remove("live","cont");
+  };
+  try{ lookRec.start(); }catch(e){ btn.classList.remove("live","cont"); }
+}
+
+pressHold(document.getElementById("btnProdMic"), {
+  onTap: ()=>{
+    if(lookWanted){ lookWanted = false; try{ lookRec.stop(); }catch(e){} return; }
+    startLook(false);
+  },
+  onHold: ()=>{
+    if(lookWanted){ lookWanted = false; try{ lookRec.stop(); }catch(e){} return; }
+    startLook(true);
+  }
 });
 function updateFabSync(){
   const n = items.filter(i=>!i.synced).length;
@@ -2971,47 +3158,147 @@ function parseSpoken(text, defList){
 }
 
 let rec = null, micOn = false, heardText = "";
+/* ---- tap vs hold ----
+   A produce room is loud, so the short press stays exactly as it was: one
+   burst, one commit, nothing running while a forklift goes past. Holding is
+   the deliberate act that says "I'm about to reel off twenty things".
+   pointer events rather than touch/mouse, so one path covers phone and desktop
+   and nothing fires twice. */
+function pressHold(btn, opts){
+  let timer = null, held = false, down = false;
+  const clear = ()=>{ clearTimeout(timer); timer = null; };
+  btn.addEventListener("pointerdown", e=>{
+    down = true; held = false;
+    timer = setTimeout(()=>{
+      if(!down) return;
+      held = true;
+      if(navigator.vibrate) navigator.vibrate(28);   // it engaged, without looking
+      opts.onHold();
+    }, 480);
+  });
+  btn.addEventListener("pointerup", ()=>{
+    if(!down) return;
+    down = false; clear();
+    if(!held) opts.onTap();
+  });
+  // a finger that slides off mid-press shouldn't silently arm continuous mode
+  ["pointerleave","pointercancel"].forEach(ev=>
+    btn.addEventListener(ev, ()=>{ down = false; clear(); }));
+  // the hold gesture otherwise pops the text-selection menu on Android
+  btn.addEventListener("contextmenu", e=>e.preventDefault());
+  btn.style.touchAction = "none";
+  btn.style.webkitUserSelect = "none";
+  btn.style.userSelect = "none";
+}
+
 const micBtn = document.getElementById("btnMic");
 const heardBox = document.getElementById("heard");
 
 function setMic(on){
   micOn = on;
   micBtn.classList.toggle("on", on);
-  micBtn.setAttribute("aria-label", on ? "Listening — tap to stop" : "Hold to talk");
+  micBtn.classList.toggle("cont", on && micCont);
+  micBtn.setAttribute("aria-label",
+    on ? (micCont ? "Listening to everything — tap to stop" : "Listening — tap to stop")
+       : "Tap to talk, hold to keep listening");
 }
 
-micBtn.addEventListener("click", ()=>{
-  if(!SR) return toast("No speech support here — use Chrome on Android or Safari on iOS");
-  if(micOn){ try{ rec.stop(); }catch(e){} return; }
+let micCont = false;      // is this a hold-to-keep-listening run?
+let micWanted = false;    // the engine stops itself; this says whether WE stopped
+let lastFinal = 0;        // result segments already committed, so none go twice
+let contCount = 0;
 
+function stopMic(){
+  micWanted = false;
+  try{ rec.stop(); }catch(e){}
+}
+
+function startMic(continuous){
+  if(!SR) return toast("No speech support here — use Chrome on Android or Safari on iOS");
   rec = new SR();
   rec.lang = "en-CA"; rec.interimResults = true; rec.continuous = true; rec.maxAlternatives = 1;
-  heardText = "";
+  micCont = continuous;
+  micWanted = true;
+  heardText = ""; lastFinal = 0; contCount = 0;
   heardBox.classList.remove("hidden");
-  heardBox.innerHTML = '<span class="dim">Listening… adding to ' +
-    LIST_META[activeList].label + '</span>';
+  heardBox.innerHTML = continuous
+    ? '<span class="dim">Listening — say them one after another. Tap the mic to stop.</span>'
+    : '<span class="dim">Listening… adding to ' + LIST_META[activeList].label + '</span>';
 
   rec.onresult = ev=>{
     // ev.results is CUMULATIVE — it replays every final segment on each fire.
     // Appending is what turned "two bananas" into "two two bananas".
-    // Rebuilding from the array is idempotent no matter how often it fires.
     let fin = "", interim = "";
     for(let i = 0; i < ev.results.length; i++){
       const t = ev.results[i][0].transcript;
       if(ev.results[i].isFinal) fin += t + " "; else interim += t;
     }
-    heardText = fin;
-    heardBox.innerHTML = esc(heardText) + (interim ? '<span class="dim">' + esc(interim) + '</span>' : "");
+    if(micCont){
+      // Commit each phrase the moment it's finished rather than waiting for the
+      // end — you see it land and can carry on talking. lastFinal is what stops
+      // the cumulative replay adding the same item over and over.
+      for(let i = lastFinal; i < ev.results.length; i++){
+        if(!ev.results[i].isFinal) continue;
+        commitPhrase(ev.results[i][0].transcript);
+        lastFinal = i + 1;
+      }
+      heardBox.innerHTML = (contCount ? "<b>" + contCount + " added</b> · " : "") +
+        '<span class="dim">' + (esc(interim) || "listening…") + '</span>';
+    } else {
+      heardText = fin;
+      heardBox.innerHTML = esc(heardText) + (interim ? '<span class="dim">' + esc(interim) + '</span>' : "");
+    }
   };
   rec.onerror = ev=>{
-    setMic(false);
+    if(ev.error === "no-speech" && micCont && micWanted) return;   // a pause isn't a failure
+    setMic(false); micWanted = false;
     if(ev.error === "not-allowed") heardBox.textContent = "Mic blocked — allow microphone for this site.";
     else if(ev.error === "no-speech") heardBox.textContent = "Didn't catch anything — try again.";
     else heardBox.textContent = "Speech error: " + ev.error;
   };
-  rec.onend = ()=>{ setMic(false); commitSpoken(); };   // iOS ends early; commit what we got
+  rec.onend = ()=>{
+    // The engine stops on its own — Chrome around a minute, iOS sooner. In hold
+    // mode that would cut a long list off mid-way, so restart until YOU stop it.
+    if(micCont && micWanted){
+      try{ rec.start(); return; }catch(e){}
+    }
+    setMic(false);
+    if(micCont) finishCont(); else commitSpoken();
+  };
   try{ rec.start(); setMic(true); }catch(e){ toast("Couldn't start the mic"); setMic(false); }
+}
+
+pressHold(micBtn, {
+  onTap:  ()=>{ if(micOn) stopMic(); else startMic(false); },
+  onHold: ()=>{ if(micOn) stopMic(); else startMic(true); }
 });
+
+/* One finished phrase -> rows, straight away. */
+function commitPhrase(text){
+  const heard = parseSpoken(text, activeList);
+  if(!heard.length) return;
+  heard.forEach(it=>{
+    const hit = pluFor(it.name);
+    const r = newRow({
+      name: it.name.replace(/\b\w/g, c=>c.toUpperCase()),
+      plu: hit || "", qty: it.qty, kg: !!it.kg, heard: it.heard || ""
+    });
+    lists[it.list].push(r);
+    justAdded.add(r.id);
+  });
+  contCount += heard.length;
+  renderLists();
+  const first = document.querySelector(".srow.just");
+  if(first) first.scrollIntoView({ behavior:"smooth", block:"nearest" });
+}
+
+function finishCont(){
+  heardBox.innerHTML = contCount
+    ? "Added " + contCount + " to " + LIST_META[activeList].label +
+      '<span class="dim"> · tap any name to fix what it heard</span>'
+    : '<span class="dim">Nothing usable. Try "three bananas".</span>';
+  if(contCount) toast("Added " + contCount);
+}
 
 function commitSpoken(){
   const heard = parseSpoken(heardText, activeList);   // the tab decides
@@ -3774,11 +4061,6 @@ document.getElementById("segUnit").addEventListener("click", e=>{
   toast("Weights now shown in " + unitLabel());
 });
 /* the gear is a toggle: tap once for settings, again to go back where you were */
-document.getElementById("btnFind").addEventListener("click", ()=>{
-  showView("product");
-  const b = document.getElementById("prodSearch");
-  b.focus(); b.select();
-});
 
 let lastView = "list";
 document.getElementById("btnGear").addEventListener("click", ()=>{
@@ -4431,7 +4713,67 @@ function logClaim(c, n, how){
 const KEY_ORDERS = "label_orders_v1";
 const RE_ART  = /^\d{7,12}$/;
 const RE_SIZE = /^\d{1,3}\s*[xX]\s*[\d.]+(G|KG|ML|L|EA|LB|OZ|CT)$/i;
-const RE_QTY  = /^\d{1,4}[.,]\d{3}-?$/;
+// Phone readers mangle these constantly: "_1.000", "1-000", "-1-000", "0.00".
+// The trailing minus is NOT noise — it's SAP for over-shipped — so it survives
+// while leading dashes and underscores get stripped.
+const RE_QTY  = /^[_\-–—]?\d{1,4}[.,\-–—]\d{2,3}-?$/;
+function normQty(t){
+  let s = String(t).trim();
+  const neg = /[-–—]$/.test(s);
+  s = s.replace(/^[_\-–—\s]+/, "").replace(/[-–—]$/, "");
+  s = s.replace(/[_\-–—]/g, ".").replace(/,/g, ".");
+  // "0000" is zero wherever the point belongs — safe to accept. "4000" is NOT
+  // (it could be 4.000 or a mis-read 1.000), so it stays rejected: a flagged
+  // row beats a confidently wrong one.
+  if(/^0{3,4}$/.test(s)) return 0;
+  if(!/^\d{1,4}\.\d{1,3}$/.test(s)) return null;
+  const v = parseFloat(s);
+  if(isNaN(v)) return null;
+  return neg ? -v : v;
+}
+
+/* Ord, Ship and Diff arrive in whatever order the reader happened to see them —
+   the reason code often lands in the middle. But they aren't independent:
+   ord - ship = diff, always. And a SHORT SUMMARY only lists lines that DIFFER,
+   so a diff of zero means the assignment is wrong. Those two facts together
+   pin the triple down without trusting the order at all. */
+function assignQty(qs){
+  const k = n => Math.round(n * 1000) / 1000;
+  if(!qs.length) return { ord:null, ship:null, diff:null };
+  if(qs.length === 1) return { ord:qs[0], ship:null, diff:null };
+  if(qs.length === 2){
+    // Two numbers and no third to check against. Order can't be trusted — the
+    // reader takes them in visual order and they sit at different heights. An
+    // over-ship is rare and announces itself with a trailing minus; without one,
+    // the larger number is the order.
+    const neg = qs.some(x=>x < 0);
+    const a = (!neg && qs[0] < qs[1]) ? [qs[1], qs[0]] : qs;
+    return { ord:a[0], ship:a[1], diff:k(a[0] - a[1]) };
+  }
+  // More than one arrangement can satisfy ord-ship=diff. [58,-2,60] fits via
+  // 58-(-2)=60, but you cannot ship minus two cases: ord and ship are never
+  // negative, only diff is. That single rule picks 58/60/-2 correctly.
+  let zeroDiff = null;
+  for(let i = 0; i < qs.length; i++)
+    for(let j = 0; j < qs.length; j++)
+      for(let m = 0; m < qs.length; m++){
+        if(i === j || j === m || i === m) continue;
+        if(qs[i] < 0 || qs[j] < 0) continue;
+        if(Math.abs((qs[i] - qs[j]) - qs[m]) > 0.001) continue;
+        // a SHORT SUMMARY only lists lines that differ, so diff 0 means wrong
+        if(qs[m] !== 0) return { ord:qs[i], ship:qs[j], diff:qs[m] };
+        if(!zeroDiff) zeroDiff = { ord:qs[i], ship:qs[j], diff:qs[m] };
+      }
+  if(zeroDiff) return zeroDiff;
+  return { ord:qs[0], ship:qs[1], diff:k(qs[0] - qs[1]) };
+}
+
+/* "68OG" is "680G" with a mis-read zero. Only accepted when the swap turns it
+   into a real pack size — a genuine word can't accidentally do that. */
+function packish(t){
+  const x = String(t);
+  return PACKWORDS.test(x) || PACKWORDS.test(x.replace(/[oO]/g, "0"));
+}
 const RE_REAS = /^\d{3}-/;
 
 /* "2.000-" is SAP's trailing minus: they shipped MORE than ordered.
@@ -4489,44 +4831,52 @@ function artLike(t){
    it arrived from a camera or a clipboard.                                   */
 function parseTextBlock(text){
   const lines = String(text || "").split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
-  if(lines.length < 3) return parseShortSummary(String(text||"").split(/\s+/));
+  if(!lines.length) return [];
 
-  const rows = [];
-  let cur = null;
-  for(const line of lines){
+  // Column-by-column output can't be salvaged — see below.
+  let runs = 0;
+  for(let i = 0; i < lines.length - 1; i++){
+    const a = lines[i].split(/\s+/), b = lines[i+1].split(/\s+/);
+    if(a.length === 1 && b.length === 1 && artLike(a[0]) && artLike(b[0])) runs++;
+  }
+  if(runs >= 1) return [];
+
+  // Flatten to one token stream. Samsung returns this entire table as a SINGLE
+  // line beginning "SHORT SUMMARY ...", so line structure can't be relied on to
+  // bound rows — but it's still worth keeping for two jobs: knowing where the
+  // header ends and where Totals begins.
+  // The invoice number is ten digits on a line of its own — indistinguishable
+  // from an article number by shape alone. Position is what separates them: it
+  // sits in the letterhead, above the table. So the table is where it says it
+  // begins.
+  const startAt = lines.findIndex(l=>/short\s*summary/i.test(l));
+  const body = startAt > -1 ? lines.slice(startAt) : lines;
+
+  const stream = [];
+  for(const line of body){
     const toks = line.split(/\s+/).filter(Boolean);
     if(!toks.length) continue;
-    if(/^(totals?|page|invoice|customer|article|description|short summary)\b/i.test(line)) {
-      // header/footer lines close whatever row was open
-      if(cur){ rows.push(cur); cur = null; }
+    // Totals ends the table; the footer numbers after it would corrupt the last row
+    if(/^totals?\b/i.test(line)) break;
+    const hasArt = toks.some(t=>artLike(t));
+    if(!hasArt && /^(page|invoice|customer|article|description|short summary)\b/i.test(line))
+      continue;
+    stream.push(...toks);
+  }
+
+  // Every article number opens a row — including several on the same line. The
+  // old loop found the first one and then BROKE, pushing the whole rest of the
+  // line into it, so a one-line table came out as exactly one row.
+  const rows = [];
+  let cur = null;
+  for(const t of stream){
+    const a = artLike(t);
+    if(a){
+      if(cur) rows.push(cur);
+      cur = { toks: [a] };
       continue;
     }
-    let started = false;
-    for(let i = 0; i < toks.length; i++){
-      const a = artLike(toks[i]);
-      // stitch a number split across two tokens — but never across quantities
-      const j = (!a && i+1 < toks.length && !RE_QTY.test(toks[i]) && !RE_QTY.test(toks[i+1]))
-        ? artLike(toks[i] + toks[i+1]) : null;
-      if(a || j){
-        if(cur) rows.push(cur);
-        cur = { toks: [a || j] };
-        i += j ? 1 : 0;
-        started = true;
-        cur.toks.push(...toks.slice(i+1));
-        break;
-      }
-    }
-    if(started) continue;
-    const qtys = toks.filter(t=>RE_QTY.test(t)).length;
-    if(cur && !(cur.toks.filter(t=>RE_QTY.test(t)).length >= 3 && qtys >= 2)){
-      cur.toks.push(...toks);              // continuation of the row above
-    } else if(qtys >= 2){
-      // a data row whose article number didn't survive: keep it, flagged
-      if(cur) rows.push(cur);
-      cur = { toks: ["?"].concat(toks), guessed:true };
-    } else if(cur){
-      cur.toks.push(...toks);
-    }
+    if(cur) cur.toks.push(t);      // words before the first article are header: dropped
   }
   if(cur) rows.push(cur);
   return finishRows(rows);
@@ -4577,43 +4927,50 @@ function finishRows(rows){
   return rows.map(r=>{
     const t = r.toks;
     const art = t[0];
-    const guessed = !!r.guessed;
-    let sizeIdx = t.findIndex((x,i)=>i > 0 && RE_SIZE.test(x));
-    // OCR sometimes splits "24 x 680G" into three tokens
-    if(sizeIdx < 0){
-      for(let i = 1; i < t.length - 2; i++){
-        if(/^\d{1,3}$/.test(t[i]) && /^[xX]$/.test(t[i+1]) && /^[\d.]+(G|KG|ML|L|EA)$/i.test(t[i+2])){
-          t.splice(i, 3, t[i] + "x" + t[i+2]); sizeIdx = i; break;
-        }
+    const rest = t.slice(1);
+    const used = new Set();
+
+    // The reader gives these in whatever order it saw them — the reason code
+    // routinely lands between the quantities. So nothing is read by position:
+    // every field is found by what it looks like.
+
+    // reason: "015-" plus the shouted words after it
+    // The reader picks up the NEXT row's reason before it leaves this one, so a
+    // row often carries two. Take the first as ours; strip them all, or "FIRM
+    // ORDERS ONLY" ends up glued to the product name.
+    let reason = "";
+    for(let i = 0; i < rest.length; i++){
+      if(used.has(i) || !RE_REAS.test(rest[i])) continue;
+      const w = [rest[i]]; used.add(i);
+      for(let j = i + 1; j < rest.length; j++){
+        if(/^[A-Za-z]{2,}$/.test(rest[j]) && rest[j] === rest[j].toUpperCase()){
+          w.push(rest[j]); used.add(j);
+        } else break;
       }
-    }
-    const qty = [];
-    const from = sizeIdx > 0 ? sizeIdx + 1 : 1;
-    let qEnd = from;
-    for(let i = from; i < t.length && qty.length < 3; i++){
-      if(RE_QTY.test(t[i])){ qty.push(t[i]); qEnd = i + 1; }
-      else if(qty.length) break;              // a gap after quantities = reason
-    }
-    let reason = t.slice(qEnd).join(" ").trim();
-    const rIdx = t.findIndex(x=>RE_REAS.test(x));
-    if(rIdx > -1) reason = t.slice(rIdx).join(" ").trim();
-
-    let pack = "", desc = "";
-    if(sizeIdx > 0){
-      const maybe = t[sizeIdx - 1];
-      if(/^\d{1,3}$/.test(maybe)){ pack = maybe; desc = t.slice(1, sizeIdx - 1).join(" "); }
-      else desc = t.slice(1, sizeIdx).join(" ");
-    } else {
-      desc = t.slice(1, Math.max(1, qEnd - 3)).join(" ");
+      if(!reason) reason = w.join(" ");
     }
 
-    const ord = qty[0] ? num(qty[0]) : null;
-    const ship = qty[1] ? num(qty[1]) : null;
-    const diff = qty[2] ? num(qty[2]) : (ord !== null && ship !== null ? ord - ship : null);
-    const clean = desc.replace(/\s+/g," ").trim();
+    // size: 24x680G
+    let size = "";
+    for(let i = 0; i < rest.length; i++){
+      if(used.has(i)) continue;
+      if(RE_SIZE.test(rest[i])){ size = rest[i]; used.add(i); break; }
+    }
+
+    // every quantity, in the order seen
+    const qs = [];
+    rest.forEach((x,i)=>{
+      if(used.has(i)) return;
+      const v = normQty(x);
+      if(v !== null){ qs.push(v); used.add(i); }
+    });
+    const { ord, ship, diff } = assignQty(qs);
+
+    const desc = rest.filter((x,i)=>!used.has(i) && !packish(x))
+                     .join(" ").replace(/\s+/g," ").trim();
+
     return {
-      art, desc: clean, item: produceName(clean), pack,
-      size: sizeIdx > 0 ? t[sizeIdx] : "",
+      art, desc, item: produceName(desc), pack:"", size,
       ord, ship, diff, reason,
       // a row that lost its numbers is flagged rather than quietly wrong
       ok: !!(art && art !== "?" && desc && ord !== null && ship !== null)
@@ -4633,7 +4990,7 @@ function finishRows(rows){
    means you keep the cleaned-up original. */
 // Brands only. "STEAM AND GO" is a product line, not a brand — stripping those
 // words left the bare word "yellow", which then matched "Onions Yellow".
-const BRANDS = new Set(["nnni","pc","pco","fm","cove","manns","wholly","nn","ns","pcb",
+const BRANDS = new Set(["nnni","ninni","pc","pco","fm","cove","manns","wholly","nn","ns","pcb",
                         "farmers","presidents","choice","organics","gt","sensations"]);
 // Pack sizes, case codes and the two-letter origin that trails these lines
 // (US, CA, MX) — none of it belongs in a product name.
@@ -4704,11 +5061,43 @@ function titleCase(t){
 
 function parseInvoiceHead(text){
   const t = String(text).replace(/\s+/g," ");
-  const inv = (t.match(/Invoice\s*Number\s*[:.]?\s*(\d{6,})/i) || [])[1] || "";
-  const date = (t.match(/Invoice\s*Date\s*[:.]?\s*([\d]{1,2}[.\-\/][A-Z]{3}[.\-\/][\d]{2,4})/i) || [])[1] || "";
-  const page = (t.match(/Page\s*(\d+)\s*of\s*(\d+)/i) || []);
+
+  // Real output reads "Invoice Number Customer: FC01 6514237696" — the label and
+  // its number end up separated by whatever else shared that line, so allow a
+  // gap instead of demanding they touch.
+  const inv = (t.match(/Invoice\s*Number[\s\S]{0,60}?(\d{9,12})/i) || [])[1] || "";
+
+  // "10JUL.202": no separator after the day, and the year lost its last digit.
+  const dm = t.match(/Invoice\s*Date\s*[:.]?\s*(\d{1,2})\s*[.\-\/]?\s*([A-Za-z]{3})\s*[.\-\/]?\s*(\d{2,4})/i);
+  let date = "", dateGuess = false;
+  if(dm){
+    const dm2 = dm[1] + "." + dm[2].toUpperCase() + ".";
+    if(dm[3].length === 4){ date = dm2 + dm[3]; }
+    else {
+      // A truncated year can't be recovered — "202" could be any of ten years.
+      // Use this one and SAY it was assumed, rather than inventing a date on a
+      // document that backs a money claim.
+      date = dm2 + new Date().getFullYear();
+      dateGuess = true;
+    }
+  }
+
+  // "Page_9 of" — an underscore where a space belongs, and the total cut off.
+  // This has to be read from the LINE, not the flattened text: the very next
+  // line is "24 DC Moncton Caledonia", so a loose "of (\d+)" against the whole
+  // blob happily returned "page 9 of 24" for a page that says 9 of 12.
+  let pgN = "", pgOf = "";
+  for(const line of String(text).split(/\r?\n/)){
+    const m = line.match(/^\s*Page[\s_]*(\d+)/i);
+    if(!m) continue;
+    pgN = m[1];
+    const o = line.match(/\bof\s*(\d+)\s*$/i);   // only if it ENDS the line
+    pgOf = o ? o[1] : "";
+    break;
+  }
+  const page = ["", pgN, pgOf];
   const cust = (t.match(/Customer\s*[:.]?\s*([A-Z0-9]{2,8})/i) || [])[1] || "";
-  return { inv, date, cust, page: page[1] || "", pages: page[2] || "" };
+  return { inv, date, dateGuess, cust, page: page[1] || "", pages: page[2] || "" };
 }
 
 function orders(){ try{ return JSON.parse(localStorage.getItem(KEY_ORDERS) || "[]"); }catch(e){ return []; } }
@@ -4768,7 +5157,7 @@ document.getElementById("ordReadGo").addEventListener("click", async ()=>{
   try{
     const t = await navigator.clipboard.readText();
     if(!t || t.trim().length < 40){ openPaste(); return toast("Clipboard looks empty"); }
-    ingestOrder(parseTextBlock(t), parseInvoiceHead(t), "", "your phone's reader");
+    ingestOrder(parseTextBlock(t), parseInvoiceHead(t), "", "your phone's reader", t);
   }catch(e){
     openPaste();                     // permission refused: fall back to the box
     toast("Long-press the box and paste");
@@ -4805,12 +5194,14 @@ document.getElementById("pasteClose").addEventListener("click", ()=>{
   document.getElementById("pasteOverlay").classList.add("hidden");
   document.body.style.overflow = "";
 });
+let lastPaste = "";
 document.getElementById("pasteGo").addEventListener("click", ()=>{
   const t = document.getElementById("pasteBox").value;
   if(!t.trim()) return toast("Nothing to read");
+  lastPaste = t;
   document.getElementById("pasteOverlay").classList.add("hidden");
   document.body.style.overflow = "";
-  ingestOrder(parseTextBlock(t), parseInvoiceHead(t), "", "your phone's reader");
+  ingestOrder(parseTextBlock(t), parseInvoiceHead(t), "", "your phone's reader", t);
 });
 
 
@@ -4848,27 +5239,82 @@ async function readOrderPage(f){
     const rows = /\n/.test(String(data.text||"")) && String(data.text).split(/\n/).length > 4
       ? parseTextBlock(data.text)
       : parseShortSummary(words.length ? words : String(data.text||"").split(/\s+/));
-    ingestOrder(rows, parseInvoiceHead(data.text || ""), shot, "the built-in reader");
+    ingestOrder(rows, parseInvoiceHead(data.text || ""), shot, "the built-in reader", data.text || "");
   }catch(err){
     body.innerHTML = '<div class="sea-empty">OCR failed: ' + esc(err.message) + '</div>';
   }
 }
 
+/* When a parse finds nothing, "couldn't make out any rows" is useless — it
+   doesn't say whether the text arrived, whether the article numbers were
+   readable, or whether the quantities were. Show the working instead: the same
+   move that found the Devices bug in one shot. */
+function parseReport(text){
+  const t = String(text || "");
+  const lines = t.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  const toks = t.split(/\s+/).filter(Boolean);
+  const arts = toks.filter(x=>artLike(x));
+  const qtys = toks.filter(x=>normQty(x) !== null);
+  const sizes = toks.filter(x=>RE_SIZE.test(x));
+  const reasons = toks.filter(x=>RE_REAS.test(x));
+  const bits = [
+    lines.length + " line(s), " + toks.length + " word(s)",
+    arts.length + " article number(s)  " + (arts.length ? "e.g. " + arts.slice(0,3).join(", ") : "— none found"),
+    qtys.length + " quantity token(s) like 1.000",
+    sizes.length + " size token(s) like 24x680G",
+    reasons.length + " reason code(s) like 015-"
+  ];
+  let why = "";
+  if(!toks.length) why = "Nothing arrived — the box was empty.";
+  else if(!arts.length && !qtys.length)
+    why = "This doesn't look like a SHORT SUMMARY page. Is it the right page?";
+  else if(!arts.length)
+    why = "Quantities came through but no article numbers. They may have read as " +
+          "letters, or been cut off the left edge — check the whole table was selected.";
+  else if(!qtys.length)
+    why = "Article numbers came through but no quantities. The Ord/Ship/Diff " +
+          "columns may not have been selected.";
+  else {
+    // was it read column-first?
+    let runs = 0;
+    for(let i = 0; i < lines.length - 1; i++){
+      const a = lines[i].split(/\s+/), b = lines[i+1].split(/\s+/);
+      if(a.length === 1 && b.length === 1 && artLike(a[0]) && artLike(b[0])) runs++;
+    }
+    why = runs >= 1
+      ? "This came out column-by-column — all the article numbers together, then " +
+        "all the descriptions. Nothing can tell which quantity belongs to which " +
+        "item, so it's refused rather than guessed. Try selecting one row at a " +
+        "time, or photograph the page instead."
+      : "The pieces are all there but they didn't line up into rows. Send " +
+        "Faisal the first few lines below.";
+  }
+  return { bits, why,
+    sample: lines.slice(0, 6).map(l=>l.slice(0, 70)).join("\n") };
+}
+
 /* One place where a page becomes stored data, whichever route it arrived by —
    paste and camera drifting apart would be a bug factory. */
-function ingestOrder(rows, head, img, how){
+function ingestOrder(rows, head, img, how, rawText){
   const body = document.getElementById("ordBody");
   if(!rows.length){
-    body.innerHTML = '<div class="sea-empty">Couldn\'t make out any rows. ' +
-      'If you photographed it, lay the page flat and fill the frame — or use ' +
-      'your phone\'s own text reader and paste it in.</div>';
+    const r = rawText ? parseReport(rawText) : null;
+    body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">' +
+      'Nothing parsed</b>' +
+      (r ? '<p>' + esc(r.why) + '</p><p style="margin-top:8px">' +
+           r.bits.map(b=>esc(b)).join("<br>") + '</p>' +
+           (r.sample ? '<p style="margin-top:8px;opacity:.75">What it saw:<br>' +
+                       esc(r.sample).replace(/\n/g,"<br>") + '</p>' : "")
+         : '<p>If you photographed it, lay the page flat and fill the frame — ' +
+           'or use your phone\'s own text reader and paste it in.</p>') +
+      '</div>';
     return;
   }
   const all = orders();
   const key = head.inv || ("unknown-" + new Date().toISOString().slice(0,10));
   let inv = all.find(x=>x.inv === key);
   if(!inv){ inv = { inv:key, date:head.date, cust:head.cust, pages:[] }; all.unshift(inv); }
-  if(head.date && !inv.date) inv.date = head.date;
+  if(head.date && !inv.date){ inv.date = head.date; inv.dateGuess = !!head.dateGuess; }
 
   const fp = rows.map(r=>r.art).sort().join(",");
   const dupe = inv.pages.find(p=>p.fp === fp);
@@ -5611,7 +6057,7 @@ if("serviceWorker" in navigator){
             const b = document.getElementById("errbar");
             if(!b) return;
             b.classList.remove("hidden");
-            b.innerHTML = "<b>New version ready</b>Close and reopen Label to use it.";
+            b.innerHTML = "<b>New version ready</b>Close and reopen CatCaddy to use it.";
           }
         });
       });
@@ -5654,6 +6100,10 @@ document.getElementById("btnPullKnown").addEventListener("click", async ()=>{
   }
   btn.disabled = false;
 });
+
+/* ================= boot ================= */
+// Last thing in the file: everything it might reveal is already wired.
+bootLock();
 
 /* ================= clear all ================= */
 document.getElementById("btnClear").addEventListener("click", ()=>{

@@ -1144,6 +1144,24 @@
       <div class="status" id="syncStatus"></div>
     </div>
     <div class="panel">
+      <h3>This phone</h3>
+      <div class="field">
+        <label for="setSecret">Shared secret</label>
+        <input id="setSecret" type="password" placeholder="the phrase Faisal set" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="setDevName">Device name <span class="hint">(so you can tell phones apart)</span></label>
+        <input id="setDevName" placeholder="e.g. Faisal's phone" autocomplete="off">
+      </div>
+      <div class="abt"><span>Device ID</span><b id="devId">—</b></div>
+      <p class="lookup-note">Every request carries the secret and this device's id.
+         A phone that isn't ticked <b>Approved</b> in the Sheet's <b>Devices</b> tab
+         can't write anything — its work just stays queued until you tick it.</p>
+      <button class="btn btn-ghost" id="btnHello">Test my access</button>
+      <p class="lookup-note" id="helloNote"></p>
+    </div>
+
+    <div class="panel">
       <h3>Claims</h3>
       <div class="field">
         <label for="setClaimTo">Send claims to</label>
@@ -1849,9 +1867,56 @@ document.getElementById("fRescan").addEventListener("click", ()=>{
    is not allowed to fetch atlanticsuperstore.ca directly.                    */
 function proxyUrl(){ return localStorage.getItem(KEY_URL) || ""; }
 
+/* ---- who is asking ----
+   The app link is public and that's fine: the deployed files hold no secret and
+   no Sheet address. What actually opens your Sheet is the /exec URL plus the
+   secret plus an approved device — and those live only on the phones you set up.
+   The device id is random, made once, and means nothing to anyone else. It
+   exists so you can revoke one phone without changing anything for the others. */
+const KEY_DEVICE = "label_device_v1";
+const KEY_SECRET = "label_secret_v1";
+
+function deviceInfo(){
+  let d;
+  try{ d = JSON.parse(localStorage.getItem(KEY_DEVICE) || "null"); }catch(e){ d = null; }
+  if(!d || !d.id){
+    const rnd = (crypto && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : "d" + Date.now().toString(36) + Math.random().toString(36).slice(2,10);
+    d = { id: rnd, name: guessDeviceName() };
+    try{ localStorage.setItem(KEY_DEVICE, JSON.stringify(d)); }catch(e){}
+  }
+  return d;
+}
+function guessDeviceName(){
+  const u = navigator.userAgent;
+  const m = u.match(/\((?:Linux; )?(?:Android [\d.]+; )?([^;)]+)/);
+  let n = m ? m[1].trim() : "phone";
+  if(/iPhone/.test(u)) n = "iPhone";
+  if(/iPad/.test(u)) n = "iPad";
+  return n.slice(0, 28);
+}
+function setDeviceName(name){
+  const d = deviceInfo();
+  d.name = String(name || "").slice(0, 28) || guessDeviceName();
+  try{ localStorage.setItem(KEY_DEVICE, JSON.stringify(d)); }catch(e){}
+}
+function secret(){ return localStorage.getItem(KEY_SECRET) || ""; }
+
+/* Thrown when the script says "I know who you are, you're just not allowed
+   yet" — deliberately distinct, so callers can keep the work queued instead of
+   dropping it on the floor. */
+function AuthError(msg, code){
+  const e = new Error(msg); e.code = code; e.auth = true; return e;
+}
+
 async function callProxy(payload){
   const url = proxyUrl();
   if(!url) throw new Error("no proxy configured");
+  const dev = deviceInfo();
+  payload = Object.assign({}, payload, {
+    secret: secret(), deviceId: dev.id, deviceName: dev.name
+  });
   const ctrl = new AbortController();
   setTimeout(()=>ctrl.abort(), 25000);
   const r = await fetch(url, {
@@ -1860,7 +1925,28 @@ async function callProxy(payload){
     body: JSON.stringify(payload),
     signal: ctrl.signal
   });
-  return await r.json();
+  const d = await r.json();
+  if(d && d.ok === false && d.code){
+    // PENDING / SECRET / NOSECRET are all "not allowed", not "failed" — the
+    // difference decides whether the caller retries or gives up.
+    throw AuthError(d.error || "not allowed", d.code);
+  }
+  return d;
+}
+
+/* One place that turns a refusal into something worth reading. */
+function authMessage(err){
+  if(!err || !err.auth) return null;
+  if(err.code === "PENDING")
+    return "This phone is registered but not approved yet. Open the Sheet, go to " +
+           "the Devices tab, and tick Approved next to “" + deviceInfo().name + "”.";
+  if(err.code === "SECRET")
+    return "Wrong shared secret — check it in Settings.";
+  if(err.code === "NOSECRET")
+    return "No secret set on the script yet. In the Apps Script editor run " +
+           "setSecret(\"your phrase\"), then put the same phrase in Settings.";
+  if(err.code === "NODEVICE") return "This phone has no device id — reload the app.";
+  return err.message;
 }
 
 /* Open Food Facts keeps a name PER LANGUAGE, plus a default that's whatever
@@ -3039,7 +3125,14 @@ document.getElementById("btnScrapSync").addEventListener("click", async ()=>{
     saveSessions(all);
     scrapBadge(); renderLists();
     toast("Sent " + rows.length + " row(s) to the Sheet");
-  }catch(err){ toast("Sync failed: " + err.message); }
+  }catch(err){
+    // Not approved yet? The lists stay unsynced and the badge stays up, so they
+    // go through by themselves once the device is ticked. Losing a morning's
+    // scrap because a checkbox wasn't ticked would be unforgivable.
+    const a = authMessage(err);
+    toast(a || ("Sync failed: " + err.message));
+    if(a) errBanner(a);
+  }
   btn.classList.remove("busy");
 });
 
@@ -3616,6 +3709,13 @@ function renderAppearance(){
   if(pluN) pluN.textContent = PLU.length.toLocaleString();
   const fx = document.getElementById("fixCount");
   if(fx) fx.textContent = Object.keys(fixes()).length;
+  const sec = document.getElementById("setSecret");
+  if(sec) sec.value = secret();
+  const dn = document.getElementById("setDevName");
+  const dev = deviceInfo();
+  if(dn) dn.value = dev.name;
+  const di = document.getElementById("devId");
+  if(di) di.textContent = dev.id.slice(0, 13) + "…";
   const ct = document.getElementById("setClaimTo");
   if(ct) ct.value = localStorage.getItem(KEY_CLAIM_TO) || "";
   const wh = document.getElementById("setWarehouse");
@@ -3627,6 +3727,23 @@ function renderAppearance(){
     sz.textContent = Math.round(n/1024) + " KB";
   }
 }
+document.getElementById("setSecret").addEventListener("change", e=>{
+  localStorage.setItem(KEY_SECRET, e.target.value.trim()); toast("Saved");
+});
+document.getElementById("setDevName").addEventListener("change", e=>{
+  setDeviceName(e.target.value); toast("Saved");
+});
+document.getElementById("btnHello").addEventListener("click", async ()=>{
+  const n = document.getElementById("helloNote");
+  if(!proxyUrl()){ n.textContent = "Add your Apps Script URL first."; return; }
+  n.textContent = "Asking…";
+  try{
+    await callProxy({ action:"hello" });
+    n.innerHTML = "<b style='color:var(--ok)'>You're approved.</b> This phone can write to the Sheet.";
+  }catch(err){
+    n.textContent = authMessage(err) || ("Couldn't reach the script: " + err.message);
+  }
+});
 document.getElementById("setClaimTo").addEventListener("change", e=>{
   localStorage.setItem(KEY_CLAIM_TO, e.target.value.trim()); toast("Saved");
 });
@@ -4275,7 +4392,11 @@ document.getElementById("clSend").addEventListener("click", async ()=>{
     document.getElementById("clQty").value = "1";
     renderClaims();
     toast("Sent to " + to);
-  }catch(err){ toast("Couldn't send: " + err.message); }
+  }catch(err){
+    const a = authMessage(err);
+    toast(a || ("Couldn't send: " + err.message));
+    if(a) errBanner(a);
+  }
   btn.disabled = false; btn.textContent = "Send it";
 });
 
@@ -5424,12 +5545,10 @@ async function doSync(quiet){
       promo: !!i.flyer,
       img: i.img || ""
     }));
-    const r = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ action: "sync", rows: payload })
-    });
-    const d = await r.json();
+    // Through callProxy, not a fetch of its own — this one built its own
+    // request and would have sailed off without the secret or the device id,
+    // then been refused forever with nothing explaining why.
+    const d = await callProxy({ action: "sync", rows: payload });
     if(d && d.ok){
       unsent.forEach(i=>i.synced = true);
       persist(); renderList();
@@ -5441,10 +5560,14 @@ async function doSync(quiet){
       toast("Synced ✓ " + bits.join(", "));
     } else throw new Error(d && d.error || "Unexpected reply");
   }catch(err){
+    // Not approved yet leaves everything unsent, so it goes through on its own
+    // the moment the box is ticked. Nothing is lost waiting for permission.
+    const a = authMessage(err);
     status.className = "status err";
-    status.textContent = "Sync failed: " + err.message +
-      " — check the URL and that the script is deployed for “Anyone”.";
-    toast("Sync failed");
+    status.textContent = a || ("Sync failed: " + err.message +
+      " — check the URL and that the script is deployed for “Anyone”.");
+    toast(a ? "Not approved yet" : "Sync failed");
+    if(a) errBanner(a);
   }
   btn.disabled = false; fab.disabled = false;
 }

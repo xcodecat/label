@@ -132,7 +132,14 @@
   /* the mic lives in the box, not beside it: tap anywhere to type, tap the
      icon to speak. A green slab next to the field looked bolted on. */
   .sbox{position:relative;flex:1;display:flex}
-  .sbox input{flex:1;padding-right:46px!important;transition:border-color .25s,box-shadow .25s}
+  .clr{position:absolute;right:6px;top:50%;transform:translateY(-50%);
+    width:19px;height:19px;border-radius:50%;border:none;cursor:pointer;
+    background:var(--muted);color:var(--ink);font-size:10px;line-height:1;
+    padding:0;display:none;align-items:center;justify-content:center;z-index:3}
+  .clr.on{display:flex}
+  .clr:active{background:var(--paper)}
+  .search-wrap input, .sea-wrap input{padding-right:32px}
+  .sbox input{flex:1;padding-right:76px!important;transition:border-color .25s,box-shadow .25s}
   /* a brief glow says "start typing here" without stealing the screen */
   .sbox input.armed{border-color:var(--laser);box-shadow:0 0 0 3px rgba(214,64,44,.16)}
   .sbox button{position:absolute;right:4px;top:50%;transform:translateY(-50%);
@@ -152,6 +159,10 @@
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     padding:28px;text-align:center}
   .lock.hidden{display:none}
+  /* While deciding, show the logo and nothing else. The password field used to
+     flash up and vanish, which looked like the lock had failed. */
+  .lock.checking .lock-form{visibility:hidden}
+  .lock-form{width:100%;max-width:280px;display:flex;flex-direction:column;align-items:center}
   .lock-logo{width:132px;height:132px;object-fit:contain;margin-bottom:18px}
   .lock-name{font-family:var(--sans);font-size:26px;letter-spacing:.18em;
     color:var(--paper);margin:0 0 6px;font-weight:700}
@@ -755,13 +766,15 @@
   <meta name="apple-mobile-web-app-title" content="CatCaddy">
 </head>
 <body>
-<div id="lockScreen" class="lock">
+<div id="lockScreen" class="lock checking">
   <img src="./logo.png" alt="CatCaddy" class="lock-logo">
   <h1 class="lock-name">CatCaddy</h1>
-  <p class="lock-sub" id="lockSub">Enter the password to open</p>
-  <input id="lockPass" type="password" placeholder="Password" autocomplete="current-password"
-         enterkeyhint="go" autocapitalize="off" autocorrect="off">
-  <button class="btn btn-primary" id="lockGo">Open</button>
+  <p class="lock-sub" id="lockSub">Checking…</p>
+  <div class="lock-form">
+    <input id="lockPass" type="password" placeholder="Password" autocomplete="current-password"
+           enterkeyhint="go" autocapitalize="off" autocorrect="off">
+    <button class="btn btn-primary" id="lockGo">Open</button>
+  </div>
   <p class="lock-note" id="lockNote"></p>
 </div>
 
@@ -913,8 +926,13 @@
     </div>
     <div class="heard hidden" id="heard"></div>
     <div class="tbl" id="tblActive"></div>
+    <!-- the + sits under the list because that's where the new line appears -->
+    <button class="addrow" id="btnScrapRow" aria-label="Add a line">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
     <div class="btn-row">
-      <button class="btn btn-ghost" id="btnScrapRow">+ Add line</button>
+      <button class="btn btn-ghost danger" id="btnScrapClear">Clear all</button>
       <button class="btn btn-primary" id="btnScrapSave">Save all</button>
     </div>
     <div id="savedWrap"></div>
@@ -942,11 +960,6 @@
     </div>
     <div id="ordVerdict"></div>
     <div id="ordBody"></div>
-    <div class="readbar hidden" id="ordReadBar">
-      <span>Copied something? Read it in.</span>
-      <button id="ordReadGo">Read what you copied</button>
-      <button class="rb-x" id="ordReadX" aria-label="Dismiss">✕</button>
-    </div>
     <button class="mic-fab shoot" id="btnOrdAdd" aria-label="Add a page">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -1190,6 +1203,7 @@
          can't write anything — its work just stays queued until you tick it.</p>
       <button class="btn btn-ghost" id="btnHello">Test my access</button>
       <p class="lookup-note" id="helloNote"></p>
+      <p class="lookup-note" id="lockState"></p>
     </div>
 
     <div class="panel">
@@ -1950,7 +1964,8 @@ async function openApp(){
 
 function showLock(msg, bad){
   const l = document.getElementById("lockScreen");
-  l.classList.remove("hidden");
+  l.classList.remove("hidden", "checking");
+  document.getElementById("lockSub").textContent = "Enter the password to open";
   document.getElementById("appWrap").classList.add("hidden-until-open");
   document.body.style.overflow = "hidden";
   const n = document.getElementById("lockNote");
@@ -1980,7 +1995,12 @@ async function bootLock(){
     if(remembered) return openApp();
     return showLock("No signal — connect once to unlock this phone.");
   }
-  if(!proxyUrl()) return openApp();              // brand new phone, nothing to check against
+  if(!proxyUrl()){
+    // Nothing to check against yet. Opening is the only option that isn't a
+    // dead end — the password lives on the script, and you need Settings to
+    // reach the script. The app is empty until it's pointed at a Sheet anyway.
+    return openApp();
+  }
   try{
     const d = await tryUnlock(remembered || "");
     if(d && d.ok) return openApp();              // no password set, or the old one still fits
@@ -2326,7 +2346,8 @@ function itemRow(i){
    Tap for one. Hold to keep it open: say "granny smith", read the code, say
    "cortland", and the answer swaps the moment you speak — no reaching for the
    phone with full hands. */
-let lookRec = null, lookCont = false, lookWanted = false, lookLast = 0;
+let lookRec = null, lookCont = false, lookWanted = false;
+let lookFinal = "", lookDone = 0, lookTimer = null;
 
 function lookHeard(t){
   t = String(t).trim();
@@ -2345,31 +2366,47 @@ function startLook(continuous){
   lookRec = new SR();
   lookRec.lang = "en-CA"; lookRec.interimResults = true;
   lookRec.continuous = true;
-  lookCont = continuous; lookWanted = true; lookLast = 0;
+  lookCont = continuous; lookWanted = true;
+  lookFinal = ""; lookDone = 0; clearTimeout(lookTimer);
   btn.classList.add("live");
   btn.classList.toggle("cont", continuous);
 
   lookRec.onresult = ev=>{
+    let fin = "", interim = "";
+    for(let i = 0; i < ev.results.length; i++){
+      const t = ev.results[i][0].transcript;
+      if(ev.results[i].isFinal) fin += t + " "; else interim += t;
+    }
     if(lookCont){
-      // Each finished phrase REPLACES the search — one item at a time, which is
-      // how you'd actually use it: ask, read, ask again.
-      for(let i = lookLast; i < ev.results.length; i++){
-        if(!ev.results[i].isFinal) continue;
-        lookHeard(ev.results[i][0].transcript);
-        lookLast = i + 1;
-      }
+      // Same trap as the scrap mic: Chrome finalises a phrase in growing pieces,
+      // so "granny smith" would search for "granny" first and flicker. Wait for
+      // the pause, then look up only what's new.
+      lookFinal = fin;
+      clearTimeout(lookTimer);
+      lookTimer = setTimeout(()=>{
+        const pending = lookFinal.slice(lookDone).trim();
+        lookDone = lookFinal.length;
+        if(pending) lookHeard(pending);
+      }, 900);
       return;
     }
-    let t = "";
-    for(let i = 0; i < ev.results.length; i++) t += ev.results[i][0].transcript;
-    lookHeard(t);
+    lookHeard(fin + interim);
   };
   lookRec.onerror = ev=>{
-    if(ev.error === "no-speech" && lookCont && lookWanted) return;
+    // "no-speech" and "aborted" are just silence — in held-open mode they must
+    // NOT end the session, or it dies the first time you pause to read the code.
+    // That's why it kept stopping.
+    if(lookCont && lookWanted && (ev.error === "no-speech" || ev.error === "aborted")) return;
     btn.classList.remove("live","cont"); lookWanted = false;
+    if(ev.error === "not-allowed") toast("Mic blocked — allow microphone for this site");
   };
   lookRec.onend = ()=>{
-    if(lookCont && lookWanted){ try{ lookRec.start(); return; }catch(e){} }
+    if(lookCont && lookWanted){
+      // engine restarts empty, so the accumulators reset with it
+      lookFinal = ""; lookDone = 0;
+      try{ lookRec.start(); return; }catch(e){}
+    }
+    clearTimeout(lookTimer);
     btn.classList.remove("live","cont");
   };
   try{ lookRec.start(); }catch(e){ btn.classList.remove("live","cont"); }
@@ -3205,12 +3242,15 @@ function setMic(on){
 
 let micCont = false;      // is this a hold-to-keep-listening run?
 let micWanted = false;    // the engine stops itself; this says whether WE stopped
-let lastFinal = 0;        // result segments already committed, so none go twice
 let contCount = 0;
+let finalText = "";       // every finalised word this run, rebuilt from scratch
+let committedLen = 0;     // how much of it has already become rows
+let contTimer = null;
 
 function stopMic(){
   micWanted = false;
-  try{ rec.stop(); }catch(e){}
+  clearTimeout(contTimer);
+  try{ rec.stop(); }catch(e){}   // onend commits whatever is outstanding
 }
 
 function startMic(continuous){
@@ -3219,7 +3259,9 @@ function startMic(continuous){
   rec.lang = "en-CA"; rec.interimResults = true; rec.continuous = true; rec.maxAlternatives = 1;
   micCont = continuous;
   micWanted = true;
-  heardText = ""; lastFinal = 0; contCount = 0;
+  heardText = ""; contCount = 0;
+  finalText = ""; committedLen = 0;
+  clearTimeout(contTimer);
   heardBox.classList.remove("hidden");
   heardBox.innerHTML = continuous
     ? '<span class="dim">Listening — say them one after another. Tap the mic to stop.</span>'
@@ -3234,15 +3276,20 @@ function startMic(continuous){
       if(ev.results[i].isFinal) fin += t + " "; else interim += t;
     }
     if(micCont){
-      // Commit each phrase the moment it's finished rather than waiting for the
-      // end — you see it land and can carry on talking. lastFinal is what stops
-      // the cumulative replay adding the same item over and over.
-      for(let i = lastFinal; i < ev.results.length; i++){
-        if(!ev.results[i].isFinal) continue;
-        commitPhrase(ev.results[i][0].transcript);
-        lastFinal = i + 1;
-      }
+      // Chrome finalises a phrase PIECE BY PIECE — "organic", then "organic
+      // banana", then "organic banana 4 kilo" — so committing on every final
+      // segment added the same item once per piece. That's the six bananas.
+      //
+      // Instead: keep the complete finalised text (rebuilt from zero each time,
+      // so replays and rewrites are harmless), and commit only the part that's
+      // new — and only once you've stopped talking for a moment. A pause is
+      // what ends an item, not the recogniser's opinion of one.
+      finalText = fin;
+      clearTimeout(contTimer);
+      contTimer = setTimeout(flushCont, 1100);
+      const pending = finalText.slice(committedLen).trim();
       heardBox.innerHTML = (contCount ? "<b>" + contCount + " added</b> · " : "") +
+        (pending ? esc(pending) + " " : "") +
         '<span class="dim">' + (esc(interim) || "listening…") + '</span>';
     } else {
       heardText = fin;
@@ -3250,7 +3297,9 @@ function startMic(continuous){
     }
   };
   rec.onerror = ev=>{
-    if(ev.error === "no-speech" && micCont && micWanted) return;   // a pause isn't a failure
+    // Silence is not a failure. Ending on it is why held-open mode kept dying
+    // between items.
+    if(micCont && micWanted && (ev.error === "no-speech" || ev.error === "aborted")) return;
     setMic(false); micWanted = false;
     if(ev.error === "not-allowed") heardBox.textContent = "Mic blocked — allow microphone for this site.";
     else if(ev.error === "no-speech") heardBox.textContent = "Didn't catch anything — try again.";
@@ -3260,10 +3309,16 @@ function startMic(continuous){
     // The engine stops on its own — Chrome around a minute, iOS sooner. In hold
     // mode that would cut a long list off mid-way, so restart until YOU stop it.
     if(micCont && micWanted){
+      // The engine restarts with an EMPTY results list, so the accumulators have
+      // to reset with it. Commit anything outstanding first — otherwise the last
+      // thing you said before the restart vanishes.
+      flushCont();
+      finalText = ""; committedLen = 0;
       try{ rec.start(); return; }catch(e){}
     }
+    clearTimeout(contTimer);
     setMic(false);
-    if(micCont) finishCont(); else commitSpoken();
+    if(micCont){ flushCont(); finishCont(); } else commitSpoken();
   };
   try{ rec.start(); setMic(true); }catch(e){ toast("Couldn't start the mic"); setMic(false); }
 }
@@ -3272,6 +3327,13 @@ pressHold(micBtn, {
   onTap:  ()=>{ if(micOn) stopMic(); else startMic(false); },
   onHold: ()=>{ if(micOn) stopMic(); else startMic(true); }
 });
+
+/* Whatever's been said since the last pause becomes rows. */
+function flushCont(){
+  const pending = finalText.slice(committedLen).trim();
+  committedLen = finalText.length;
+  if(pending) commitPhrase(pending);
+}
 
 /* One finished phrase -> rows, straight away. */
 function commitPhrase(text){
@@ -3656,6 +3718,25 @@ document.getElementById("btnScrapRow").addEventListener("click", ()=>{
   const r = newRow(); lists[activeList].push(r); openRow = r.id; renderLists();
 });
 
+document.getElementById("btnScrapClear").addEventListener("click", ()=>{
+  const n = lists[activeList].length;
+  if(!n) return toast("Nothing to clear");
+  // Named, counted, and undoable. A morning's scrap is an hour of walking —
+  // "are you sure?" is not enough on its own.
+  if(!confirm("Clear all " + n + " line(s) from " + LIST_META[activeList].label + "?\n\n" +
+              "They haven't been saved. You'll get one chance to undo.")) return;
+  const backup = lists[activeList].slice();
+  const which = activeList;
+  lists[which] = [];
+  justAdded.clear();
+  renderLists();
+  toastUndo("Cleared " + n + " line(s)", ()=>{
+    lists[which] = backup;
+    renderLists();
+    toast("Put back");
+  });
+});
+
 ["tblActive"].forEach(id=>{
   const host = document.getElementById(id);
 
@@ -4000,6 +4081,17 @@ function renderAppearance(){
   if(pluN) pluN.textContent = PLU.length.toLocaleString();
   const fx = document.getElementById("fixCount");
   if(fx) fx.textContent = Object.keys(fixes()).length;
+  const ls = document.getElementById("lockState");
+  if(ls){
+    ls.innerHTML = !proxyUrl()
+      ? "<b>App lock: off.</b> Add your Apps Script URL below — the password lives " +
+        "on the script, so there's nothing to check against until then."
+      : (localStorage.getItem(KEY_UNLOCK)
+          ? "<b>App lock: on.</b> This phone has unlocked. Change the password from the " +
+            "Sheet: CatCaddy menu &rarr; Set app password."
+          : "<b>App lock: off.</b> No password set on the script. Set one from the " +
+            "Sheet: CatCaddy menu &rarr; Set app password.");
+  }
   const sec = document.getElementById("setSecret");
   if(sec) sec.value = secret();
   const dn = document.getElementById("setDevName");
@@ -4970,7 +5062,7 @@ function finishRows(rows){
                      .join(" ").replace(/\s+/g," ").trim();
 
     return {
-      art, desc, item: produceName(desc), pack:"", size,
+      art, desc, item: produceName(desc), brand: brandOf(desc), pack:"", size,
       ord, ship, diff, reason,
       // a row that lost its numbers is flagged rather than quietly wrong
       ok: !!(art && art !== "?" && desc && ord !== null && ship !== null)
@@ -4990,8 +5082,33 @@ function finishRows(rows){
    means you keep the cleaned-up original. */
 // Brands only. "STEAM AND GO" is a product line, not a brand — stripping those
 // words left the bare word "yellow", which then matched "Onions Yellow".
-const BRANDS = new Set(["nnni","ninni","pc","pco","fm","cove","manns","wholly","nn","ns","pcb",
-                        "farmers","presidents","choice","organics","gt","sensations"]);
+/* These aren't noise — they're brands, and on a claim the brand is part of what
+   you're claiming for. Stripping "NNNI" threw away the fact that it was the
+   Naturally Imperfect line, which is exactly the sort of thing a claim turns on.
+   So: pulled out of the description, kept as their own field, expanded to what
+   they actually stand for, and searchable either way. */
+const BRAND_FULL = {
+  nnni:"No Name Naturally Imperfect", ninni:"No Name Naturally Imperfect",
+  nn:"No Name", ns:"No Name", pc:"President's Choice", pco:"PC Organics",
+  pcb:"PC Blue Menu", fm:"Farmer's Market", cove:"Cove", manns:"Mann's",
+  wholly:"Wholly", gt:"GT's", sensations:"Sensations"
+};
+const BRANDS = new Set(Object.keys(BRAND_FULL).concat(
+  ["farmers","presidents","choice","organics"]));
+
+/* Pull the brand off the front of a description. Only the leading run counts:
+   "PC TOMATO BISTRO" is President's Choice, but a stray brand word in the
+   middle of a name is likelier to be part of the product. */
+function brandOf(desc){
+  const toks = String(desc || "").toLowerCase().replace(/[^a-z0-9. ]/g," ").split(/\s+/).filter(Boolean);
+  const found = [];
+  for(const t of toks){
+    if(BRAND_FULL[t]){ found.push(BRAND_FULL[t]); continue; }
+    if(BRANDS.has(t)) continue;      // "organics", "choice" — part of a brand, no name of its own
+    break;                            // hit a real word: the brand is over
+  }
+  return found.length ? found[0] : "";
+}
 // Pack sizes, case codes and the two-letter origin that trails these lines
 // (US, CA, MX) — none of it belongs in a product name.
 const PACKWORDS = /^(\d+(\.\d+)?\s*(g|kg|ml|l|lb|oz|ct|ea|pk|bg|cs)|\d+x[\d.]+\w*|\d{1,3})$/i;
@@ -5141,31 +5258,8 @@ document.getElementById("apPaste").addEventListener("click", ()=>{ closeAddPage(
    It can't do this silently and shouldn't: a page reading your clipboard
    unprompted is exactly the thing that permission exists to stop.
    Only armed after you've used paste once, so it never nags. */
-let ordArmed = false;
-document.addEventListener("visibilitychange", ()=>{
-  if(document.visibilityState !== "visible") return;
-  if(!ordArmed) return;
-  const v = document.querySelector(".view.active");
-  if(!v || v.id !== "view-order") return;
-  document.getElementById("ordReadBar").classList.remove("hidden");
-});
-document.getElementById("ordReadX").addEventListener("click", ()=>{
-  document.getElementById("ordReadBar").classList.add("hidden");
-});
-document.getElementById("ordReadGo").addEventListener("click", async ()=>{
-  document.getElementById("ordReadBar").classList.add("hidden");
-  try{
-    const t = await navigator.clipboard.readText();
-    if(!t || t.trim().length < 40){ openPaste(); return toast("Clipboard looks empty"); }
-    ingestOrder(parseTextBlock(t), parseInvoiceHead(t), "", "your phone's reader", t);
-  }catch(e){
-    openPaste();                     // permission refused: fall back to the box
-    toast("Long-press the box and paste");
-  }
-});
 
 async function openPaste(){
-  ordArmed = true;
   document.getElementById("pasteHow").innerHTML = isIOS
     ? "In <b>Photos</b>, open the invoice and tap the <b>text icon</b> at the " +
       "bottom right, then <b>Select All → Copy</b>. Come back and paste."
@@ -5357,7 +5451,6 @@ function shrinkImg(file, maxW){
 }
 
 function renderOrder(){
-  document.getElementById("ordReadBar").classList.add("hidden");
   const all = orders();
   const body = document.getElementById("ordBody");
   const tabs = document.getElementById("ordTabs");
@@ -5388,7 +5481,7 @@ function renderOrder(){
     '<div class="otable">' +
     '<div class="ohead"><span>Item</span><span>Ord</span><span>Ship</span><span>Diff</span></div>' +
     rows.map(r=>`<div class="orow2${r.ok?"":" flag"}">
-        <div class="d">${esc(r.item || r.desc)}<small>${esc(r.art)}</small></div>
+        <div class="d">${esc(r.item || r.desc)}${r.brand ? '<b class="brand">' + esc(r.brand) + '</b>' : ""}<small>${esc(r.art)}</small></div>
         <b>${r.ord==null?"?":r.ord}</b><b>${r.ship==null?"?":r.ship}</b>
         <b class="${r.diff>0?"diff":(r.diff<0?"over":"")}">${r.diff==null?"?":(r.diff>0?"-"+r.diff:(r.diff<0?"+"+Math.abs(r.diff):"0"))}</b>
       </div>`).join("") + '</div>';
@@ -5547,6 +5640,7 @@ function ordSearchRun(){
     const over = r.diff < 0;
     return '<div class="verdict ' + (over ? "over" : "short") + '">' +
       '<h4>' + esc(r.item || r.desc) + '</h4>' +
+      (r.brand ? '<p class="cd-src">' + esc(r.brand) + '</p>' : "") +
       '<div class="big">' + (over ? "OVER by " + Math.abs(r.diff) : "SHORT by " + r.diff) + '</div>' +
       '<p>Ordered ' + r.ord + " · shipped " + r.ship +
       (r.reason ? " · " + esc(r.reason) : "") +
@@ -6100,6 +6194,39 @@ document.getElementById("btnPullKnown").addEventListener("click", async ()=>{
   }
   btn.disabled = false;
 });
+
+/* ---- clear buttons ----
+   The grey ✕ Chrome puts in its address bar. Wired generically rather than four
+   times by hand, so the next search box gets one for free instead of being the
+   one that's inconsistent. */
+function addClearButton(id){
+  const input = document.getElementById(id);
+  if(!input) return;
+  const host = input.parentElement;
+  if(getComputedStyle(host).position === "static") host.style.position = "relative";
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "clr";
+  b.setAttribute("aria-label", "Clear");
+  b.innerHTML = "&#10005;";
+  host.appendChild(b);
+
+  // sits left of the mic where there is one, so they never overlap
+  const mic = host.querySelector("button:not(.clr)");
+  if(mic) b.style.right = "44px";
+
+  const sync = ()=>b.classList.toggle("on", !!input.value);
+  input.addEventListener("input", sync);
+  b.addEventListener("click", ()=>{
+    input.value = "";
+    // a plain .value change fires nothing — without this the list stays filtered
+    input.dispatchEvent(new Event("input", { bubbles:true }));
+    input.focus();
+    sync();
+  });
+  sync();
+}
+["search","saleSearch","ordSearch","prodSearch"].forEach(addClearButton);
 
 /* ================= boot ================= */
 // Last thing in the file: everything it might reveal is already wired.

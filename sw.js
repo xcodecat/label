@@ -3,7 +3,14 @@
    Your data never comes through here: items, PLUs and the calendar live in
    localStorage, which works offline anyway. This is only about the app
    itself loading when you're standing in a walk-in with no bars.          */
-const CACHE = "label-v1";
+/* BUMP THIS ON EVERY DEPLOY.
+   It was hard-coded to "label-v1" forever while the shell was served
+   cache-first, and activate only deletes caches whose name DIFFERS from this
+   one. So the name never changed, the old cache was never dropped, and a phone
+   went on serving the first index.html it ever saw — every update invisible
+   until you cleared site data. The comment next to the fetch handler said the
+   shell "barely changes", which was wrong the day it was written. */
+const CACHE = "label-v12-2026-07-17";
 const SHELL = [
   "./",
   "./index.html",
@@ -44,10 +51,27 @@ self.addEventListener("fetch", e=>{
     );
     return;
   }
-  // App shell: cache first, it barely changes
+  // The app itself: network first, cache as the fallback. It changes often, and
+  // a stale copy is worse than a slow one — you'd be looking at last week's
+  // build with no way to tell. The cache is still there for the walk-in with no
+  // bars; it just stops being the first answer.
+  if(url.origin === location.origin){
+    e.respondWith(
+      fetch(req).then(r=>{
+        if(r.ok){
+          const copy = r.clone();
+          caches.open(CACHE).then(c=>c.put(req, copy));
+        }
+        return r;
+      }).catch(()=> caches.match(req).then(hit=> hit || caches.match("./index.html")))
+    );
+    return;
+  }
+
+  // CDN libraries are versioned in their URL, so those really don't change.
   e.respondWith(
     caches.match(req).then(hit=> hit || fetch(req).then(r=>{
-      if(r.ok && (url.origin === location.origin || url.hostname.includes("cdnjs"))){
+      if(r.ok && url.hostname.includes("cdnjs")){
         const copy = r.clone();
         caches.open(CACHE).then(c=>c.put(req, copy));
       }

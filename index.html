@@ -1157,7 +1157,10 @@
       <p class="lookup-note">Every request carries the secret and this device's id.
          A phone that isn't ticked <b>Approved</b> in the Sheet's <b>Devices</b> tab
          can't write anything — its work just stays queued until you tick it.</p>
-      <button class="btn btn-ghost" id="btnHello">Test my access</button>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="btnHello">Test my access</button>
+        <button class="btn btn-primary hidden" id="btnClaim">Claim this script</button>
+      </div>
       <p class="lookup-note" id="helloNote"></p>
     </div>
 
@@ -1586,7 +1589,11 @@ function showView(name){
   if(name==="product") renderProduct();
   if(name==="order") renderOrder();
   if(name==="claims") renderClaims();
-  if(name==="settings"){ pluCountLabel(); renderAppearance(); }
+  if(name==="settings"){
+    pluCountLabel(); renderAppearance();
+    // surface the claim button without making you go looking for it
+    if(proxyUrl() && navigator.onLine) checkAccess();
+  }
   if(name==="settings") document.getElementById("scriptUrl").value = localStorage.getItem(KEY_URL)||"";
 }
 
@@ -3733,16 +3740,64 @@ document.getElementById("setSecret").addEventListener("change", e=>{
 document.getElementById("setDevName").addEventListener("change", e=>{
   setDeviceName(e.target.value); toast("Saved");
 });
-document.getElementById("btnHello").addEventListener("click", async ()=>{
+document.getElementById("btnHello").addEventListener("click", checkAccess);
+
+async function checkAccess(){
   const n = document.getElementById("helloNote");
+  const claim = document.getElementById("btnClaim");
+  claim.classList.add("hidden");
   if(!proxyUrl()){ n.textContent = "Add your Apps Script URL first."; return; }
   n.textContent = "Asking…";
   try{
     await callProxy({ action:"hello" });
     n.innerHTML = "<b style='color:var(--ok)'>You're approved.</b> This phone can write to the Sheet.";
   }catch(err){
+    if(err.code === "NOSECRET"){
+      // No secret on the script yet — offer to set it from here, since the
+      // editor and the Sheets menu are both desktop-only.
+      n.innerHTML = "<b>Nobody has claimed this script yet.</b> Type a phrase above " +
+        "and tap <b>Claim this script</b> — it'll set the secret and approve this " +
+        "phone. Do it now: whoever claims it first owns it.";
+      claim.classList.remove("hidden");
+      return;
+    }
     n.textContent = authMessage(err) || ("Couldn't reach the script: " + err.message);
   }
+}
+
+document.getElementById("btnClaim").addEventListener("click", async ()=>{
+  const n = document.getElementById("helloNote");
+  const v = document.getElementById("setSecret").value.trim();
+  if(v.length < 4){ n.textContent = "Type a phrase of at least 4 characters first."; return; }
+  localStorage.setItem(KEY_SECRET, v);
+  const dev = deviceInfo();
+  n.textContent = "Claiming…";
+  try{
+    const r = await fetch(proxyUrl(), {
+      method:"POST",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      // deliberately not callProxy: claiming happens BEFORE there's a secret
+      // to send, and callProxy would refuse its own reply
+      body: JSON.stringify({ action:"claim_setup", newSecret:v,
+                             deviceId:dev.id, deviceName:dev.name })
+    });
+    const d = await r.json();
+    if(d && d.ok){
+      document.getElementById("btnClaim").classList.add("hidden");
+      n.innerHTML = "<b style='color:var(--ok)'>Claimed.</b> The secret is set and this " +
+        "phone is approved. Give the same phrase to anyone else — their phone " +
+        "registers itself and you tick it in the Sheet's Devices tab.";
+      toast("This script is yours");
+      return;
+    }
+    if(d && d.code === "TAKEN"){
+      n.textContent = "Already claimed — a secret is set. If it wasn't you, archive " +
+        "the deployment and redeploy for a fresh URL.";
+      document.getElementById("btnClaim").classList.add("hidden");
+      return;
+    }
+    n.textContent = (d && d.error) || "Couldn't claim it.";
+  }catch(err){ n.textContent = "Couldn't reach the script: " + err.message; }
 });
 document.getElementById("setClaimTo").addEventListener("change", e=>{
   localStorage.setItem(KEY_CLAIM_TO, e.target.value.trim()); toast("Saved");
@@ -5593,7 +5648,23 @@ window.addEventListener("unhandledrejection", ev=>{
 
 if("serviceWorker" in navigator){
   window.addEventListener("load", ()=>{
-    navigator.serviceWorker.register("./sw.js").catch(()=>{ /* file:// or no HTTPS */ });
+    navigator.serviceWorker.register("./sw.js").then(reg=>{
+      // Say so when a new build has arrived, instead of leaving you to wonder
+      // why a fix you were told about isn't there.
+      reg.addEventListener("updatefound", ()=>{
+        const w = reg.installing;
+        if(!w) return;
+        w.addEventListener("statechange", ()=>{
+          if(w.state === "installed" && navigator.serviceWorker.controller){
+            const b = document.getElementById("errbar");
+            if(!b) return;
+            b.classList.remove("hidden");
+            b.innerHTML = "<b>New version ready</b>Close and reopen Label to use it.";
+          }
+        });
+      });
+      reg.update();
+    }).catch(()=>{ /* file:// or no HTTPS */ });
   });
 }
 

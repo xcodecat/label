@@ -59,6 +59,11 @@
   /* ---------- header ---------- */
   header{position:sticky;top:0;z-index:20;background:var(--ink);border-bottom:1px solid var(--line);
     padding:14px 16px 12px;display:flex;align-items:baseline;justify-content:space-between}
+  /* A logo, not a shout. The two halves are set apart by weight and colour
+     rather than capitals — the camel case is the whole idea of the name. */
+  .wordmark{font-size:19px;letter-spacing:-.01em;display:flex;align-items:center}
+  .wordmark .w1{font-weight:800;color:var(--paper)}
+  .wordmark .w2{font-weight:300;color:var(--laser)}
   header h1{font-size:17px;font-weight:700;letter-spacing:.04em}
   header h1 .stripes{display:inline-block;width:26px;height:13px;margin-right:8px;
     background:repeating-linear-gradient(90deg,var(--paper) 0 3px,transparent 3px 5px,var(--paper) 5px 6px,transparent 6px 10px)}
@@ -176,9 +181,13 @@
   .lock.checking .lock-form{visibility:hidden}
   .lock-form{width:100%;max-width:280px;display:flex;flex-direction:column;align-items:center}
   .lock-logo{width:132px;height:132px;object-fit:contain;margin-bottom:18px}
-  .lock-name{font-family:var(--sans);font-size:26px;letter-spacing:.18em;
-    color:var(--paper);margin:0 0 6px;font-weight:700}
-  .lock-sub{color:var(--muted);font-size:12px;margin:0 0 22px}
+  .lock-name{font-family:var(--sans);font-size:30px;letter-spacing:-.02em;
+    margin:0 0 6px}
+  .lock-name .w1{font-weight:800;color:var(--paper)}
+  .lock-name .w2{font-weight:300;color:var(--laser)}
+  .lock-sub{color:var(--muted);font-size:12px;margin:0 0 3px}
+  .lock-hint{color:var(--muted);font-size:10px;margin:0 0 20px;opacity:.7}
+  .lock.checking .lock-hint{visibility:hidden}
   .lock input{width:100%;max-width:280px;background:var(--surface-2);
     border:1px solid var(--line);border-radius:9px;padding:14px;color:var(--paper);
     font-size:16px;font-family:var(--sans);text-align:center;margin-bottom:12px}
@@ -200,11 +209,18 @@
   .burger .b1{top:12px;transform:translateX(-50%)}
   .burger .b2{top:18px;transform:translateX(-50%)}
   .burger .b3{top:24px;transform:translateX(-50%)}
-  /* top and bottom bars swing into the two strokes of the arrowhead, the middle
-     one becomes its shaft */
-  .burger.on .b1{width:11px;top:17px;transform:translateX(-96%) rotate(45deg)}
-  .burger.on .b2{width:2px;height:15px;top:11px;border-radius:2px;transform:translateX(-50%)}
-  .burger.on .b3{width:11px;top:17px;transform:translateX(-4%) rotate(-45deg)}
+  /* Open: the three bars collapse into a solid triangle pointing down.
+     Bars can't BE a triangle — an arrow is two strokes and a shaft, which is
+     what this was. So they fade out and a real triangle takes over: a CSS
+     border triangle, which is genuinely solid rather than three lines pretending.
+     Both live in the same button, so it swings back to bars on the second tap. */
+  .burger .tri{position:absolute;left:50%;top:50%;width:0;height:0;
+    border-left:8px solid transparent;border-right:8px solid transparent;
+    border-top:9px solid currentColor;
+    transform:translate(-50%,-50%) scale(.4) rotate(-90deg);
+    opacity:0;transition:transform .28s cubic-bezier(.4,0,.2,1), opacity .18s}
+  .burger.on .bl{opacity:0;transform:translateX(-50%) scale(.5)}
+  .burger.on .tri{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0deg)}
   .look-wrap{margin-bottom:16px}
   .look-h{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
     margin:14px 0 8px}
@@ -419,6 +435,14 @@
     color:var(--paper);border-radius:8px;padding:11px;font-family:var(--mono);
     font-size:12px;line-height:1.5;margin-bottom:12px;resize:none}
   .pastebox:focus{border-color:var(--laser);outline:none}
+  .xcheck{background:var(--surface-2);border:1px solid var(--line);border-radius:9px;
+    padding:11px;margin:10px 0}
+  .xc-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+  .xc-head b{font-size:12px;color:var(--paper)}
+  .xc-head span{font-size:10px;color:var(--muted);font-family:var(--mono)}
+  .xc-head span.have{color:var(--ok)}
+  .xcheck p{font-size:10px;color:var(--muted);line-height:1.45;margin-bottom:9px}
+  .xcheck .btn{margin-top:0;padding:9px}
   .crop-stage{position:relative;background:#000;border-radius:8px;overflow:hidden;
     margin-bottom:10px;touch-action:none;line-height:0}
   .crop-stage canvas{width:100%;display:block}
@@ -462,6 +486,7 @@
   .orow2 .d{color:var(--paper);line-height:1.3}
   /* the shorthand sits in front of the name, the way it reads on the page */
   .orow2 .d .warn{display:block;font-size:9px;color:#e0b341;font-weight:600;margin-top:2px}
+  .orow2 .d .dimtag{display:block;font-size:8px;color:var(--muted);font-weight:500;margin-top:2px}
   .orow2 .d .brand{display:inline-block;font-size:8px;color:#fff;background:var(--laser);
     font-weight:700;letter-spacing:.06em;padding:1px 4px;border-radius:3px;
     margin-right:5px;vertical-align:1px;font-family:var(--sans)}
@@ -807,8 +832,9 @@
 <body>
 <div id="lockScreen" class="lock checking">
   <img src="./logo.png" alt="CatCaddy" class="lock-logo">
-  <h1 class="lock-name">CatCaddy</h1>
+  <h1 class="lock-name"><span class="w1">Cat</span><span class="w2">Caddy</span></h1>
   <p class="lock-sub" id="lockSub">Checking…</p>
+  <p class="lock-hint" id="lockHint">Locks itself after 15 minutes.</p>
   <div class="lock-form">
     <input id="lockPass" type="password" placeholder="Password" autocomplete="current-password"
            enterkeyhint="go" autocapitalize="off" autocorrect="off">
@@ -819,10 +845,11 @@
 
 <div id="appWrap" class="hidden-until-open">
 <header>
-  <h1><span class="stripes" aria-hidden="true"></span>CATCADDY</h1>
-  <span class="count" id="hdrCount">0 items</span>
+  <h1 class="wordmark"><span class="stripes" aria-hidden="true"></span><span class="w1">Cat</span><span class="w2">Caddy</span></h1>
+
   <button class="gear burger" id="btnGear" aria-label="Settings">
     <span class="bl b1"></span><span class="bl b2"></span><span class="bl b3"></span>
+    <span class="tri" aria-hidden="true"></span>
   </button>
 </header>
 
@@ -1030,8 +1057,21 @@
         <button class="modal-close" id="pasteClose" aria-label="Close">✕</button></div>
       <p class="cd-src" id="pasteHow"></p>
       <textarea id="pasteBox" class="pastebox" placeholder="Long-press here and choose Paste…"></textarea>
+      <button class="btn btn-ghost" id="pasteClip">Paste from clipboard</button>
+      <div class="xcheck">
+        <div class="xc-head">
+          <b>Add the photo as well</b>
+          <span id="pasteShotState">not added</span>
+        </div>
+        <p>The two readers fail differently, so where they agree you can trust
+           the number, and where they don't you get told instead of guessing.
+           It's how a row your phone swallowed comes back.</p>
+        <div class="btn-row">
+          <button class="btn btn-ghost" id="pasteShoot">Camera</button>
+          <button class="btn btn-ghost" id="pastePick">Gallery</button>
+        </div>
+      </div>
       <div class="btn-row">
-        <button class="btn btn-ghost" id="pasteClip">Paste from clipboard</button>
         <button class="btn btn-primary" id="pasteGo">Read it</button>
       </div>
     </div>
@@ -1094,6 +1134,16 @@
         <input id="clReason" list="clReasons" placeholder="e.g. Mouldy on arrival" autocomplete="off"></div>
       <div class="field"><label for="clInv">Invoice / PO <span class="hint">(optional)</span></label>
         <input id="clInv" inputmode="numeric" autocomplete="off"></div>
+    </div>
+    <div class="panel">
+      <h3>Who it's from</h3>
+      <div class="field"><label for="clFrom">Your name</label>
+        <input id="clFrom" placeholder="who's making the claim" autocomplete="name"></div>
+      <div class="field"><label for="clReply">Your email <span class="hint">(replies come here)</span></label>
+        <input id="clReply" type="email" placeholder="you@example.com" autocomplete="email"></div>
+      <div class="field"><label for="clTo">Send to</label>
+        <input id="clTo" type="email" placeholder="office@example.com" autocomplete="off"></div>
+      <p class="lookup-note" id="clFromNote"></p>
     </div>
     <div class="btn-row">
       <button class="btn btn-ghost" id="clShare">Share to Gmail</button>
@@ -1220,7 +1270,7 @@
     </div>
     <div class="panel">
       <h3>Sync to Google Sheets</h3>
-      <p>Sends new items — including the barcode photo — straight into your spreadsheet. One-time setup: paste your Google Apps Script web app URL below (instructions in the README that came with this app).</p>
+      <p>Sends new items — including the barcode photo — straight into your spreadsheet. Paste the setup link below; Faisal has it.</p>
       <input id="scriptUrl" placeholder="https://script.google.com/macros/s/…/exec">
       <button class="btn btn-primary" id="btnSync">Sync new items</button>
       <div class="status" id="syncStatus"></div>
@@ -1235,10 +1285,8 @@
         <label for="setDevName">Device name <span class="hint">(so you can tell phones apart)</span></label>
         <input id="setDevName" placeholder="e.g. Faisal's phone" autocomplete="off">
       </div>
-      <div class="abt"><span>Device ID</span><b id="devId">—</b></div>
-      <p class="lookup-note">Every request carries the secret and this device's id.
-         A phone that isn't ticked <b>Approved</b> in the Sheet's <b>Devices</b> tab
-         can't write anything — its work just stays queued until you tick it.</p>
+      <p class="lookup-note">Anything you add is kept and sent once this phone is
+         approved. Nothing is lost while you wait.</p>
       <button class="btn btn-ghost" id="btnHello">Test my access</button>
       <p class="lookup-note" id="helloNote"></p>
       <p class="lookup-note" id="lockState"></p>
@@ -1246,6 +1294,14 @@
 
     <div class="panel">
       <h3>Claims</h3>
+      <div class="field">
+        <label for="setMeName">Your name <span class="hint">(signs the email)</span></label>
+        <input id="setMeName" placeholder="e.g. Faisal" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="setMeEmail">Your email <span class="hint">(replies come back to you)</span></label>
+        <input id="setMeEmail" type="email" placeholder="you@example.com" autocomplete="email">
+      </div>
       <div class="field">
         <label for="setClaimTo">Send claims to</label>
         <input id="setClaimTo" type="email" placeholder="office@example.com" autocomplete="off">
@@ -1653,9 +1709,10 @@ function persist(){
   updateCount();
 }
 function bootIndex(){ try{ reindexFlyer(); }catch(e){} }
-function updateCount(){
-  document.getElementById("hdrCount").textContent = items.length + (items.length===1?" item":" items");
-}
+// The header counter is gone. Kept as a no-op rather than chasing down every
+// caller — deleting the element alone would have thrown on the first render and
+// taken the rest of that function with it.
+function updateCount(){}
 updateCount();
 
 /* ================= views ================= */
@@ -2021,7 +2078,7 @@ function idleTooLong(){
 }
 function lockNow(msg){
   localStorage.removeItem(KEY_SEEN);
-  showLock(msg || "Locked after 15 minutes. Enter the password.");
+  showLock(msg || "");
 }
 
 // Any real interaction counts as being there. Passive, so it can't miss one.
@@ -2059,6 +2116,8 @@ async function openApp(){
 function showLock(msg, bad){
   const l = document.getElementById("lockScreen");
   l.classList.remove("hidden", "checking");
+  // The subtitle asks; the note is for problems only. Both saying "enter the
+  // password" just told you twice.
   document.getElementById("lockSub").textContent = "Enter the password to open";
   document.getElementById("appWrap").classList.add("hidden-until-open");
   document.body.style.overflow = "hidden";
@@ -2093,7 +2152,7 @@ async function bootLock(){
     // enforce the timeout — the remembered password is checked the moment
     // there's a connection again.
     if(remembered && !stale) return openApp();
-    if(remembered) return showLock("Locked after 15 minutes. Enter the password.");
+    if(remembered) return showLock("");
     return showLock("No signal — connect once to unlock this phone.");
   }
   if(!proxyUrl()){
@@ -2107,15 +2166,13 @@ async function bootLock(){
     // No password on the script at all: nothing to ask for.
     if(d && d.ok && !remembered) return openApp();
     if(d && d.ok && !stale) return openApp();    // still within the 15 minutes
-    if(d && d.ok && stale)
-      return lockNow(isColdStart() ? "Enter the password to open."
-                                   : "Locked after 15 minutes. Enter the password.");
+    if(d && d.ok && stale) return lockNow("");
     // the password changed, or there never was one on this phone
     localStorage.removeItem(KEY_UNLOCK);
     showLock(remembered ? "The password has changed." : "");
   }catch(e){
     if(remembered && !stale) return openApp();   // script unreachable: don't strand them
-    if(remembered) return showLock("Locked after 15 minutes. Enter the password.");
+    if(remembered) return showLock("");
     showLock("Couldn't reach the script to check.");
   }
 }
@@ -2212,15 +2269,14 @@ async function callProxy(payload){
 /* One place that turns a refusal into something worth reading. */
 function authMessage(err){
   if(!err || !err.auth) return null;
+  // Say what it means for THEM, not how it works. The mechanism is Faisal's
+  // business; a borrowed phone shouldn't come with a map of the locks.
   if(err.code === "PENDING")
-    return "This phone is registered but not approved yet. Open the Sheet, go to " +
-           "the Devices tab, and tick Approved next to “" + deviceInfo().name + "”.";
-  if(err.code === "SECRET")
-    return "Wrong shared secret — check it in Settings.";
-  if(err.code === "NOSECRET")
-    return "No secret set on the script yet. In the Apps Script editor run " +
-           "setSecret(\"your phrase\"), then put the same phrase in Settings.";
-  if(err.code === "NODEVICE") return "This phone has no device id — reload the app.";
+    return "This phone is waiting to be approved. Ask Faisal — your work is saved " +
+           "and will send as soon as it is.";
+  if(err.code === "SECRET") return "That passphrase isn't right — check Settings.";
+  if(err.code === "NOSECRET") return "Not set up yet. Ask Faisal.";
+  if(err.code === "NODEVICE") return "Something's off with this phone — reload the app.";
   return err.message;
 }
 
@@ -2536,7 +2592,7 @@ function updateFabSync(){
   else { b.classList.add("hidden"); f.classList.remove("pending"); }
 }
 document.getElementById("fabSync").addEventListener("click", ()=>{
-  if(!proxyUrl()){ toast("Add your Apps Script URL in Export first"); return showView("settings"); }
+  if(!proxyUrl()){ toast("Not set up yet — see Settings"); return showView("settings"); }
   if(!items.filter(i=>!i.synced).length) return toast("Everything already synced");
   doSync();
 });
@@ -2704,6 +2760,17 @@ try{
 document.getElementById("saleSearch").addEventListener("input", renderSales);
 document.getElementById("btnRefreshSales").addEventListener("click", refreshSales);
 
+/* Flyers run Thursday to Wednesday and land a day or two early, so the useful
+   answer is "check back Tuesday" — as a date, not a lecture. */
+function nextFlyerDay(){
+  const d = new Date();
+  // 2 = Tuesday. Find the next one; if today IS Tuesday, say today.
+  const delta = (2 - d.getDay() + 7) % 7;
+  d.setDate(d.getDate() + delta);
+  return delta === 0 ? "today"
+    : d.toLocaleDateString(undefined, { weekday:"long", month:"short", day:"numeric" });
+}
+
 function currentWeekItems(){
   return (weeks[activeWeek] && weeks[activeWeek].items) || [];
 }
@@ -2733,10 +2800,11 @@ function renderSales(){
   // the ghost "Next week" tab: real tab, no data behind it yet
   if(activeWeek === 1 && weeks.length < 2){
     grid.innerHTML = "";
+    // Say WHEN, not who publishes it or how it gets here. Naming the source
+    // just tells a borrowed phone where the data comes from.
     meta.innerHTML = "<b>Next week's flyer isn't out yet.</b><br>" +
-      "Loblaws usually posts it to Flipp a day or two before it starts — " +
-      "flyers run Thursday to Wednesday, so check back around Tuesday. " +
-      "Hit refresh then and this tab fills itself in.";
+      "It usually appears around <b>" + nextFlyerDay() + "</b>. " +
+      "Tap refresh then.";
     return;
   }
   if(!weeks.length){
@@ -2776,7 +2844,7 @@ function dateRange(w){
 
 async function refreshSales(){
   if(!proxyUrl()){
-    toast("Add your Apps Script URL in Export first");
+    toast("Not set up yet — see Settings");
     return showView("settings");
   }
   const btn = document.getElementById("btnRefreshSales");
@@ -2800,7 +2868,7 @@ async function refreshSales(){
     toast("Loaded " + currentWeekItems().length + " flyer items");
   }catch(err){
     meta.textContent = "Couldn't load the flyer: " + err.message +
-      " — run testFlyer in Apps Script to see why.";
+      ".";
   }
   document.getElementById("saleBar").style.width = "0";
   prog.classList.remove("on");
@@ -3330,36 +3398,58 @@ function joinResults(results, finalOnly){
 }
 
 function pressHold(btn, opts){
-  let timer = null, held = false;
-  // The tap rides on the browser's own click event. Rebuilding it from
-  // pointerdown/pointerup meant every quirk — a finger drifting, the browser
-  // guessing you meant to scroll, a cancelled pointer — silently ate the tap,
-  // which is why this felt sluggish and the hold never fired at all.
-  // The timer is all the hold needs; it doesn't care where the finger is.
-  const start = ()=>{
-    held = false;
-    clearTimeout(timer);
-    timer = setTimeout(()=>{
-      held = true;
-      if(navigator.vibrate) navigator.vibrate(28);   // it engaged, without looking
-      opts.onHold();
-    }, 480);
+  let timer = null, held = false, downAt = 0;
+
+  /* Why this is fussier than it looks.
+     touch-action:"manipulation" leaves Chrome free to claim the gesture for
+     panning. Press and HOLD a small button — especially one sitting on top of a
+     text input — and Android decides you might be scrolling or selecting, and
+     fires pointercancel. Cancelling the timer there meant onHold could never
+     run, while a quick tap (which never triggers that guess) worked fine. That
+     is exactly the "short press works, long press does nothing" shape.
+     touch-action:"none" says: this button handles its own gestures, don't guess.
+     The mic FAB never hit this because it's position:fixed, nowhere near an
+     input, so Chrome had nothing to guess about. */
+  btn.style.touchAction = "none";
+  btn.style.webkitUserSelect = "none";
+  btn.style.userSelect = "none";
+  btn.style.webkitTouchCallout = "none";
+
+  const fire = ()=>{
+    held = true;
+    if(navigator.vibrate) navigator.vibrate(28);   // it engaged, without looking
+    opts.onHold();
   };
-  const stop = ()=>clearTimeout(timer);
+  const start = e=>{
+    held = false; downAt = Date.now();
+    clearTimeout(timer);
+    timer = setTimeout(fire, 480);
+  };
+  const stop = ()=>{ clearTimeout(timer); };
+
   btn.addEventListener("pointerdown", start);
   btn.addEventListener("pointerup", stop);
-  btn.addEventListener("pointercancel", ()=>{ stop(); held = false; });
+  // A cancel this late is Chrome overruling us anyway — if the finger was down
+  // long enough, honour the hold rather than silently dropping it.
+  btn.addEventListener("pointercancel", ()=>{
+    clearTimeout(timer);
+    if(!held && Date.now() - downAt >= 480) fire();
+  });
+
   btn.addEventListener("click", e=>{
     e.preventDefault();
     stop();
     if(held){ held = false; return; }   // the hold already ran; don't tap as well
     opts.onTap();
   });
+
+  // touchstart/touchend as a backstop: if pointer events are being interfered
+  // with, these still arrive. Guarded so nothing can fire twice.
+  btn.addEventListener("touchstart", e=>{ if(!timer) start(e); }, { passive:true });
+  btn.addEventListener("touchend", stop, { passive:true });
+
   // stops the hold popping Android's text-selection menu over the button
   btn.addEventListener("contextmenu", e=>e.preventDefault());
-  btn.style.touchAction = "manipulation";
-  btn.style.webkitUserSelect = "none";
-  btn.style.userSelect = "none";
 }
 
 const micBtn = document.getElementById("btnMic");
@@ -3468,17 +3558,43 @@ function flushCont(){
 }
 
 /* One finished phrase -> rows, straight away. */
+/* ---- one line per item ----
+   Saying "two bananas" and then "three bananas" meant two rows of bananas, and
+   you'd add them up by hand at the end. Now the second lands on the first.
+
+   Two things that must NOT merge:
+   - kg and each. "2 kg bananas" and "3 bananas" are different measurements;
+     adding them gives 5 of nothing. Different units, different rows.
+   - anything you've since renamed or edited. Merging is matched on the PLU when
+     there is one, and on the name when there isn't, so a row you corrected
+     stays the row you corrected.
+   Returns the row it landed on, so the caller can highlight it. */
+function addOrMerge(list, row){
+  const key = r => (r.plu || "") + "|" + (r.barcode || "") + "|" +
+                   (r.name || "").trim().toLowerCase() + "|" + (r.kg ? "kg" : "ea");
+  const k = key(row);
+  const hit = lists[list].find(r => key(r) === k);
+  if(!hit){ lists[list].push(row); return { row, merged:false }; }
+  const before = Number(hit.qty) || 0;
+  const add = Number(row.qty) || 0;
+  // kg carries 3 decimals; a count is a count. Float addition would otherwise
+  // turn 0.1 + 0.2 into 0.30000000000000004 on a scrap sheet.
+  hit.qty = hit.kg ? Math.round((before + add) * 1000) / 1000 : before + add;
+  return { row: hit, merged:true, was: before };
+}
+
 function commitPhrase(text){
   const heard = parseSpoken(text, activeList);
   if(!heard.length) return;
   heard.forEach(it=>{
     const hit = pluFor(it.name);
-    const r = newRow({
+    const res = addOrMerge(it.list, newRow({
       name: it.name.replace(/\b\w/g, c=>c.toUpperCase()),
       plu: hit || "", qty: it.qty, kg: !!it.kg, heard: it.heard || ""
-    });
-    lists[it.list].push(r);
-    justAdded.add(r.id);
+    }));
+    justAdded.add(res.row.id);
+    if(res.merged) toast(res.row.name + ": " + res.was + " + " + it.qty +
+                         " = " + res.row.qty + (res.row.kg ? " kg" : ""));
   });
   contCount += heard.length;
   renderLists();
@@ -3505,12 +3621,11 @@ function commitSpoken(){
   heard.forEach(it=>{
     const hit = pluFor(it.name);           // "organic zucchini" -> 94067
     if(hit) matched++;
-    const r = newRow({
+    const res = addOrMerge(it.list, newRow({
       name: it.name.replace(/\b\w/g, c=>c.toUpperCase()),
       plu: hit || "", qty: it.qty, kg: !!it.kg, heard: it.heard || ""
-    });
-    lists[it.list].push(r);
-    if(it.list === activeList) justAdded.add(r.id); else elsewhere++;
+    }));
+    if(it.list === activeList) justAdded.add(res.row.id); else elsewhere++;
   });
   renderLists();
   const first = document.querySelector(".srow.just");
@@ -3589,7 +3704,7 @@ function scrapBadge(){
 document.getElementById("btnScrapSync").addEventListener("click", async ()=>{
   const pend = unsyncedSessions();
   if(!pend.length) return toast("Nothing new to sync");
-  if(!proxyUrl()){ toast("Add your Apps Script URL in Settings first"); return showView("settings"); }
+  if(!proxyUrl()){ toast("Not set up yet — see Settings"); return showView("settings"); }
   if(!navigator.onLine) return toast("Offline — it'll keep until you're back");
 
   const btn = document.getElementById("btnScrapSync");
@@ -4216,21 +4331,20 @@ function renderAppearance(){
   const ls = document.getElementById("lockState");
   if(ls){
     ls.innerHTML = !proxyUrl()
-      ? "<b>App lock: off.</b> Add your Apps Script URL below — the password lives " +
-        "on the script, so there's nothing to check against until then."
+      ? "<b>App lock: off</b> — finish setup below."
       : (localStorage.getItem(KEY_UNLOCK)
-          ? "<b>App lock: on.</b> This phone has unlocked. Change the password from the " +
-            "Sheet: CatCaddy menu &rarr; Set app password."
-          : "<b>App lock: off.</b> No password set on the script. Set one from the " +
-            "Sheet: CatCaddy menu &rarr; Set app password.");
+          ? "<b>App lock: on</b> — locks after 15 minutes."
+          : "<b>App lock: off</b>");
   }
   const sec = document.getElementById("setSecret");
   if(sec) sec.value = secret();
   const dn = document.getElementById("setDevName");
   const dev = deviceInfo();
   if(dn) dn.value = dev.name;
-  const di = document.getElementById("devId");
-  if(di) di.textContent = dev.id.slice(0, 13) + "…";
+  const mn = document.getElementById("setMeName");
+  if(mn) mn.value = localStorage.getItem(KEY_ME_NAME) || meName();
+  const me = document.getElementById("setMeEmail");
+  if(me) me.value = meEmail();
   const ct = document.getElementById("setClaimTo");
   if(ct) ct.value = localStorage.getItem(KEY_CLAIM_TO) || "";
   const wh = document.getElementById("setWarehouse");
@@ -4252,7 +4366,7 @@ document.getElementById("btnHello").addEventListener("click", checkAccess);
 
 async function checkAccess(){
   const n = document.getElementById("helloNote");
-  if(!proxyUrl()){ n.textContent = "Add your Apps Script URL first."; return; }
+  if(!proxyUrl()){ n.textContent = "Not set up yet — see Settings."; return; }
   n.textContent = "Asking…";
   try{
     await callProxy({ action:"hello" });
@@ -4262,6 +4376,12 @@ async function checkAccess(){
   }
 }
 
+document.getElementById("setMeName").addEventListener("change", e=>{
+  localStorage.setItem(KEY_ME_NAME, e.target.value.trim()); toast("Saved"); renderClaims();
+});
+document.getElementById("setMeEmail").addEventListener("change", e=>{
+  localStorage.setItem(KEY_ME_EMAIL, e.target.value.trim()); toast("Saved");
+});
 document.getElementById("setClaimTo").addEventListener("change", e=>{
   localStorage.setItem(KEY_CLAIM_TO, e.target.value.trim()); toast("Saved");
 });
@@ -4372,6 +4492,14 @@ function originBox(prefix, get, set){
    you want to eyeball it in Gmail first.                                    */
 const KEY_CLAIMS = "label_claims_v1";
 const KEY_CLAIM_TO = "label_claim_to_v1";
+const KEY_ME_NAME  = "label_me_name_v1";
+const KEY_ME_EMAIL = "label_me_email_v1";
+function meName(){
+  // The device name is a decent first guess — it's already "Faisal's phone".
+  return localStorage.getItem(KEY_ME_NAME) ||
+         (deviceInfo().name || "").replace(/'s phone$/i, "").trim();
+}
+function meEmail(){ return localStorage.getItem(KEY_ME_EMAIL) || ""; }
 const KEY_WH = "label_wh_v1";
 let WAREHOUSE = localStorage.getItem(KEY_WH) || "";
 /* `box` is where the crop STARTS, as a fraction of the photo — tight for the
@@ -4787,7 +4915,22 @@ function claimName(k){
          String(n).padStart(2,"0") + "_" + item + "_" + idx + "of5.jpg";
 }
 
+/* The claim form fills itself from Settings but lets you override per claim —
+   you might be sending one on someone else's behalf, or to a different desk. */
+function fillClaimWho(){
+  const f = document.getElementById("clFrom");
+  const r = document.getElementById("clReply");
+  const t = document.getElementById("clTo");
+  if(f && !f.value) f.value = meName();
+  if(r && !r.value) r.value = meEmail();
+  if(t && !t.value) t.value = localStorage.getItem(KEY_CLAIM_TO) || "";
+  const n = document.getElementById("clFromNote");
+  if(n) n.innerHTML = "<b>Send it</b> signs the email with your name and sends " +
+    "replies to your address. To send from your own mailbox, use <b>Share to Gmail</b>.";
+}
+
 function renderClaims(){
+  fillClaimWho();
   document.getElementById("clShots").innerHTML = SHOTS.map(sh=>{
     const got = clShots[sh.k];
     return `<div class="shot${got?" done":""}" data-k="${sh.k}">
@@ -4849,7 +4992,11 @@ function claimBody(){
           (inv ? "Invoice:  " + inv + "\n" : "") +
           "Received: " + new Date().toLocaleDateString() + "\n\n" +
           "Photos attached: close-ups of the damage, the full case, and the case label.\n\n" +
-          "Faisal\nProduce Manager"
+          // Was "Faisal / Produce Manager", hardcoded — wrong for anyone else
+          // holding the phone, and wrong about their job too.
+          (document.getElementById("clFrom").value.trim() || meName() || "") +
+          ((document.getElementById("clReply").value.trim() || meEmail())
+            ? "\n" + (document.getElementById("clReply").value.trim() || meEmail()) : "")
   };
 }
 
@@ -4886,9 +5033,10 @@ document.getElementById("clSend").addEventListener("click", async ()=>{
   if(!c.item) return toast("Name the product first");
   const shots = SHOTS.filter(s=>clShots[s.k]);
   if(!shots.length) return toast("Take at least one photo first");
-  const to = localStorage.getItem(KEY_CLAIM_TO) || "";
+  const to = (document.getElementById("clTo").value || "").trim() ||
+             localStorage.getItem(KEY_CLAIM_TO) || "";
   if(!to){ toast("Set the claims email in Settings first"); return showView("settings"); }
-  if(!proxyUrl()){ toast("Add your Apps Script URL in Settings"); return showView("settings"); }
+  if(!proxyUrl()){ toast("Not set up yet — see Settings"); return showView("settings"); }
   if(!navigator.onLine) return toast("Offline — send it when you're back");
 
   const btn = document.getElementById("clSend");
@@ -4896,10 +5044,12 @@ document.getElementById("clSend").addEventListener("click", async ()=>{
   try{
     const d = await callProxy({
       action:"claim", to, subject:c.subject, body:c.body,
+      fromName: (document.getElementById("clFrom").value || "").trim(),
+      replyTo:  (document.getElementById("clReply").value || "").trim(),
       files: shots.map(s=>({ name: claimName(s.k), data: clShots[s.k].split(",")[1] }))
     });
     if(!d || !d.ok) throw new Error((d && d.error) || "failed");
-    logClaim(c, shots.length, "sent from your Gmail");
+    logClaim(c, shots.length, "sent");
     clShots = {};
     ["clItem","clReason","clInv"].forEach(id=>document.getElementById(id).value = "");
     document.getElementById("clQty").value = "1";
@@ -5474,6 +5624,9 @@ async function openPaste(){
     : "In <b>Gallery</b>, open the invoice and tap the <b>(T)</b> icon, then " +
       "<b>Select all → Copy</b>. Come back and paste.";
   document.getElementById("pasteBox").value = "";
+  pasteShot = null;
+  const st = document.getElementById("pasteShotState");
+  if(st){ st.textContent = "not added"; st.classList.remove("have"); }
   document.getElementById("pasteOverlay").classList.remove("hidden");
   document.body.style.overflow = "hidden";
   // one-tap if the browser allows it; the textarea is there when it doesn't
@@ -5497,13 +5650,76 @@ document.getElementById("pasteClose").addEventListener("click", ()=>{
   document.body.style.overflow = "";
 });
 let lastPaste = "";
-document.getElementById("pasteGo").addEventListener("click", ()=>{
+/* The photo that will be cross-checked against the pasted text. */
+let pasteShot = null;
+const pasteCam = document.createElement("input");
+pasteCam.type = "file"; pasteCam.accept = "image/*"; pasteCam.capture = "environment";
+const pasteGal = document.createElement("input");
+pasteGal.type = "file"; pasteGal.accept = "image/*";
+// separate inputs on purpose: capture="environment" makes Android skip the
+// gallery entirely, so one input can't offer both
+function pasteTook(f){
+  if(!f) return;
+  pasteShot = f;
+  const st = document.getElementById("pasteShotState");
+  st.textContent = "photo added";
+  st.classList.add("have");
+}
+pasteCam.addEventListener("change", e=>pasteTook(e.target.files && e.target.files[0]));
+pasteGal.addEventListener("change", e=>pasteTook(e.target.files && e.target.files[0]));
+document.getElementById("pasteShoot").addEventListener("click", ()=>{ pasteCam.value=""; pasteCam.click(); });
+document.getElementById("pastePick").addEventListener("click", ()=>{ pasteGal.value=""; pasteGal.click(); });
+
+document.getElementById("pasteGo").addEventListener("click", async ()=>{
   const t = document.getElementById("pasteBox").value;
   if(!t.trim()) return toast("Nothing to read");
   lastPaste = t;
   document.getElementById("pasteOverlay").classList.add("hidden");
   document.body.style.overflow = "";
-  ingestOrder(parseTextBlock(t), parseInvoiceHead(t), "", "your phone's reader", t);
+  const textRows = parseTextBlock(t);
+  const head = parseInvoiceHead(t);
+
+  if(!pasteShot){
+    ingestOrder(textRows, head, "", "your phone's reader", t);
+    return;
+  }
+
+  // Read the photo too, and hold the text result while it works — if the reader
+  // falls over, you still get the text rather than nothing.
+  const body = document.getElementById("ordBody");
+  body.innerHTML = '<div class="ocr-prog"><div class="ocr-bar"><i id="oBar"></i></div>' +
+                   '<p id="oMsg">Reading the photo to double-check…</p></div>';
+  let shotRows = [], shot = "";
+  try{
+    await loadTesseract();
+    const big = await shrinkImg(pasteShot, 2200);
+    shot = await shrinkImg(pasteShot, 1100);
+    const worker = await Tesseract.createWorker("eng", 1, {
+      logger: m=>{
+        if(m.status === "recognizing text"){
+          const b = document.getElementById("oBar");
+          if(b) b.style.width = Math.round(m.progress * 100) + "%";
+        }
+      }
+    });
+    const { data } = await worker.recognize(big);
+    await worker.terminate();
+    const words = (data.words || []).map(w=>w.text);
+    shotRows = /\n/.test(String(data.text||"")) && String(data.text).split(/\n/).length > 4
+      ? parseTextBlock(data.text)
+      : parseShortSummary(words.length ? words : String(data.text||"").split(/\s+/));
+  }catch(err){
+    toast("Couldn't read the photo — using the text only");
+  }
+  const merged = crossCheck(textRows, shotRows);
+  const agree = merged.filter(r=>r.conf === "both").length;
+  const clash = merged.filter(r=>r.conf === "differs").length;
+  const extra = merged.filter(r=>r.conf === "photo").length;
+  ingestOrder(merged, head, shot, "both readers", t);
+  if(shotRows.length)
+    toast(agree + " agreed" + (clash ? " · " + clash + " disagree" : "") +
+          (extra ? " · " + extra + " only on the photo" : ""));
+  pasteShot = null;
 });
 
 
@@ -5551,6 +5767,17 @@ async function readOrderPage(f){
    doesn't say whether the text arrived, whether the article numbers were
    readable, or whether the quantities were. Show the working instead: the same
    move that found the Devices bug in one shot. */
+function confBadge(r){
+  if(!r.conf || r.conf === "both") return "";
+  if(r.conf === "differs")
+    return '<b class="warn">Readers disagree — photo says ' +
+      esc(String(r.alt && r.alt.ord)) + "/" + esc(String(r.alt && r.alt.ship)) +
+      '. Check the page.</b>';
+  if(r.conf === "photo")
+    return '<b class="warn">Only the photo saw this row — check it.</b>';
+  return '<b class="dimtag">text only</b>';
+}
+
 function parseReport(text){
   const t = String(text || "");
   const lines = t.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
@@ -5597,6 +5824,73 @@ function parseReport(text){
 
 /* One place where a page becomes stored data, whichever route it arrived by —
    paste and camera drifting apart would be a bug factory. */
+/* ---- reading the page twice ----
+   Your phone's reader and the built-in one fail differently, and that's the
+   whole value. Samsung loses a digit off an article number and runs two rows
+   together when one loses its number entirely; Tesseract is worse overall but
+   has no reason to make the SAME mistake in the same place.
+   So: match rows on the article number — the only field the two can arrive at
+   independently — and then say which is which.
+
+     both     the two readers agree. Trust it.
+     differs  they disagree on the numbers. The paste is shown because its
+              engine is better, but the row is flagged: LOOK AT THE PHOTO.
+     text     only the pasted text saw this row.
+     photo    only the photograph saw it — this is the one that earns the whole
+              exercise, because it's how MANNS SNAP PEAS comes back after
+              Samsung swallowed it into the strawberries.
+
+   What this does NOT do is average them or pick a winner on a hunch. Where they
+   disagree, you get told, and the photo settles it. */
+function crossCheck(textRows, shotRows){
+  if(!shotRows || !shotRows.length) return textRows;
+  const byArt = new Map();
+  shotRows.forEach(r=>{ if(r.art && r.art !== "?") byArt.set(String(r.art), r); });
+  const seen = new Set();
+
+  /* An exact match isn't enough. Samsung read the lime as 2167392100 and the
+     camera as 21673921002 — one dropped digit — so they looked like two
+     different items and the row came out TWICE. A duplicate is worse than the
+     problem this is meant to solve.
+     So if the numbers are within one edit AND the two readers describe the same
+     thing, it's the same row. Both conditions matter: article numbers that
+     differ by a digit are common, and so are genuinely different products whose
+     numbers happen to be close. */
+  const words = x => new Set(String(x || "").toLowerCase().match(/[a-z]{4,}/g) || []);
+  function findNear(r){
+    const rw = words(r.label || r.desc);
+    for(const x of shotRows){
+      if(!x.art || x.art === "?" || seen.has(String(x.art))) continue;
+      if(lev(String(r.art), String(x.art)) > 1) continue;
+      const xw = words(x.label || x.desc);
+      for(const w of rw) if(xw.has(w)) return x;
+    }
+    return null;
+  }
+
+  const out = textRows.map(r=>{
+    let m = r.art && byArt.get(String(r.art));
+    if(m) seen.add(String(r.art));
+    if(!m && r.art && r.art !== "?"){
+      m = findNear(r);
+      if(m) seen.add(String(m.art));
+    }
+    if(!m) return Object.assign({}, r, { conf:"text" });
+    const agree = r.ord === m.ord && r.ship === m.ship;
+    return Object.assign({}, r, {
+      conf: agree ? "both" : "differs",
+      alt: agree ? null : { ord:m.ord, ship:m.ship, diff:m.diff },
+      ok: r.ok && agree
+    });
+  });
+  // rows only the camera found — usually one the text reader merged away
+  shotRows.forEach(r=>{
+    if(!r.art || r.art === "?" || seen.has(String(r.art))) return;
+    out.push(Object.assign({}, r, { conf:"photo", ok:false }));
+  });
+  return out;
+}
+
 function ingestOrder(rows, head, img, how, rawText){
   const body = document.getElementById("ordBody");
   if(!rows.length){
@@ -5689,7 +5983,7 @@ function renderOrder(){
     '<div class="otable">' +
     '<div class="ohead"><span>Item</span><span>Ord</span><span>Ship</span><span>Diff</span></div>' +
     rows.map(r=>`<div class="orow2${r.ok?"":" flag"}">
-        <div class="d">${r.brand ? '<b class="brand" title="' + esc(r.brandFull) + '">' + esc(r.brand) + '</b>' : ""}${esc(r.label || r.item || r.desc)}${r.merged ? '<b class="warn">2 items ran together — check the photo</b>' : ""}<small>${esc(r.art)}${r.size ? " · " + esc(r.size) : ""}</small></div>
+        <div class="d">${r.brand ? '<b class="brand" title="' + esc(r.brandFull) + '">' + esc(r.brand) + '</b>' : ""}${esc(r.label || r.item || r.desc)}${r.merged ? '<b class="warn">2 items ran together — check the photo</b>' : ""}${confBadge(r)}<small>${esc(r.art)}${r.size ? " · " + esc(r.size) : ""}</small></div>
         <b>${r.ord==null?"?":r.ord}</b><b>${r.ship==null?"?":r.ship}</b>
         <b class="${r.diff>0?"diff":(r.diff<0?"over":"")}">${r.diff==null?"?":(r.diff>0?"-"+r.diff:(r.diff<0?"+"+Math.abs(r.diff):"0"))}</b>
       </div>`).join("") + '</div>';
@@ -6187,7 +6481,7 @@ function renderNut(){
     " USDA lists species, not cultivars — this is the generic figure, not this variety specifically.";
 }
 document.getElementById("cdFetch").addEventListener("click", async ()=>{
-  if(!proxyUrl()){ toast("Add your Apps Script URL in Export first"); return showView("settings"); }
+  if(!proxyUrl()){ toast("Not set up yet — see Settings"); return showView("settings"); }
   if(!navigator.onLine) return toast("Offline — fetch it when you're back");
   const btn = document.getElementById("cdFetch");
   btn.disabled = true; btn.textContent = "Fetching…";
@@ -6207,7 +6501,7 @@ document.getElementById("cdFetch").addEventListener("click", async ()=>{
     toast(d && d.ok && d.found ? "Fetched — cached offline" : "Couldn't get numbers — see the card");
   }catch(err){
     const store = usdaStore();
-    store[cardName] = { found:false, error:"Couldn't reach your Apps Script: " + err.message };
+    store[cardName] = { found:false, error:"Couldn't reach the server: " + err.message };
     saveUsda(store); renderNut();
   }
   btn.disabled = false; btn.textContent = "Fetch nutrition";
@@ -6277,7 +6571,7 @@ document.getElementById("btnSync").addEventListener("click", ()=>{
   if(!url.startsWith("https://script.google.com/")){
     const st = document.getElementById("syncStatus");
     st.className = "status err";
-    st.textContent = "Paste a valid Apps Script /exec URL first.";
+    st.textContent = "That link doesn't look right.";
     return;
   }
   localStorage.setItem(KEY_URL, url);
@@ -6396,7 +6690,7 @@ setOnline();
 /* ---- pull the barcode history out of the Sheet ---- */
 document.getElementById("btnPullKnown").addEventListener("click", async ()=>{
   const note = document.getElementById("knownNote");
-  if(!proxyUrl()){ toast("Add your Apps Script URL first"); return; }
+  if(!proxyUrl()){ toast("Not set up yet — see Settings"); return; }
   if(!navigator.onLine){ note.textContent = "You're offline."; return; }
   const btn = document.getElementById("btnPullKnown");
   btn.disabled = true; note.textContent = "Pulling…";

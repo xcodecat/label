@@ -10,11 +10,10 @@
    went on serving the first index.html it ever saw — every update invisible
    until you cleared site data. The comment next to the fetch handler said the
    shell "barely changes", which was wrong the day it was written. */
-const CACHE = "catcaddy-v15-2026-07-17";
+const CACHE = "catcaddy-v16-2026-07-17";
 const SHELL = [
   "./",
   "./index.html",
-  "./manifest.json",
   "./logo.png",
   "./icon-192.png",
   "https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js",

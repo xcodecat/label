@@ -623,6 +623,14 @@
   .mic-sm{background:var(--ok)!important;color:#0d1a12!important;border-color:var(--ok)!important;
     display:flex;align-items:center;justify-content:center;min-width:44px}
   .s-say{display:flex;align-items:center;justify-content:center;min-width:40px}
+  .se-row{display:flex;gap:6px;margin-bottom:6px}
+  .se-row .s-nm,.se-row .s-code-in{flex:1;min-width:0}
+  .s-code-in{background:var(--ink);border:1px solid var(--line);border-radius:8px;
+    color:var(--paper);font-family:var(--mono);font-size:13px;padding:9px 10px}
+  .s-code-in:focus{border-color:var(--laser);outline:none}
+  .s-scan{display:flex;align-items:center;justify-content:center;min-width:40px}
+  .se-btns{margin-bottom:0}
+  .se-btns .s-unit.on{background:var(--laser);border-color:var(--laser);color:#fff}
   .mic-sm.on{animation:pulse 1s ease-in-out infinite}
   /* product tab */
   .prod-tags{display:flex;gap:6px;overflow-x:auto;margin-top:9px;padding-bottom:2px;
@@ -1486,7 +1494,14 @@
         </div>
     </div>
     <div class="field">
-      <label for="mQty">Quantity</label>
+      <label>Counted by</label>
+      <div class="seg" id="mUnitSeg" role="group" aria-label="Per each or by weight">
+        <button type="button" class="on" data-u="each">Per each</button>
+        <button type="button" data-u="kg">By weight</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="mQty" id="mQtyLabel">Quantity</label>
       <div class="qty-row">
         <button type="button" class="qty-btn" id="mQtyMinus">−</button>
         <input id="mQty" type="number" inputmode="numeric" value="1" min="0">
@@ -1932,7 +1947,7 @@ function onScanSuccess(text){
   }
   if(target && target.type === "row"){
     const f = rowById(target.id);
-    if(f){ f.r.code = text; f.r.plu = ""; renderLists(); toast("Barcode " + text); }
+    if(f){ f.r.code = text; f.r.plu = ""; openRow = f.r.id; renderLists(); toast("Barcode " + text); }
     return;
   }
   openEntry(text, shot);
@@ -1961,6 +1976,30 @@ const fCode = document.getElementById("fCode"),
       lookupNote = document.getElementById("lookupNote");
 
 let pendingScan = null, pendingMatch = null;
+let mKg = false;   // is the current manual entry counted by weight?
+
+/* The default follows Settings: if your store weighs in kg, a new manual entry
+   starts on "by weight". You can still flip it per item. */
+function setManualUnit(kg){
+  mKg = !!kg;
+  document.querySelectorAll("#mUnitSeg button").forEach(b=>
+    b.classList.toggle("on", (b.dataset.u === "kg") === mKg));
+  const q = document.getElementById("mQty");
+  const lbl = document.getElementById("mQtyLabel");
+  if(mKg){
+    q.setAttribute("inputmode","decimal"); q.setAttribute("step","0.001");
+    lbl.textContent = "Weight (" + unit() + ")";
+    if(!/[.]/.test(q.value) && (parseInt(q.value,10)===1)) q.value = "";  // don't imply "1 kg"
+  } else {
+    q.setAttribute("inputmode","numeric"); q.setAttribute("step","1");
+    lbl.textContent = "Quantity";
+    if(!q.value) q.value = "1";
+  }
+}
+document.getElementById("mUnitSeg").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  setManualUnit(b.dataset.u === "kg");
+});
 
 function openEntryForm(scan){
   // This assignment went missing when the scan tab became an overlay, and
@@ -2050,6 +2089,28 @@ function proxyUrl(){ return localStorage.getItem(KEY_URL) || ""; }
  * it would prevent. The unlock is re-checked the moment there's a connection.
  */
 const KEY_UNLOCK = "label_unlock_v1";
+const KEY_PWHASH = "label_pwhash_v1";   // salted hash of the last password that worked
+
+/* The password lives on the Sheet, which is right — you control it from there.
+   But that means a fetch is the only way to check it, and offline there's no
+   fetch. So when a check SUCCEEDS online we keep a salted SHA-256 of the
+   password here. Offline, a typed password is checked against that hash — the
+   same password still opens the app in a freezer with no signal. The moment
+   there's a connection again the Sheet is authoritative: change the password
+   there and the next online unlock overwrites this hash, so the old one dies. */
+async function pwHash(pass){
+  const data = new TextEncoder().encode("catcaddy\u0001" + pass);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function rememberPassword(pass){
+  try{ localStorage.setItem(KEY_PWHASH, await pwHash(pass)); }catch(e){}
+}
+async function passwordMatchesCache(pass){
+  const h = localStorage.getItem(KEY_PWHASH);
+  if(!h) return false;
+  try{ return (await pwHash(pass)) === h; }catch(e){ return false; }
+}
 const KEY_SEEN   = "label_seen_v1";      // last time you actually used it
 const IDLE_MS    = 15 * 60 * 1000;
 
@@ -2132,14 +2193,29 @@ function showLock(msg, bad){
 async function tryUnlock(pass){
   const url = proxyUrl();
   if(!url) return { ok:true, why:"nourl" };       // not set up yet: don't lock them out
-  const r = await fetch(url, {
-    method:"POST",
-    headers:{ "Content-Type":"text/plain;charset=utf-8" },
-    // not callProxy: the lock is checked before the device gate, so that an
-    // unapproved phone can still get in and ask to be approved
-    body: JSON.stringify({ action:"unlock", password:pass })
-  });
-  return await r.json();
+  // Offline: the Sheet is unreachable, so check what we cached last time online.
+  if(!navigator.onLine){
+    if(await passwordMatchesCache(pass)) return { ok:true, offline:true };
+    if(!localStorage.getItem(KEY_PWHASH)) return { ok:false, code:"OFFLINE" };
+    return { ok:false, code:"BADPASS" };
+  }
+  try{
+    const r = await fetch(url, {
+      method:"POST",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      // not callProxy: the lock is checked before the device gate, so an
+      // unapproved phone can still get in and ask to be approved
+      body: JSON.stringify({ action:"unlock", password:pass })
+    });
+    const d = await r.json();
+    // A password confirmed by the Sheet becomes the offline key.
+    if(d && d.ok && pass) rememberPassword(pass);
+    return d;
+  }catch(e){
+    // The connection dropped mid-check. Fall back to the cache rather than fail.
+    if(await passwordMatchesCache(pass)) return { ok:true, offline:true };
+    throw e;
+  }
 }
 
 async function bootLock(){
@@ -2149,12 +2225,12 @@ async function bootLock(){
   // Two separate reasons to ask: the app was closed, or it sat untouched.
   const stale = remembered && (isColdStart() || idleTooLong());
   if(!navigator.onLine){
-    // No signal. A phone that has been unlocked before, and used recently, opens;
-    // otherwise it waits. Offline can't re-check the password, but it CAN still
-    // enforce the timeout — the remembered password is checked the moment
-    // there's a connection again.
+    // No signal. Within the timeout, open straight away as before. If it's gone
+    // stale, don't strand the phone: show the lock so the password can be TYPED
+    // and checked against the cached hash (handleUnlock does that offline). Only
+    // a phone that has never once unlocked here has nothing to check against.
     if(remembered && !stale) return openApp();
-    if(remembered) return showLock("");
+    if(remembered || localStorage.getItem(KEY_PWHASH)) return showLock("");
     return showLock("No signal — connect once to unlock this phone.");
   }
   if(!proxyUrl()){
@@ -2169,8 +2245,11 @@ async function bootLock(){
     if(d && d.ok && !remembered) return openApp();
     if(d && d.ok && !stale) return openApp();    // still within the 15 minutes
     if(d && d.ok && stale) return lockNow("");
-    // the password changed, or there never was one on this phone
+    // Online and the Sheet rejected the remembered password: it changed there.
+    // Drop BOTH the remembered password and the offline hash so the old one
+    // can't keep opening the app offline.
     localStorage.removeItem(KEY_UNLOCK);
+    localStorage.removeItem(KEY_PWHASH);
     showLock(remembered ? "The password has changed." : "");
   }catch(e){
     if(remembered && !stale) return openApp();   // script unreachable: don't strand them
@@ -2188,10 +2267,13 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
     const d = await tryUnlock(p);
     if(d && d.ok){
       localStorage.setItem(KEY_UNLOCK, p);
+      rememberPassword(p);            // so it works next time there's no signal
       document.getElementById("lockPass").value = "";
       openApp();
     } else {
-      showLock(d && d.code === "BADPASS" ? "That's not it." : ((d && d.error) || "Couldn't check."), true);
+      showLock(d && d.code === "BADPASS" ? "That's not it."
+             : d && d.code === "OFFLINE" ? "No signal, and this phone hasn't unlocked here before. Connect once."
+             : ((d && d.error) || "Couldn't check."), true);
       if(navigator.vibrate) navigator.vibrate([40,60,40]);
     }
   }catch(e){ showLock("Couldn't reach the script: " + e.message, true); }
@@ -2502,7 +2584,7 @@ function itemRow(i){
     '<small>' + (i.code ? esc(i.code) : "no barcode") +
     (i.plu ? " · PLU " + esc(i.plu) : "") +
     (o.length ? " · " + o.map(x=>esc(originFull(x))).join(", ") : "") +
-    " · qty " + (i.qty||0) + '</small></div></div>';
+    " · " + (i.kg ? kgStr(i.qty||0) + " " + unit() : "qty " + (i.qty||0)) + '</small></div></div>';
 }
 
 /* The Info-tab mic used to be a second, hand-copied speech engine with its own
@@ -2549,7 +2631,7 @@ function renderList(){
             (i.code && !/^PLU/.test(i.code)) ? esc(i.code) : ""
           ].filter(Boolean).join(" · ") || "no code"}${
             originList(i.origin).map(o=>`<span class="origin" title="${esc(originFull(o))}">${esc(o)}</span>`).join("")}</div>
-        <div class="sub"><span class="qty">×${i.qty}</span>
+        <div class="sub"><span class="qty">${i.kg ? kgStr(i.qty) + " " + unit() : "×" + i.qty}</span>
           ${i.flyer ? `<span class="price">$${Number(i.flyer.price).toFixed(2)}</span> · ` : ""}
           ${new Date(i.ts).toLocaleDateString()}
           <span class="sync-dot ${i.synced?"done":""}" title="${i.synced?"Synced to Sheets":"Not synced yet"}"></span>
@@ -3305,7 +3387,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v20";
+const APP_VERSION = "v22";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -3791,6 +3873,7 @@ document.getElementById("fabAdd").addEventListener("click", ()=>{
   ["mCode","mName","mPlu","mNotes"].forEach(id=>document.getElementById(id).value="");
   mOrigins = []; drawMOrigins();
   document.getElementById("mQty").value = 1;
+  setManualUnit(unit() === "kg");     // start on whatever Settings weighs in
   document.getElementById("mPluDrop").classList.add("hidden");
   manOverlay.classList.remove("hidden");
   document.body.style.overflow = "hidden";
@@ -3837,12 +3920,22 @@ document.getElementById("mSave").addEventListener("click", ()=>{
   const name = document.getElementById("mName").value.trim();
   const plu  = document.getElementById("mPlu").value.trim();
   if(!name && !code && !plu) return toast("Enter a name, barcode or PLU");
-  const qty = parseInt(document.getElementById("mQty").value)||0;
+  const qty = mKg ? kg3(parseFloat(document.getElementById("mQty").value)||0)
+                  : (parseInt(document.getElementById("mQty").value)||0);
   const key = code || (plu ? "PLU"+plu : "");
   const existing = key ? items.find(i=>i.code===key) : null;
   if(existing){
-    existing.qty += qty; existing.synced = false;
-    toast("Quantity updated → " + existing.qty);
+    // kg and each don't add together; only merge when the unit matches
+    if(!!existing.kg === mKg){
+      existing.qty = mKg ? kg3((parseFloat(existing.qty)||0) + qty) : (existing.qty + qty);
+      existing.synced = false;
+      toast("Quantity updated → " + (mKg ? kgStr(existing.qty) + " " + unit() : existing.qty));
+    } else {
+      addItem({ code:key, name:name||"(unnamed)", plu:plu, qty:qty, kg:mKg,
+                origin: mOrigins.slice(),
+                notes:document.getElementById("mNotes").value.trim() });
+      toast("Added as a separate " + (mKg ? "weight" : "each") + " line");
+    }
   } else {
     // a PLU you type in here is a fact about your store, so it joins the list
     if(plu && name && !PLU.some(e=>e.plu === plu && e.name.toLowerCase() === name.toLowerCase())){
@@ -3851,7 +3944,7 @@ document.getElementById("mSave").addEventListener("click", ()=>{
       SEED_KEYS = null;
       toast("Added " + plu + " to your PLU list");
     }
-    addItem({ code:key, name:name||"(unnamed)", plu:plu, qty:qty,
+    addItem({ code:key, name:name||"(unnamed)", plu:plu, qty:qty, kg:mKg,
               origin: mOrigins.slice(),
               notes:document.getElementById("mNotes").value.trim() });
     toast("Added");
@@ -3870,6 +3963,7 @@ function addItem(o){
     origin: o.origin || "",
     list: o.list || "",
     qty: o.qty==null ? 1 : o.qty,
+    kg: !!o.kg,
     notes: o.notes || "",
     img: o.img || "",
     flyer: matchFlyer(o.name||""),
@@ -3966,11 +4060,20 @@ function rowHtml(r, key){
       </div>
       <button class="s-del" aria-label="Remove">✕</button>`}
     ${open ? `<div class="s-edit">
-        <input class="s-nm" value="${esc(r.name)}" placeholder="Item name" autofocus>
-        <button class="s-say" aria-label="Say it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
-        <button class="s-unit">${r.kg ? "kg" : "each"}</button>
-      <button class="s-move">→ ${key==="loop"?"Flash":"Loop"}</button>
-        <button class="s-ok">Done</button>
+        <div class="se-row">
+          <input class="s-nm" value="${esc(r.name)}" placeholder="Item name" autofocus>
+          <button class="s-say" aria-label="Say it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
+        </div>
+        <div class="se-row">
+          <input class="s-code-in" value="${esc(r.plu || r.code)}" inputmode="numeric"
+                 placeholder="PLU or barcode" aria-label="PLU or barcode">
+          <button class="s-scan" aria-label="Scan barcode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></button>
+        </div>
+        <div class="se-row se-btns">
+          <button class="s-unit${r.kg?" on":""}">${r.kg ? "By weight" : "Per each"}</button>
+          <button class="s-move">→ ${key==="loop"?"Flash":"Loop"}</button>
+          <button class="s-ok">Done</button>
+        </div>
       </div>` : ""}
   </div>`;
 }
@@ -4024,6 +4127,7 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
       return;
     }
     if(e.target.classList.contains("s-say")){ dictateInto(e.target.closest(".s-edit").querySelector(".s-nm"), r); return; }
+    if(e.target.closest(".s-scan")){ openRow = r.id; openScanner({ type:"row", id:r.id }); return; }
     if(e.target.classList.contains("s-del")){
       const idx = lists[list].indexOf(r);
       lists[list] = lists[list].filter(x=>x.id!==r.id);
@@ -4074,6 +4178,13 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
     if(e.target.classList.contains("s-nm")){
       found.r.name = e.target.value;
       if(isWeighed(found.r.name)) found.r.kg = true;
+    }
+    if(e.target.classList.contains("s-code-in")){
+      // 4–5 digits is a PLU; anything longer is a barcode. Keep only one set so
+      // a row never carries a stale PLU and barcode at once.
+      const v = e.target.value.replace(/\D/g,"");
+      if(v.length >= 6){ found.r.code = v; found.r.plu = ""; }
+      else { found.r.plu = v; found.r.code = ""; }
     }
   });
 });
@@ -6614,7 +6725,7 @@ async function doSync(quiet){
       list: i.list || "",
       origin: originList(i.origin).join("; "),
       nameFr: i.nameFr || "",
-      name: i.name, qty: i.qty, notes: i.notes||"",
+      name: i.name, qty: i.qty, unit: i.kg ? unit() : "each", notes: i.notes||"",
       price: i.flyer?Number(i.flyer.price).toFixed(2):"",
       promo: !!i.flyer,
       img: i.img || ""

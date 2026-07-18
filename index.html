@@ -2503,87 +2503,13 @@ function itemRow(i){
     " · qty " + (i.qty||0) + '</small></div></div>';
 }
 
-/* say it instead of typing it — same engine as the scrap mic, but this one
-   only ever looks things up */
-/* ---- lookup by voice ----
-   Tap for one. Hold to keep it open: say "granny smith", read the code, say
-   "cortland", and the answer swaps the moment you speak — no reaching for the
-   phone with full hands. */
-let lookRec = null, lookCont = false, lookWanted = false;
-let lookFinal = "", lookDone = 0, lookTimer = null;
-
-function lookHeard(t){
-  t = String(t).trim();
-  // strip the "look up ..." wrapper people naturally say
-  t = t.replace(/^(look ?up|find|search( for)?|show me|what'?s the plu (for|of)|plu for)\s+/i, "");
-  if(!t) return;
-  const fixed = applyFix(t.toLowerCase());
-  document.getElementById("prodSearch").value = fixed || t;
-  lookAll = false;
-  renderProduct();
-}
-
-function startLook(continuous){
-  if(!SR){ toast("This browser can't do speech"); return; }
-  const btn = document.getElementById("btnProdMic");
-  lookRec = new SR();
-  lookRec.lang = "en-CA"; lookRec.interimResults = true;
-  lookRec.continuous = true;
-  lookCont = continuous; lookWanted = true;
-  lookFinal = ""; lookDone = 0; clearTimeout(lookTimer);
-  btn.classList.add("live");
-  btn.classList.toggle("cont", continuous);
-
-  lookRec.onresult = ev=>{
-    const fin = joinResults(ev.results, true);
-    const all = joinResults(ev.results, false);
-    if(lookCont){
-      // Same trap as the scrap mic: Chrome finalises a phrase in growing pieces,
-      // so "granny smith" would search for "granny" first and flicker. Wait for
-      // the pause, then look up only what's new.
-      lookFinal = fin + " ";
-      clearTimeout(lookTimer);
-      lookTimer = setTimeout(()=>{
-        const pending = lookFinal.slice(lookDone).trim();
-        lookDone = lookFinal.length;
-        if(pending) lookHeard(pending);
-      }, 900);
-      return;
-    }
-    // NOT fin + all — that is the "navel navel orange" bug. `all` already
-    // contains the finalised words; the interim is a continuation of them.
-    lookHeard(all || fin);
-  };
-  lookRec.onerror = ev=>{
-    // "no-speech" and "aborted" are just silence — in held-open mode they must
-    // NOT end the session, or it dies the first time you pause to read the code.
-    // That's why it kept stopping.
-    if(lookCont && lookWanted && (ev.error === "no-speech" || ev.error === "aborted")) return;
-    btn.classList.remove("live","cont"); lookWanted = false;
-    if(ev.error === "not-allowed") toast("Mic blocked — allow microphone for this site");
-  };
-  lookRec.onend = ()=>{
-    if(lookCont && lookWanted){
-      // engine restarts empty, so the accumulators reset with it
-      lookFinal = ""; lookDone = 0;
-      try{ lookRec.start(); return; }catch(e){}
-    }
-    clearTimeout(lookTimer);
-    btn.classList.remove("live","cont");
-  };
-  try{ lookRec.start(); }catch(e){ btn.classList.remove("live","cont"); }
-}
-
-pressHold(document.getElementById("btnProdMic"), {
-  onTap: ()=>{
-    if(lookWanted){ lookWanted = false; try{ lookRec.stop(); }catch(e){} return; }
-    startLook(false);
-  },
-  onHold: ()=>{
-    if(lookWanted){ lookWanted = false; try{ lookRec.stop(); }catch(e){} return; }
-    startLook(true);
-  }
-});
+/* The Info-tab mic used to be a second, hand-copied speech engine with its own
+   lookRec/lookWanted state. It drifted from the scrap one and broke where the
+   scrap mic never did: a fresh recogniser built on every tap, a race between
+   onend restarting and the next start(), state that pressHold's guards couldn't
+   see. The scrap mic works flawlessly, so the fix is not to mend this copy but
+   to delete it — the button now drives the SAME engine, told to look up instead
+   of add. Wiring lives with the engine, further down. */
 function updateFabSync(){
   const n = items.filter(i=>!i.synced).length;
   const b = document.getElementById("fabSyncN");
@@ -3369,6 +3295,12 @@ function parseSpoken(text, defList){
 }
 
 let rec = null, micOn = false, heardText = "";
+/* "scrap" adds rows to the active list; "look" drives the Info search box.
+   ONE engine, ONE lifecycle — the only per-mode differences are where the words
+   are shown and what a finished phrase does. Everything the scrap mic gets right
+   (restart on timeout, the joinResults dedup, the pause-debounce) the Info mic
+   now gets for free, because it is literally the same code. */
+let micMode = "scrap";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -3455,13 +3387,35 @@ function pressHold(btn, opts){
 const micBtn = document.getElementById("btnMic");
 const heardBox = document.getElementById("heard");
 
+/* In look mode there is no heard box; the words go straight into the search
+   field the user is already watching, so feedback there is redundant. */
+function lookHeard(t){
+  t = String(t).trim();
+  t = t.replace(/^(look ?up|find|search( for)?|show me|what'?s the plu (for|of)|plu for)\s+/i, "");
+  if(!t) return;
+  const fixed = applyFix(t.toLowerCase());
+  const box = document.getElementById("prodSearch");
+  box.value = fixed || t;
+  lookAll = false;
+  clearTimeout(prodT);        // search is debounced; speak-then-see shouldn't wait a frame
+  renderProduct();
+}
+
 function setMic(on){
   micOn = on;
-  micBtn.classList.toggle("on", on);
-  micBtn.classList.toggle("cont", on && micCont);
-  micBtn.setAttribute("aria-label",
-    on ? (micCont ? "Listening to everything — tap to stop" : "Listening — tap to stop")
-       : "Tap to talk, hold to keep listening");
+  // The scrap mic is a FAB with .on/.cont; the search mic is the small icon in
+  // the box, which uses .live/.cont. Drive whichever this run belongs to.
+  if(micMode === "look"){
+    const b = document.getElementById("btnProdMic");
+    b.classList.toggle("live", on);
+    b.classList.toggle("cont", on && micCont);
+  } else {
+    micBtn.classList.toggle("on", on);
+    micBtn.classList.toggle("cont", on && micCont);
+    micBtn.setAttribute("aria-label",
+      on ? (micCont ? "Listening to everything — tap to stop" : "Listening — tap to stop")
+         : "Tap to talk, hold to keep listening");
+  }
 }
 
 let micCont = false;      // is this a hold-to-keep-listening run?
@@ -3477,8 +3431,9 @@ function stopMic(){
   try{ rec.stop(); }catch(e){}   // onend commits whatever is outstanding
 }
 
-function startMic(continuous){
+function startMic(continuous, mode){
   if(!SR) return toast("No speech support here — use Chrome on Android or Safari on iOS");
+  micMode = mode || "scrap";
   rec = new SR();
   rec.lang = "en-CA"; rec.interimResults = true; rec.continuous = true; rec.maxAlternatives = 1;
   micCont = continuous;
@@ -3486,10 +3441,12 @@ function startMic(continuous){
   heardText = ""; contCount = 0;
   finalText = ""; committedLen = 0;
   clearTimeout(contTimer);
-  heardBox.classList.remove("hidden");
-  heardBox.innerHTML = continuous
-    ? '<span class="dim">Listening — say them one after another. Tap the mic to stop.</span>'
-    : '<span class="dim">Listening… adding to ' + LIST_META[activeList].label + '</span>';
+  if(micMode === "scrap"){
+    heardBox.classList.remove("hidden");
+    heardBox.innerHTML = continuous
+      ? '<span class="dim">Listening — say them one after another. Tap the mic to stop.</span>'
+      : '<span class="dim">Listening… adding to ' + LIST_META[activeList].label + '</span>';
+  }
 
   rec.onresult = ev=>{
     // ev.results is CUMULATIVE — it replays every final segment on each fire.
@@ -3500,19 +3457,29 @@ function startMic(continuous){
     if(micCont){
       // Chrome finalises a phrase PIECE BY PIECE — "organic", then "organic
       // banana", then "organic banana 4 kilo" — so committing on every final
-      // segment added the same item once per piece. That's the six bananas.
-      //
-      // Instead: keep the complete finalised text (rebuilt from zero each time,
-      // so replays and rewrites are harmless), and commit only the part that's
-      // new — and only once you've stopped talking for a moment. A pause is
-      // what ends an item, not the recogniser's opinion of one.
+      // segment added the same item once per piece. Keep the complete finalised
+      // text (rebuilt from zero, so replays are harmless) and commit only what's
+      // new, once talking pauses. A pause ends an item, not the recogniser.
       finalText = fin + " ";
       clearTimeout(contTimer);
-      contTimer = setTimeout(flushCont, 1100);
-      const pending = finalText.slice(committedLen).trim();
-      heardBox.innerHTML = (contCount ? "<b>" + contCount + " added</b> · " : "") +
-        (pending ? esc(pending) + " " : "") +
-        '<span class="dim">' + (esc(interim) || "listening…") + '</span>';
+      contTimer = setTimeout(flushCont, micMode === "look" ? 750 : 1100);
+      if(micMode === "look"){
+        // show the live guess right in the box so it feels instant
+        const box = document.getElementById("prodSearch");
+        const preview = (finalText.slice(committedLen) + " " + interim).trim();
+        if(preview){ box.value = preview; clearTimeout(prodT); renderProduct(); }
+      } else {
+        const pending = finalText.slice(committedLen).trim();
+        heardBox.innerHTML = (contCount ? "<b>" + contCount + " added</b> · " : "") +
+          (pending ? esc(pending) + " " : "") +
+          '<span class="dim">' + (esc(interim) || "listening…") + '</span>';
+      }
+    } else if(micMode === "look"){
+      // single-shot lookup: show every word as it lands, commit on end
+      heardText = fin;
+      const box = document.getElementById("prodSearch");
+      const live = (all || fin).trim();
+      if(live){ box.value = live; clearTimeout(prodT); renderProduct(); }
     } else {
       heardText = fin;
       heardBox.innerHTML = esc(heardText) + (interim ? ' <span class="dim">' + esc(interim) + '</span>' : "");
@@ -3523,6 +3490,11 @@ function startMic(continuous){
     // between items.
     if(micCont && micWanted && (ev.error === "no-speech" || ev.error === "aborted")) return;
     setMic(false); micWanted = false;
+    if(micMode === "look"){
+      if(ev.error === "not-allowed") toast("Mic blocked — allow microphone for this site");
+      micMode = "scrap";
+      return;
+    }
     if(ev.error === "not-allowed") heardBox.textContent = "Mic blocked — allow microphone for this site.";
     else if(ev.error === "no-speech") heardBox.textContent = "Didn't catch anything — try again.";
     else heardBox.textContent = "Speech error: " + ev.error;
@@ -3540,21 +3512,39 @@ function startMic(continuous){
     }
     clearTimeout(contTimer);
     setMic(false);
+    if(micMode === "look"){
+      // look mode already put the words in the box live; just flush the tail
+      if(micCont) flushCont(); else if(heardText.trim()) lookHeard(heardText);
+      micMode = "scrap";                 // back to default for the next press
+      return;
+    }
     if(micCont){ flushCont(); finishCont(); } else commitSpoken();
   };
   try{ rec.start(); setMic(true); }catch(e){ toast("Couldn't start the mic"); setMic(false); }
 }
 
 pressHold(micBtn, {
-  onTap:  ()=>{ if(micOn) stopMic(); else startMic(false); },
-  onHold: ()=>{ if(micOn) stopMic(); else startMic(true); }
+  onTap:  ()=>{ if(micOn) stopMic(); else startMic(false, "scrap"); },
+  onHold: ()=>{ if(micOn) stopMic(); else startMic(true,  "scrap"); }
+});
+
+/* The Info-tab search mic. Exactly the same engine and the same pressHold — the
+   only difference is the mode. Whatever makes the scrap mic reliable applies
+   here unchanged, which is the entire point of unifying them.
+   micOn is shared, so a press while it's already listening stops it, no matter
+   which mic started it. */
+pressHold(document.getElementById("btnProdMic"), {
+  onTap:  ()=>{ if(micOn) stopMic(); else startMic(false, "look"); },
+  onHold: ()=>{ if(micOn) stopMic(); else startMic(true,  "look"); }
 });
 
 /* Whatever's been said since the last pause becomes rows. */
 function flushCont(){
   const pending = finalText.slice(committedLen).trim();
   committedLen = finalText.length;
-  if(pending) commitPhrase(pending);
+  if(!pending) return;
+  if(micMode === "look") lookHeard(pending);
+  else commitPhrase(pending);
 }
 
 /* One finished phrase -> rows, straight away. */

@@ -87,8 +87,17 @@
   .btn-primary{background:var(--laser);color:#fff}
   .btn-primary:active{filter:brightness(.9)}
   .btn-ghost{background:var(--surface);color:var(--paper);border:1px solid var(--line)}
+  .addrow{display:flex;align-items:center;justify-content:center;gap:7px;
+    width:100%;height:42px;margin:10px 0 12px;background:transparent;
+    border:1px dashed var(--line);border-radius:9px;color:var(--muted);
+    cursor:pointer;font-family:var(--sans);font-size:12px;letter-spacing:.06em}
+  .addrow svg{width:17px;height:17px;flex:0 0 17px}
+  .addrow:active{border-color:var(--laser);color:var(--paper)}
+  .btn.danger{color:var(--laser);border-color:rgba(214,64,44,.4)}
   .btn-row{display:flex;gap:10px}
   .btn-row .btn{margin-top:12px}
+  /* the sync FAB floats bottom-right over this row — keep clear of it */
+  .btn-row-clear{padding-right:64px}
   .btn:disabled{opacity:.5}
 
   /* ---------- entry form (thermal label look) ---------- */
@@ -175,6 +184,20 @@
   .lock-note{color:var(--muted);font-size:11px;margin-top:14px;min-height:16px;
     max-width:300px;line-height:1.5}
   .lock-note.bad{color:var(--laser)}
+  /* Three bars that fold into a downward arrow when settings is open — the
+     same button, and the shape tells you which way it goes. */
+  .burger{position:relative;width:38px;height:38px}
+  .burger .bl{position:absolute;left:50%;height:2px;width:17px;background:currentColor;
+    border-radius:2px;transform-origin:50% 50%;
+    transition:transform .28s cubic-bezier(.4,0,.2,1), opacity .18s, width .28s}
+  .burger .b1{top:12px;transform:translateX(-50%)}
+  .burger .b2{top:18px;transform:translateX(-50%)}
+  .burger .b3{top:24px;transform:translateX(-50%)}
+  /* top and bottom bars swing into the two strokes of the arrowhead, the middle
+     one becomes its shaft */
+  .burger.on .b1{width:11px;top:17px;transform:translateX(-96%) rotate(45deg)}
+  .burger.on .b2{width:2px;height:15px;top:11px;border-radius:2px;transform:translateX(-50%)}
+  .burger.on .b3{width:11px;top:17px;transform:translateX(-4%) rotate(-45deg)}
   .look-wrap{margin-bottom:16px}
   .look-h{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
     margin:14px 0 8px}
@@ -430,6 +453,10 @@
   .orow2:last-child{border-bottom:none}
   .orow2.flag{background:rgba(138,109,31,.14)}
   .orow2 .d{color:var(--paper);line-height:1.3}
+  /* the shorthand sits in front of the name, the way it reads on the page */
+  .orow2 .d .brand{display:inline-block;font-size:8px;color:#fff;background:var(--laser);
+    font-weight:700;letter-spacing:.06em;padding:1px 4px;border-radius:3px;
+    margin-right:5px;vertical-align:1px;font-family:var(--sans)}
   .orow2 .d small{display:block;color:var(--muted);font-family:var(--mono);font-size:9px;
     margin-top:2px;opacity:.7}
   .orow2 b{font-family:var(--mono);text-align:right;color:var(--muted);font-weight:400}
@@ -782,11 +809,8 @@
 <header>
   <h1><span class="stripes" aria-hidden="true"></span>CATCADDY</h1>
   <span class="count" id="hdrCount">0 items</span>
-  <button class="gear" id="btnGear" aria-label="Settings">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="12" cy="12" r="3"/>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-    </svg>
+  <button class="gear burger" id="btnGear" aria-label="Settings">
+    <span class="bl b1"></span><span class="bl b2"></span><span class="bl b3"></span>
   </button>
 </header>
 
@@ -928,10 +952,12 @@
     <div class="tbl" id="tblActive"></div>
     <!-- the + sits under the list because that's where the new line appears -->
     <button class="addrow" id="btnScrapRow" aria-label="Add a line">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" aria-hidden="true">
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add a line
     </button>
-    <div class="btn-row">
+    <div class="btn-row btn-row-clear">
       <button class="btn btn-ghost danger" id="btnScrapClear">Clear all</button>
       <button class="btn btn-primary" id="btnScrapSave">Save all</button>
     </div>
@@ -1953,10 +1979,66 @@ function proxyUrl(){ return localStorage.getItem(KEY_URL) || ""; }
  * it would prevent. The unlock is re-checked the moment there's a connection.
  */
 const KEY_UNLOCK = "label_unlock_v1";
+const KEY_SEEN   = "label_seen_v1";      // last time you actually used it
+const IDLE_MS    = 15 * 60 * 1000;
 
-function lockNeeded(){ return !!localStorage.getItem(KEY_UNLOCK) || navigator.onLine; }
+/* The password is remembered so you don't retype it forty times a shift, but a
+   phone left on a pallet shouldn't stay open forever. Fifteen minutes of doing
+   nothing, or a full close, and it asks again.
+   Minimising is NOT locking: you switch to Gallery to read an invoice and come
+   straight back, and being thrown out for that would make the app unusable.
+   The clock keeps running while you're away, so fifteen minutes in Gallery
+   locks it just the same. */
+function touchSeen(){
+  try{ localStorage.setItem(KEY_SEEN, String(Date.now())); }catch(e){}
+}
+
+/* localStorage survives a full close, so an idle clock kept there would let you
+   straight back in after quitting — which is not what "ask when it's closed"
+   means. sessionStorage is the one that actually dies with the app, so its
+   absence IS the cold start. */
+function isColdStart(){
+  try{ return !sessionStorage.getItem("cc_live"); }catch(e){ return false; }
+}
+function markLive(){
+  try{ sessionStorage.setItem("cc_live", "1"); }catch(e){}
+}
+function idleTooLong(){
+  const t = parseInt(localStorage.getItem(KEY_SEEN) || "0", 10);
+  return !t || (Date.now() - t) > IDLE_MS;
+}
+function lockNow(msg){
+  localStorage.removeItem(KEY_SEEN);
+  showLock(msg || "Locked after 15 minutes. Enter the password.");
+}
+
+// Any real interaction counts as being there. Passive, so it can't miss one.
+["pointerdown","keydown"].forEach(ev=>
+  document.addEventListener(ev, ()=>{
+    if(!document.getElementById("lockScreen").classList.contains("hidden")) return;
+    touchSeen();
+  }, { passive:true, capture:true }));
+
+// Coming back from the background: closed and reopened, or just minimised —
+// either way the question is only how long it's been.
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState !== "visible") return;
+  if(!localStorage.getItem(KEY_UNLOCK)) return;        // no password in play
+  if(document.getElementById("lockScreen").classList.contains("hidden") === false) return;
+  if(idleTooLong()) lockNow();
+  else touchSeen();
+});
+
+// And while it sits open on the counter untouched.
+setInterval(()=>{
+  if(!localStorage.getItem(KEY_UNLOCK)) return;
+  if(!document.getElementById("lockScreen").classList.contains("hidden")) return;
+  if(idleTooLong()) lockNow();
+}, 30000);
 
 async function openApp(){
+  touchSeen();
+  markLive();
   document.getElementById("lockScreen").classList.add("hidden");
   document.getElementById("appWrap").classList.remove("hidden-until-open");
   document.body.style.overflow = "";
@@ -1989,10 +2071,17 @@ async function tryUnlock(pass){
 
 async function bootLock(){
   const remembered = localStorage.getItem(KEY_UNLOCK);
+  // A cold start is always a fresh ask when a password is in play. The remembered
+  // password only saves you from retyping WITHIN a session, never across one.
+  // Two separate reasons to ask: the app was closed, or it sat untouched.
+  const stale = remembered && (isColdStart() || idleTooLong());
   if(!navigator.onLine){
-    // No signal. A phone that has been unlocked before opens; one that hasn't
-    // can't be checked, so it waits.
-    if(remembered) return openApp();
+    // No signal. A phone that has been unlocked before, and used recently, opens;
+    // otherwise it waits. Offline can't re-check the password, but it CAN still
+    // enforce the timeout — the remembered password is checked the moment
+    // there's a connection again.
+    if(remembered && !stale) return openApp();
+    if(remembered) return showLock("Locked after 15 minutes. Enter the password.");
     return showLock("No signal — connect once to unlock this phone.");
   }
   if(!proxyUrl()){
@@ -2003,12 +2092,18 @@ async function bootLock(){
   }
   try{
     const d = await tryUnlock(remembered || "");
-    if(d && d.ok) return openApp();              // no password set, or the old one still fits
+    // No password on the script at all: nothing to ask for.
+    if(d && d.ok && !remembered) return openApp();
+    if(d && d.ok && !stale) return openApp();    // still within the 15 minutes
+    if(d && d.ok && stale)
+      return lockNow(isColdStart() ? "Enter the password to open."
+                                   : "Locked after 15 minutes. Enter the password.");
     // the password changed, or there never was one on this phone
     localStorage.removeItem(KEY_UNLOCK);
     showLock(remembered ? "The password has changed." : "");
   }catch(e){
-    if(remembered) return openApp();             // script unreachable: don't strand them
+    if(remembered && !stale) return openApp();   // script unreachable: don't strand them
+    if(remembered) return showLock("Locked after 15 minutes. Enter the password.");
     showLock("Couldn't reach the script to check.");
   }
 }
@@ -2372,16 +2467,13 @@ function startLook(continuous){
   btn.classList.toggle("cont", continuous);
 
   lookRec.onresult = ev=>{
-    let fin = "", interim = "";
-    for(let i = 0; i < ev.results.length; i++){
-      const t = ev.results[i][0].transcript;
-      if(ev.results[i].isFinal) fin += t + " "; else interim += t;
-    }
+    const fin = joinResults(ev.results, true);
+    const all = joinResults(ev.results, false);
     if(lookCont){
       // Same trap as the scrap mic: Chrome finalises a phrase in growing pieces,
       // so "granny smith" would search for "granny" first and flicker. Wait for
       // the pause, then look up only what's new.
-      lookFinal = fin;
+      lookFinal = fin + " ";
       clearTimeout(lookTimer);
       lookTimer = setTimeout(()=>{
         const pending = lookFinal.slice(lookDone).trim();
@@ -2390,7 +2482,9 @@ function startLook(continuous){
       }, 900);
       return;
     }
-    lookHeard(fin + interim);
+    // NOT fin + all — that is the "navel navel orange" bug. `all` already
+    // contains the finalised words; the interim is a continuation of them.
+    lookHeard(all || fin);
   };
   lookRec.onerror = ev=>{
     // "no-speech" and "aborted" are just silence — in held-open mode they must
@@ -3201,10 +3295,36 @@ let rec = null, micOn = false, heardText = "";
    the deliberate act that says "I'm about to reel off twenty things".
    pointer events rather than touch/mouse, so one path covers phone and desktop
    and nothing fires twice. */
+/* Chrome does not hand back tidy consecutive phrases. It RE-FINALISES a growing
+   one: "navel", then "navel orange". Concatenating those gives
+   "navel navel orange" — which is exactly what the lookup was searching for.
+   But it also emits genuinely separate phrases that DO need joining.
+   Telling them apart: if a segment extends the one before it, it replaces it;
+   otherwise it's new and gets appended. */
+function joinResults(results, finalOnly){
+  const parts = [];
+  for(let i = 0; i < results.length; i++){
+    if(finalOnly && !results[i].isFinal) continue;
+    const t = String(results[i][0].transcript).trim();
+    if(!t) continue;
+    const prev = parts.length ? parts[parts.length - 1] : "";
+    if(prev && (t.startsWith(prev) || prev.startsWith(t))){
+      parts[parts.length - 1] = t.length >= prev.length ? t : prev;
+      continue;
+    }
+    parts.push(t);
+  }
+  return parts.join(" ");
+}
+
 function pressHold(btn, opts){
   let timer = null, held = false, down = false;
   const clear = ()=>{ clearTimeout(timer); timer = null; };
   btn.addEventListener("pointerdown", e=>{
+    // Capture the pointer: without it a finger drifting a few pixels fires
+    // pointerleave and the hold is cancelled before it ever engages. That's
+    // why long-press on the search mic did nothing at all.
+    try{ btn.setPointerCapture(e.pointerId); }catch(_){}
     down = true; held = false;
     timer = setTimeout(()=>{
       if(!down) return;
@@ -3218,9 +3338,8 @@ function pressHold(btn, opts){
     down = false; clear();
     if(!held) opts.onTap();
   });
-  // a finger that slides off mid-press shouldn't silently arm continuous mode
-  ["pointerleave","pointercancel"].forEach(ev=>
-    btn.addEventListener(ev, ()=>{ down = false; clear(); }));
+  // with capture held, only a real cancel should abort
+  btn.addEventListener("pointercancel", ()=>{ down = false; clear(); });
   // the hold gesture otherwise pops the text-selection menu on Android
   btn.addEventListener("contextmenu", e=>e.preventDefault());
   btn.style.touchAction = "none";
@@ -3270,11 +3389,9 @@ function startMic(continuous){
   rec.onresult = ev=>{
     // ev.results is CUMULATIVE — it replays every final segment on each fire.
     // Appending is what turned "two bananas" into "two two bananas".
-    let fin = "", interim = "";
-    for(let i = 0; i < ev.results.length; i++){
-      const t = ev.results[i][0].transcript;
-      if(ev.results[i].isFinal) fin += t + " "; else interim += t;
-    }
+    const fin = joinResults(ev.results, true);
+    const all = joinResults(ev.results, false);
+    const interim = all.startsWith(fin) ? all.slice(fin.length).trim() : all;
     if(micCont){
       // Chrome finalises a phrase PIECE BY PIECE — "organic", then "organic
       // banana", then "organic banana 4 kilo" — so committing on every final
@@ -3284,7 +3401,7 @@ function startMic(continuous){
       // so replays and rewrites are harmless), and commit only the part that's
       // new — and only once you've stopped talking for a moment. A pause is
       // what ends an item, not the recogniser's opinion of one.
-      finalText = fin;
+      finalText = fin + " ";
       clearTimeout(contTimer);
       contTimer = setTimeout(flushCont, 1100);
       const pending = finalText.slice(committedLen).trim();
@@ -3293,7 +3410,7 @@ function startMic(continuous){
         '<span class="dim">' + (esc(interim) || "listening…") + '</span>';
     } else {
       heardText = fin;
-      heardBox.innerHTML = esc(heardText) + (interim ? '<span class="dim">' + esc(interim) + '</span>' : "");
+      heardBox.innerHTML = esc(heardText) + (interim ? ' <span class="dim">' + esc(interim) + '</span>' : "");
     }
   };
   rec.onerror = ev=>{
@@ -5030,12 +5147,18 @@ function finishRows(rows){
     // The reader picks up the NEXT row's reason before it leaves this one, so a
     // row often carries two. Take the first as ours; strip them all, or "FIRM
     // ORDERS ONLY" ends up glued to the product name.
+    // The table border sticks to the reason code — "|210-ITEM" — so a /^\d{3}-/
+    // test missed it and "210 Item Adjusted" leaked into the product name.
+    const bare = x => String(x).replace(/^[|\[\]!]+/, "");
     let reason = "";
     for(let i = 0; i < rest.length; i++){
-      if(used.has(i) || !RE_REAS.test(rest[i])) continue;
-      const w = [rest[i]]; used.add(i);
-      for(let j = i + 1; j < rest.length; j++){
-        if(/^[A-Za-z]{2,}$/.test(rest[j]) && rest[j] === rest[j].toUpperCase()){
+      if(used.has(i) || !RE_REAS.test(bare(rest[i]))) continue;
+      const w = [bare(rest[i])]; used.add(i);
+      // Single letters count: OCR splits "APPORTIONED" into "A PPORTIONED", and
+      // requiring two letters left "A Pportioned" glued to the name. Capped at
+      // four words so a description can't be swallowed.
+      for(let j = i + 1; j < rest.length && w.length < 5; j++){
+        if(/^[A-Za-z]+$/.test(rest[j]) && rest[j] === rest[j].toUpperCase()){
           w.push(rest[j]); used.add(j);
         } else break;
       }
@@ -5061,8 +5184,10 @@ function finishRows(rows){
     const desc = rest.filter((x,i)=>!used.has(i) && !packish(x))
                      .join(" ").replace(/\s+/g," ").trim();
 
+    const b = brandOf(desc);
     return {
-      art, desc, item: produceName(desc), brand: brandOf(desc), pack:"", size,
+      art, desc, item: produceName(desc), label: orderLabel(desc),
+      brand: b ? b.tag : "", brandFull: b ? b.full : "", pack:"", size,
       ord, ship, diff, reason,
       // a row that lost its numbers is flagged rather than quietly wrong
       ok: !!(art && art !== "?" && desc && ord !== null && ship !== null)
@@ -5087,11 +5212,19 @@ function finishRows(rows){
    Naturally Imperfect line, which is exactly the sort of thing a claim turns on.
    So: pulled out of the description, kept as their own field, expanded to what
    they actually stand for, and searchable either way. */
+// The badge is the shorthand you already read on the invoice. Spelled out it was
+// three words of noise on a phone-width row; the full name lives in the tooltip
+// and the detail card, where there's room.
 const BRAND_FULL = {
   nnni:"No Name Naturally Imperfect", ninni:"No Name Naturally Imperfect",
-  nn:"No Name", ns:"No Name", pc:"President's Choice", pco:"PC Organics",
-  pcb:"PC Blue Menu", fm:"Farmer's Market", cove:"Cove", manns:"Mann's",
+  nn:"No Name", ns:"No Name", pc:"President's Choice", pco:"PC Organic",
+  pcb:"PC Blue Menu", fm:"Farmers Market", cove:"Cove", manns:"Manns",
   wholly:"Wholly", gt:"GT's", sensations:"Sensations"
+};
+const BRAND_TAG = {
+  nnni:"NNNI", ninni:"NNNI", nn:"NN", ns:"NN", pc:"PC", pco:"PCO",
+  pcb:"PCB", fm:"FM", cove:"COVE", manns:"MANNS", wholly:"WHOLLY",
+  gt:"GT", sensations:"SENS"
 };
 const BRANDS = new Set(Object.keys(BRAND_FULL).concat(
   ["farmers","presidents","choice","organics"]));
@@ -5101,13 +5234,63 @@ const BRANDS = new Set(Object.keys(BRAND_FULL).concat(
    middle of a name is likelier to be part of the product. */
 function brandOf(desc){
   const toks = String(desc || "").toLowerCase().replace(/[^a-z0-9. ]/g," ").split(/\s+/).filter(Boolean);
-  const found = [];
   for(const t of toks){
-    if(BRAND_FULL[t]){ found.push(BRAND_FULL[t]); continue; }
+    if(BRAND_TAG[t]) return { tag: BRAND_TAG[t], full: BRAND_FULL[t] };
     if(BRANDS.has(t)) continue;      // "organics", "choice" — part of a brand, no name of its own
     break;                            // hit a real word: the brand is over
   }
-  return found.length ? found[0] : "";
+  return null;
+}
+
+function inVocab(w){
+  if(!VOCAB) buildVocab();
+  const x = String(w).toLowerCase();
+  // VOCAB holds the words as written ("raspberries"), so looking up the STEM
+  // ("raspberry") never matched and every split word stayed broken. Check both.
+  return VOCAB.has(x) || VOCAB.has(stem(x));
+}
+
+/* OCR splits words: "RASPBERRIES" came back as "RA SPBERRIES". Glue a short
+   fragment to its neighbour when the join is a word the catalogue knows and the
+   halves alone are not — so RA+SPBERRIES mends, but HOT+HOUSE is left alone
+   because both halves are already real words. */
+function mendSplits(toks){
+  const out = [];
+  for(let i = 0; i < toks.length; i++){
+    const a = toks[i], b = toks[i+1];
+    if(b && (a.length <= 3 || b.length <= 3)){
+      const joined = a + b;
+      if(joined.length >= 5 && inVocab(joined) && !(inVocab(a) && inVocab(b))){
+        out.push(joined); i++; continue;
+      }
+    }
+    out.push(a);
+  }
+  return out;
+}
+
+/* What you actually read on the invoice. The pack detail belongs WITH the name:
+   "PCO DILL 20G" tells you which dill, "Dill" alone doesn't. So sizes stay and
+   only the brand and true junk come out. */
+function orderLabel(desc){
+  let toks = String(desc || "").toLowerCase().replace(/[^a-z0-9. ]/g," ")
+               .split(/\s+/).filter(Boolean)
+               .filter(t => !BRAND_TAG[t] && !BRANDS.has(t) && !JUNK.has(t))
+               // "4000", "0000" — quantities too mangled to trust, already
+               // refused as numbers. They are never part of a product name.
+               .filter(t => !/^\d{3,4}$/.test(t))
+               .filter(t => t !== "......" && !/^\.+$/.test(t));
+  toks = mendSplits(toks);
+  // NO repairTokens here. It forces every word onto the nearest produce name,
+  // which is right when you want a catalogue match and vandalism when you want
+  // to read the invoice: it turned STEAM AND GO into "Stem And Go", GUAC RST
+  // STYL into "Guava Run Stem", and RA SPBERRIES into "Ra Cherries". The
+  // repaired name still exists on the row for PLU matching; this field shows
+  // what the page says.
+  return toks.map(t=>{
+    if(/\d/.test(t)) return t.toUpperCase();          // sizes exactly as written
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }).join(" ");
 }
 // Pack sizes, case codes and the two-letter origin that trails these lines
 // (US, CA, MX) — none of it belongs in a product name.
@@ -5481,7 +5664,7 @@ function renderOrder(){
     '<div class="otable">' +
     '<div class="ohead"><span>Item</span><span>Ord</span><span>Ship</span><span>Diff</span></div>' +
     rows.map(r=>`<div class="orow2${r.ok?"":" flag"}">
-        <div class="d">${esc(r.item || r.desc)}${r.brand ? '<b class="brand">' + esc(r.brand) + '</b>' : ""}<small>${esc(r.art)}</small></div>
+        <div class="d">${r.brand ? '<b class="brand" title="' + esc(r.brandFull) + '">' + esc(r.brand) + '</b>' : ""}${esc(r.label || r.item || r.desc)}<small>${esc(r.art)}${r.size ? " · " + esc(r.size) : ""}</small></div>
         <b>${r.ord==null?"?":r.ord}</b><b>${r.ship==null?"?":r.ship}</b>
         <b class="${r.diff>0?"diff":(r.diff<0?"over":"")}">${r.diff==null?"?":(r.diff>0?"-"+r.diff:(r.diff<0?"+"+Math.abs(r.diff):"0"))}</b>
       </div>`).join("") + '</div>';
@@ -5640,7 +5823,7 @@ function ordSearchRun(){
     const over = r.diff < 0;
     return '<div class="verdict ' + (over ? "over" : "short") + '">' +
       '<h4>' + esc(r.item || r.desc) + '</h4>' +
-      (r.brand ? '<p class="cd-src">' + esc(r.brand) + '</p>' : "") +
+      (r.brandFull ? '<p class="cd-src">' + esc(r.brandFull) + '</p>' : "") +
       '<div class="big">' + (over ? "OVER by " + Math.abs(r.diff) : "SHORT by " + r.diff) + '</div>' +
       '<p>Ordered ' + r.ord + " · shipped " + r.ship +
       (r.reason ? " · " + esc(r.reason) : "") +

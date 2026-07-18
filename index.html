@@ -142,6 +142,7 @@
     border-bottom:1px solid rgba(128,128,128,.14)}
   .abt:last-child{border-bottom:none}
   .abt span{color:var(--muted)}
+  .tm{font-size:8px;vertical-align:super;opacity:.7;margin-left:1px}
   .abt b{font-family:var(--mono);color:var(--paper);font-weight:400}
   /* the mic lives in the box, not beside it: tap anywhere to type, tap the
      icon to speak. A green slab next to the field looked bolted on. */
@@ -161,7 +162,8 @@
      38px transparent square — the clear X sat there permanently, wrong size. */
   .sbox button:not(.clr){position:absolute;right:4px;top:50%;transform:translateY(-50%);
     width:38px;height:38px;background:none;border:none;color:var(--muted);
-    cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+    cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;
+    z-index:4;touch-action:none}
   .sbox button:not(.clr) svg{width:18px;height:18px}
   .sbox button:not(.clr):active{color:var(--paper)}
   .sbox button.live{color:var(--laser);animation:micpulse 1s ease-in-out infinite}
@@ -1343,9 +1345,9 @@
 
     <h4 class="sec-h">About</h4>
     <div class="panel">
-      <div class="abt"><span>App</span><b>CatCaddy</b></div>
+      <div class="abt"><span>App</span><b>CatCaddy<sup class="tm">™</sup></b></div>
       <div class="abt"><span>Author</span><b>Faisal</b></div>
-      <div class="abt"><span>Version</span><b>v12</b></div>
+      <div class="abt"><span>Version</span><b id="abtVer">—</b></div>
       <div class="abt"><span>PLU entries</span><b id="abtPlu">—</b></div>
       <div class="abt"><span>Storage</span><b id="abtSize">—</b></div>
     </div>
@@ -3301,6 +3303,9 @@ let rec = null, micOn = false, heardText = "";
    (restart on timeout, the joinResults dedup, the pause-debounce) the Info mic
    now gets for free, because it is literally the same code. */
 let micMode = "scrap";
+/* Single source of truth for the build number. Bump on EVERY change so the
+   About screen always tells the user whether they're on the latest. */
+const APP_VERSION = "v20";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -3330,57 +3335,65 @@ function joinResults(results, finalOnly){
 }
 
 function pressHold(btn, opts){
-  let timer = null, held = false, downAt = 0;
+  let timer = null, held = false, downAt = 0, active = false, capId = null;
 
-  /* Why this is fussier than it looks.
-     touch-action:"manipulation" leaves Chrome free to claim the gesture for
-     panning. Press and HOLD a small button — especially one sitting on top of a
-     text input — and Android decides you might be scrolling or selecting, and
-     fires pointercancel. Cancelling the timer there meant onHold could never
-     run, while a quick tap (which never triggers that guess) worked fine. That
-     is exactly the "short press works, long press does nothing" shape.
-     touch-action:"none" says: this button handles its own gestures, don't guess.
-     The mic FAB never hit this because it's position:fixed, nowhere near an
-     input, so Chrome had nothing to guess about. */
+  /* Long-press failed on the search mic but worked on the scrap FAB because the
+     FAB is position:fixed with nothing under it, while the search mic sits in a
+     SCROLLABLE section. A hold there let an ancestor claim the gesture for
+     scrolling and fire pointercancel before the timer — so onHold never armed.
+     touch-action:none alone doesn't stop an ancestor; POINTER CAPTURE does. It
+     routes every later pointer event for this press to the button, so nothing
+     upstream can steal it. That plus touch-action:none is the reliable combo. */
   btn.style.touchAction = "none";
   btn.style.webkitUserSelect = "none";
   btn.style.userSelect = "none";
   btn.style.webkitTouchCallout = "none";
 
   const fire = ()=>{
+    if(held || !active) return;
     held = true;
-    if(navigator.vibrate) navigator.vibrate(28);   // it engaged, without looking
+    if(navigator.vibrate) navigator.vibrate(28);
     opts.onHold();
   };
-  const start = e=>{
-    held = false; downAt = Date.now();
+  const begin = e=>{
+    if(active) return;                    // ignore the paired pointer/touch event
+    active = true; held = false; downAt = Date.now();
+    if(e.pointerId != null && btn.setPointerCapture){
+      try{ btn.setPointerCapture(e.pointerId); capId = e.pointerId; }catch(_){}
+    }
+    if(e.cancelable) e.preventDefault();  // no focus, no caret, no native scroll
     clearTimeout(timer);
-    timer = setTimeout(fire, 480);
+    timer = setTimeout(fire, 420);
   };
-  const stop = ()=>{ clearTimeout(timer); };
-
-  btn.addEventListener("pointerdown", start);
-  btn.addEventListener("pointerup", stop);
-  // A cancel this late is Chrome overruling us anyway — if the finger was down
-  // long enough, honour the hold rather than silently dropping it.
-  btn.addEventListener("pointercancel", ()=>{
+  const release = ()=>{
+    if(capId != null && btn.releasePointerCapture){
+      try{ btn.releasePointerCapture(capId); }catch(_){}
+    }
+    capId = null;
+  };
+  const end = ()=>{
+    if(!active) return;
+    active = false; release();
     clearTimeout(timer);
-    if(!held && Date.now() - downAt >= 480) fire();
+    if(held){ held = false; return; }     // hold already ran; don't also tap
+    opts.onTap();                          // short press = tap
+  };
+
+  btn.addEventListener("pointerdown", begin);
+  btn.addEventListener("pointerup", end);
+  btn.addEventListener("pointercancel", ()=>{
+    // With capture held this should be rare. If it comes after the threshold,
+    // honour the hold; before it, it's a genuine abort — fire nothing.
+    clearTimeout(timer);
+    if(active && !held && Date.now() - downAt >= 420) fire();
+    active = false; release();
   });
+  // Touch backstop for engines that mishandle pointer events on in-flow buttons.
+  btn.addEventListener("touchstart", begin, { passive:false });
+  btn.addEventListener("touchend", e=>{ if(e.cancelable) e.preventDefault(); end(); }, { passive:false });
+  btn.addEventListener("touchcancel", ()=>{ clearTimeout(timer); active = false; release(); });
 
-  btn.addEventListener("click", e=>{
-    e.preventDefault();
-    stop();
-    if(held){ held = false; return; }   // the hold already ran; don't tap as well
-    opts.onTap();
-  });
-
-  // touchstart/touchend as a backstop: if pointer events are being interfered
-  // with, these still arrive. Guarded so nothing can fire twice.
-  btn.addEventListener("touchstart", e=>{ if(!timer) start(e); }, { passive:true });
-  btn.addEventListener("touchend", stop, { passive:true });
-
-  // stops the hold popping Android's text-selection menu over the button
+  btn.addEventListener("click", e=>e.preventDefault());
   btn.addEventListener("contextmenu", e=>e.preventDefault());
 }
 
@@ -3409,6 +3422,12 @@ function setMic(on){
     const b = document.getElementById("btnProdMic");
     b.classList.toggle("live", on);
     b.classList.toggle("cont", on && micCont);
+    // Make the state impossible to miss: the box itself says what's happening.
+    const box = document.getElementById("prodSearch");
+    if(box){
+      if(on) box.setAttribute("placeholder", micCont ? "Listening — say them one by one…" : "Listening…");
+      else   box.setAttribute("placeholder", "PLU, barcode, product, country…");
+    }
   } else {
     micBtn.classList.toggle("on", on);
     micBtn.classList.toggle("cont", on && micCont);
@@ -3520,7 +3539,12 @@ function startMic(continuous, mode){
     }
     if(micCont){ flushCont(); finishCont(); } else commitSpoken();
   };
-  try{ rec.start(); setMic(true); }catch(e){ toast("Couldn't start the mic"); setMic(false); }
+  rec.onstart = ()=>{ setMic(true); };   // truth: the engine really began
+  try{ rec.start(); setMic(true); }
+  catch(e){
+    setMic(false);
+    if(micMode === "look") toast("Mic didn't start — tap again"); else toast("Couldn't start the mic");
+  }
 }
 
 pressHold(micBtn, {
@@ -4318,6 +4342,8 @@ function renderAppearance(){
   if(pluN) pluN.textContent = PLU.length.toLocaleString();
   const fx = document.getElementById("fixCount");
   if(fx) fx.textContent = Object.keys(fixes()).length;
+  const av = document.getElementById("abtVer");
+  if(av) av.textContent = APP_VERSION;
   const ls = document.getElementById("lockState");
   if(ls){
     ls.innerHTML = !proxyUrl()
@@ -6652,7 +6678,7 @@ if("serviceWorker" in navigator){
             const b = document.getElementById("errbar");
             if(!b) return;
             b.classList.remove("hidden");
-            b.innerHTML = "<b>New version ready</b>Close and reopen CatCaddy to use it.";
+            b.innerHTML = "<b>New version ready</b>Close and reopen CatCaddy for " + APP_VERSION + ".";
           }
         });
       });

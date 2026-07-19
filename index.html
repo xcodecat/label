@@ -23,6 +23,19 @@
     --line:#343B42;
     --mono:'IBM Plex Mono','Courier New',monospace;
     --sans:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+    /* logo cat: white/cream fur, dark tabby markings — the app stays dark */
+    --fur:#F5F2E9;
+    --furmark:#2A2622;
+    --furline:transparent;      /* white cat needs no outline */
+  }
+  /* Black-cat variant: a genuinely dark cat, but a black shape on a dark app
+     would disappear — so it gets a faint cream outline to keep its silhouette
+     crisp. Fur stays charcoal (reads black); markings become cream. */
+  #lockCat.cat-black{ --fur:#3A362F; --furmark:#F0E9DA; --furline:rgba(240,233,218,.55); }
+  #lockCat.cat-black .cat-body ellipse,
+  #lockCat.cat-black .cat-head circle,
+  #lockCat.cat-black .cat-head path:not(.grin):not(.mouth):not(.nose){
+    stroke:var(--furline); stroke-width:1.3;
   }
   /* Light theme is the same layout with the palette inverted — every colour in
      the app comes from these vars, so nothing else has to know which is on. */
@@ -190,7 +203,34 @@
      flash up and vanish, which looked like the lock had failed. */
   .lock.checking .lock-form{visibility:hidden}
   .lock-form{width:100%;max-width:280px;display:flex;flex-direction:column;align-items:center}
-  .lock-logo{width:132px;height:132px;object-fit:contain;margin-bottom:18px}
+  .lock-logo{width:132px;height:132px;margin-bottom:18px;display:flex;align-items:center;justify-content:center}
+  .lock-logo svg{width:132px;height:132px;overflow:visible}
+  /* transform-origins so parts pivot naturally */
+  .cat-head{transform-box:fill-box;transform-origin:center bottom}
+  .cat-tail{transform-box:fill-box;transform-origin:right bottom}
+  .grin{opacity:0}                         /* teeth hidden until success */
+  /* --- idle: a gentle continuous tail wag (cheap: one transform) --- */
+  .cat-tail{animation:tailwag 2.4s ease-in-out infinite}
+  @keyframes tailwag{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(10deg)}}
+  /* --- wrong password: quick head shake "no", faster tail flick --- */
+  #lockCat.nope .cat-head{animation:headshake .5s ease-in-out}
+  #lockCat.nope .cat-tail{animation:tailflick .5s ease-in-out}
+  @keyframes headshake{
+    0%,100%{transform:rotate(0)}
+    15%{transform:rotate(-13deg)}40%{transform:rotate(11deg)}
+    65%{transform:rotate(-8deg)}85%{transform:rotate(5deg)}}
+  @keyframes tailflick{0%,100%{transform:rotate(-6deg)}25%{transform:rotate(16deg)}75%{transform:rotate(-12deg)}}
+  /* --- correct password: smile with teeth, a happy little bounce --- */
+  #lockCat.yay .mouth{opacity:0}
+  #lockCat.yay .grin{opacity:1;animation:grinpop .34s ease-out}
+  #lockCat.yay .cat-head{animation:nod .5s ease-out}
+  #lockCat.yay .cat-body{animation:hop .5s ease-out}
+  @keyframes grinpop{0%{transform:scaleY(.2);transform-box:fill-box;transform-origin:center}100%{transform:scaleY(1)}}
+  @keyframes nod{0%,100%{transform:translateY(0)}40%{transform:translateY(-4px) rotate(-3deg)}}
+  @keyframes hop{0%,100%{transform:translateY(0)}45%{transform:translateY(-5px)}}
+  @media (prefers-reduced-motion: reduce){
+    .cat-tail,#lockCat.nope .cat-head,#lockCat.yay .cat-head,#lockCat.yay .cat-body{animation:none}
+  }
   .lock-name{font-family:var(--sans);font-size:30px;letter-spacing:-.02em;
     margin:0 0 6px}
   .lock-name .w1{font-weight:800;color:var(--paper)}
@@ -851,7 +891,60 @@
 </head>
 <body>
 <div id="lockScreen" class="lock checking">
-  <img src="./logo.png" alt="CatCaddy" class="lock-logo">
+  <div class="lock-logo" id="lockCat" role="img" aria-label="CatCaddy">
+<svg viewBox="0 0 120 120" width="132" height="132" xmlns="http://www.w3.org/2000/svg">
+      <!-- fur colour is themeable: --fur / --furmark flip for white vs black cat -->
+      <!-- tail behind the body, peeking out the back of the cart -->
+      <g class="cat-tail" fill="none" stroke="var(--fur)" stroke-width="6" stroke-linecap="round">
+        <path d="M39 62 q-16 1 -18 -16 q-1 -10 7 -11"/>
+        <path d="M39 62 q-16 1 -18 -16" fill="none" stroke="var(--furmark)" stroke-width="2.4" stroke-dasharray="3 6" opacity=".8"/>
+      </g>
+      <!-- body -->
+      <g class="cat-body">
+        <ellipse cx="60" cy="63" rx="20" ry="15" fill="var(--fur)"/>
+        <path d="M48 60 q12 8 24 0" fill="none" stroke="var(--furmark)" stroke-width="2.2" stroke-linecap="round" opacity=".55"/>
+        <!-- little front paws over the cart edge -->
+        <ellipse cx="52" cy="76" rx="5" ry="3.4" fill="var(--fur)"/>
+        <ellipse cx="68" cy="76" rx="5" ry="3.4" fill="var(--fur)"/>
+      </g>
+      <!-- head with the signature dark cap between the ears -->
+      <g class="cat-head">
+        <path d="M46 29 L42 15 L57 26 Z" fill="var(--fur)"/>
+        <path d="M74 29 L78 15 L63 26 Z" fill="var(--fur)"/>
+        <path d="M47 26 L44 17 L54 25 Z" fill="var(--furmark)"/>
+        <path d="M73 26 L76 17 L66 25 Z" fill="var(--furmark)"/>
+        <circle cx="60" cy="41" r="18" fill="var(--fur)"/>
+        <!-- dark cap + forehead stripes (the character mark from the original) -->
+        <path class="cap" d="M60 24 a18 18 0 0 1 16 12 q-16 -7 -32 0 a18 18 0 0 1 16 -12 Z" fill="var(--furmark)"/>
+        <path d="M60 25 L60 34 M53 27 L54 35 M67 27 L66 35" stroke="var(--furmark)" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+        <!-- cheeks -->
+        <circle cx="49" cy="46" r="7.5" fill="var(--fur)"/>
+        <circle cx="71" cy="46" r="7.5" fill="var(--fur)"/>
+        <!-- eyes: big and calm like the original -->
+        <ellipse class="eye" cx="52" cy="41" rx="3" ry="3.6" fill="var(--ink)"/>
+        <ellipse class="eye" cx="68" cy="41" rx="3" ry="3.6" fill="var(--ink)"/>
+        <circle cx="53.1" cy="39.6" r="1" fill="#fff" opacity=".9"/>
+        <circle cx="69.1" cy="39.6" r="1" fill="#fff" opacity=".9"/>
+        <!-- nose + mouth -->
+        <path class="nose" d="M57 47 L63 47 L60 50.5 Z" fill="var(--laser)"/>
+        <path class="mouth" d="M60 50.5 q-4 4 -8 1.5 M60 50.5 q4 4 8 1.5" fill="none" stroke="var(--furmark)" stroke-width="1.8" stroke-linecap="round"/>
+        <path class="grin" d="M51 50 q9 10 18 0 Z" fill="#fff" stroke="var(--furmark)" stroke-width="1.5" stroke-linejoin="round"/>
+        <!-- whiskers -->
+        <g stroke="var(--fur)" stroke-width="1.5" stroke-linecap="round" opacity=".9">
+          <path d="M43 46 L31 43 M43 49 L31 50"/>
+          <path d="M77 46 L89 43 M77 49 L89 50"/>
+        </g>
+      </g>
+      <!-- cart basket in front, so the cat sits inside it -->
+      <g class="cart" fill="none" stroke="var(--laser)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M30 67 L90 67 L84 93 L36 93 Z"/>
+        <path d="M30 67 L24 55 L16 55"/>
+        <path d="M43 75 L77 75 M46 85 L74 85" stroke-width="3" opacity=".5"/>
+      </g>
+      <circle class="wheel" cx="46" cy="103" r="5.5" fill="var(--laser)"/>
+      <circle class="wheel" cx="74" cy="103" r="5.5" fill="var(--laser)"/>
+    </svg>
+  </div>
   <h1 class="lock-name"><span class="w1">Cat</span><span class="w2">Caddy</span></h1>
   <p class="lock-sub" id="lockSub">Checking…</p>
   <p class="lock-hint" id="lockHint">Locks itself after 15 minutes.</p>
@@ -1262,6 +1355,12 @@
         <label>Theme</label>
         <div class="seg" id="segTheme">
           <button data-v="dark">Dark</button><button data-v="light">Light</button>
+        </div>
+      </div>
+      <div class="setrow">
+        <label>Logo cat</label>
+        <div class="seg" id="segCat">
+          <button data-v="white">White</button><button data-v="black">Black</button>
         </div>
       </div>
       <div class="setrow">
@@ -2548,6 +2647,7 @@ async function openApp(){
 function showLock(msg, bad){
   const l = document.getElementById("lockScreen");
   l.classList.remove("hidden", "checking");
+  const cat = document.getElementById("lockCat"); if(cat) cat.classList.remove("nope","yay");
   // The subtitle asks; the note is for problems only. Both saying "enter the
   // password" just told you twice.
   document.getElementById("lockSub").textContent = "Enter the password to open";
@@ -2557,6 +2657,18 @@ function showLock(msg, bad){
   n.textContent = msg || "";
   n.classList.toggle("bad", !!bad);
   setTimeout(()=>document.getElementById("lockPass").focus(), 60);
+}
+
+/* Trigger a one-shot cat reaction. Toggling the class off then on (via a reflow)
+   lets the same animation replay on a second wrong try. Pure CSS transforms, so
+   it composites on the GPU and never blocks input or the unlock request. */
+function catReact(kind){
+  const c = document.getElementById("lockCat");
+  if(!c) return;
+  c.classList.remove("nope","yay");
+  void c.offsetWidth;            // force reflow so re-adding restarts the animation
+  c.classList.add(kind);
+  if(kind === "nope") setTimeout(()=>c.classList.remove("nope"), 600);
 }
 
 async function tryUnlock(pass){
@@ -2638,11 +2750,15 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
       localStorage.setItem(KEY_UNLOCK, p);
       rememberPassword(p);            // so it works next time there's no signal
       document.getElementById("lockPass").value = "";
-      openApp();
+      catReact("yay");
+      if(navigator.vibrate) navigator.vibrate(30);
+      // let the smile land (340ms) before swapping screens — quick, not sluggish
+      setTimeout(openApp, 360);
     } else {
       showLock(d && d.code === "BADPASS" ? "That's not it."
              : d && d.code === "OFFLINE" ? "No signal, and this phone hasn't unlocked here before. Connect once."
              : ((d && d.error) || "Couldn't check."), true);
+      catReact("nope");
       if(navigator.vibrate) navigator.vibrate([40,60,40]);
     }
   }catch(e){ showLock("Couldn't reach the script: " + e.message, true); }
@@ -3572,7 +3688,7 @@ function rememberFix(heard, real){
   d[h] = r;
   try{ localStorage.setItem(KEY_FIXES, JSON.stringify(d)); }catch(e){}
 }
-function applyFix(name){
+function applyWordFix(name){
   const d = fixes();
   const k = String(name||"").toLowerCase().trim();
   return d[k] || null;
@@ -3765,7 +3881,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v25";
+const APP_VERSION = "v27";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -3866,7 +3982,7 @@ function lookHeard(t){
   t = String(t).trim();
   t = t.replace(/^(look ?up|find|search( for)?|show me|what'?s the plu (for|of)|plu for)\s+/i, "");
   if(!t) return;
-  const fixed = applyFix(t.toLowerCase());
+  const fixed = applyWordFix(t.toLowerCase());
   const box = document.getElementById("prodSearch");
   box.value = fixed || t;
   lookAll = false;
@@ -4836,6 +4952,13 @@ function setTheme(t){
   if(m) m.setAttribute("content", t === "light" ? "#F2F0E9" : "#14171A");
 }
 function unit(){ return localStorage.getItem(KEY_UNIT) || "kg"; }
+const KEY_CAT = "label_cat_v1";
+function catColor(){ return localStorage.getItem(KEY_CAT) || "white"; }
+function setCatColor(c){
+  localStorage.setItem(KEY_CAT, c);
+  const el = document.getElementById("lockCat");
+  if(el) el.classList.toggle("cat-black", c === "black");
+}
 function setUnit(u){ localStorage.setItem(KEY_UNIT, u); }
 function unitLabel(){ return UNIT_DEF[unit()].label; }
 
@@ -4867,6 +4990,8 @@ function renderAppearance(){
     b.classList.toggle("on", b.dataset.v === theme()));
   document.querySelectorAll("#segUnit button").forEach(b=>
     b.classList.toggle("on", b.dataset.v === unit()));
+  document.querySelectorAll("#segCat button").forEach(b=>
+    b.classList.toggle("on", b.dataset.v === catColor()));
   const pluN = document.getElementById("abtPlu");
   if(pluN) pluN.textContent = PLU.length.toLocaleString();
   const fx = document.getElementById("fixCount");
@@ -4942,6 +5067,10 @@ document.getElementById("segTheme").addEventListener("click", e=>{
   const b = e.target.closest("button"); if(!b) return;
   setTheme(b.dataset.v); renderAppearance();
 });
+document.getElementById("segCat").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  setCatColor(b.dataset.v); renderAppearance();
+});
 document.getElementById("segUnit").addEventListener("click", e=>{
   const b = e.target.closest("button"); if(!b) return;
   setUnit(b.dataset.v);
@@ -4961,6 +5090,7 @@ document.getElementById("btnGear").addEventListener("click", ()=>{
 });
 
 setTheme(theme());
+setCatColor(catColor());
 
 /* ================= country of origin =================
    Superstore imports the same product from different places through the year,

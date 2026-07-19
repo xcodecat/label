@@ -138,6 +138,14 @@
   .seg button{background:none;border:none;color:var(--muted);padding:9px 15px;font-size:12px;
     font-family:var(--sans);cursor:pointer;min-height:40px}
   .seg button.on{background:var(--laser);color:#fff;font-weight:600}
+  /* compact unit toggle that lives inside the quantity row */
+  .useg{display:flex;flex:none;background:var(--ink);border:1px solid var(--line);
+    border-radius:8px;overflow:hidden}
+  .useg button{background:none;border:none;color:var(--muted);cursor:pointer;
+    min-width:44px;display:flex;align-items:center;justify-content:center;
+    font-family:var(--sans);font-size:13px;font-weight:600;padding:0 10px}
+  .useg button+button{border-left:1px solid var(--line)}
+  .useg button.on{background:rgba(128,128,128,.22);color:var(--paper)}
   .abt{display:flex;justify-content:space-between;padding:8px 0;font-size:12px;
     border-bottom:1px solid rgba(128,128,128,.14)}
   .abt:last-child{border-bottom:none}
@@ -625,14 +633,14 @@
   .mic-sm{background:var(--ok)!important;color:#0d1a12!important;border-color:var(--ok)!important;
     display:flex;align-items:center;justify-content:center;min-width:44px}
   .s-say{display:flex;align-items:center;justify-content:center;min-width:40px}
-  .se-row{display:flex;gap:6px;margin-bottom:6px}
-  .se-row .s-nm,.se-row .s-code-in{flex:1;min-width:0}
-  .s-code-in{background:var(--ink);border:1px solid var(--line);border-radius:8px;
-    color:var(--paper);font-family:var(--mono);font-size:13px;padding:9px 10px}
+  .se-row{display:flex;gap:6px;margin-bottom:6px;align-items:stretch}
+  .se-row .s-nm{flex:1;min-width:0}
+  .s-code-in{width:96px;flex:none;background:var(--ink);border:1px solid var(--line);
+    border-radius:8px;color:var(--paper);font-family:var(--mono);font-size:13px;padding:9px 10px}
   .s-code-in:focus{border-color:var(--laser);outline:none}
-  .s-scan{display:flex;align-items:center;justify-content:center;min-width:40px}
-  .se-btns{margin-bottom:0}
-  .se-btns .s-unit.on{background:var(--laser);border-color:var(--laser);color:#fff}
+  .s-say,.s-scan{flex:none;min-width:38px;padding:0 8px}
+  .se-btns{margin-bottom:0;gap:6px}
+  .s-uwrap{flex:none}
   .mic-sm.on{animation:pulse 1s ease-in-out infinite}
   /* product tab */
   .prod-tags{display:flex;gap:6px;overflow-x:auto;margin-top:9px;padding-bottom:2px;
@@ -1510,18 +1518,15 @@
         </div>
     </div>
     <div class="field">
-      <label>Counted by</label>
-      <div class="seg" id="mUnitSeg" role="group" aria-label="Per each or by weight">
-        <button type="button" class="on" data-u="each">Per each</button>
-        <button type="button" data-u="kg">By weight</button>
-      </div>
-    </div>
-    <div class="field">
       <label for="mQty" id="mQtyLabel">Quantity</label>
       <div class="qty-row">
         <button type="button" class="qty-btn" id="mQtyMinus">−</button>
         <input id="mQty" type="number" inputmode="numeric" value="1" min="0">
         <button type="button" class="qty-btn" id="mQtyPlus">+</button>
+        <div class="useg" id="mUnitSeg" role="group" aria-label="Counted per each or by weight">
+          <button type="button" class="on" data-u="each" aria-label="Per each" title="Per each">EA</button>
+          <button type="button" data-u="kg" aria-label="By weight" title="By weight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3a2 2 0 0 0-2 2H5l-3 8a4 4 0 0 0 8 0L7 5"/><path d="M12 3a2 2 0 0 1 2 2h5l3 8a4 4 0 0 1-8 0l3-8"/><path d="M12 5v14"/><path d="M8 21h8"/></svg></button>
+        </div>
       </div>
     </div>
     <div class="field">
@@ -1790,8 +1795,75 @@ const CATALOG = PRODUCT_CATALOG_RAW.map(r=>({
 }));
 const CAT_BY_ART = new Map(CATALOG.map(c=>[c.art, c]));
 const CAT_BY_CODE = new Map(CATALOG.filter(c=>c.code).map(c=>[c.code, c]));
-function catalogByArticle(a){ return CAT_BY_ART.get(String(a||"").replace(/\D/g,"")) || null; }
-function catalogByCode(c){ return CAT_BY_CODE.get(String(c||"").replace(/\D/g,"")) || null; }
+
+/* ---- your corrections to the catalog, kept on THIS phone ----
+   The 210 products are baked into the app, but OCR gets names and derived
+   barcodes wrong sometimes. Rather than wait on a rebuild, a correction you
+   make in the Add form is saved here, keyed by article number, and layered on
+   top of the built-in entry every time it's looked up. Clearing the field back
+   to the original removes the override. Corrections also sync to your Sheet as
+   normal item fields, so they're not trapped on one phone. */
+const KEY_CAT_FIX = "label_cat_fixes_v1";
+/* ---- per-product unit memory ----
+   The app watches how you save each product and remembers whether it's counted
+   each or by weight, so next time that product fills the form the right toggle
+   is pre-selected. Keyed by the most stable id available: article number, else
+   barcode, else a normalised name. */
+const KEY_UNIT_MEM = "label_unit_mem_v1";
+function unitMem(){ try{ return JSON.parse(localStorage.getItem(KEY_UNIT_MEM)||"{}"); }catch(e){ return {}; } }
+function unitKey({article,code,name}){
+  if(article) return "a:"+String(article).replace(/\D/g,"");
+  if(code)    return "c:"+String(code).replace(/\D/g,"");
+  if(name)    return "n:"+String(name).trim().toLowerCase();
+  return "";
+}
+function rememberUnit(id, kg){
+  const k = unitKey(id); if(!k) return;
+  const m = unitMem(); m[k] = kg ? "kg" : "each";
+  localStorage.setItem(KEY_UNIT_MEM, JSON.stringify(m));
+}
+function recallUnit(id){
+  const k = unitKey(id); if(!k) return null;
+  const v = unitMem()[k];
+  return v==null ? null : (v === "kg");
+}
+function catFixes(){ try{ return JSON.parse(localStorage.getItem(KEY_CAT_FIX)||"{}"); }catch(e){ return {}; } }
+function saveCatFixes(o){ localStorage.setItem(KEY_CAT_FIX, JSON.stringify(o)); }
+function applyFix(c){
+  if(!c) return c;
+  const f = catFixes()[c.art];
+  if(!f) return c;
+  return Object.assign({}, c, f);   // override wins on any field it sets
+}
+// Record a correction for an article. Only stores fields that actually differ
+// from the built-in entry; a value equal to the original clears that override.
+function setCatFix(art, patch){
+  art = String(art||"").replace(/\D/g,""); if(!art) return;
+  const base = CAT_BY_ART.get(art); if(!base) return;
+  const all = catFixes();
+  const cur = all[art] || {};
+  Object.keys(patch).forEach(k=>{
+    const v = (patch[k]||"").trim();
+    if(v && v !== (base[k]||"")) cur[k] = v;   // a real change
+    else delete cur[k];                        // back to original: drop it
+  });
+  if(Object.keys(cur).length) all[art] = cur; else delete all[art];
+  saveCatFixes(all);
+  // Rebuild the code index so a corrected barcode is findable by scan too.
+  rebuildCatCode();
+  VOCAB = null; SEED_KEYS = null;               // corrected name enters the vocab
+}
+function rebuildCatCode(){
+  CAT_BY_CODE.clear();
+  CATALOG.forEach(c=>{ const m=applyFix(c); if(m.code) CAT_BY_CODE.set(m.code, m); });
+}
+function catalogByArticle(a){ return applyFix(CAT_BY_ART.get(String(a||"").replace(/\D/g,"")) || null); }
+function catalogByCode(c){
+  c = String(c||"").replace(/\D/g,"");
+  const hit = CAT_BY_CODE.get(c);
+  return hit ? applyFix(CAT_BY_ART.get(hit.art)) : null;
+}
+rebuildCatCode();
 
 const DEFAULT_PLU = DEFAULT_PLU_RAW.map(r=>({
   plu:r[0], name:r[1],
@@ -2108,8 +2180,14 @@ async function startScanner(){
         // A wide, shallow box: barcodes are wide, and a squarer box wastes
         // pixels on nothing while making you line the phone up more carefully.
         qrbox: (vw, vh) => {
-          const w = Math.floor(Math.min(vw * 0.92, 420));
-          return { width:w, height: Math.max(120, Math.floor(w * 0.45)) };
+          // html5-qrcode rejects any dimension under 50px. On a narrow or
+          // oddly-reported viewport the old maths could dip below that and
+          // throw, killing the scanner. Clamp both sides to a safe floor and
+          // never exceed the actual video size.
+          const maxW = Math.max(50, Math.min((vw||300) - 20, 420));
+          const w = Math.max(50, Math.floor(Math.min((vw||300) * 0.92, maxW)));
+          const h = Math.max(80, Math.min(Math.floor(w * 0.45), (vh||200) - 20));
+          return { width:w, height: Math.max(50, h) };
         },
         aspectRatio: 1.7778,
         disableFlip: true            // shop barcodes are never mirrored
@@ -2257,6 +2335,9 @@ function setManualUnit(kg){
 }
 function fillFromCatalog(hit, {overwrite=false}={}){
   if(!hit) return;
+  // If we've learned how this product is counted, pre-select that unit.
+  const remembered = recallUnit({article:hit.art, code:hit.code, name:hit.name});
+  if(remembered != null) setManualUnit(remembered);
   const set=(id,v)=>{ const el=document.getElementById(id); if(el && (overwrite || !el.value)) el.value=v; };
   set("mName", hit.name);
   set("mPack", hit.pack);
@@ -2265,12 +2346,15 @@ function fillFromCatalog(hit, {overwrite=false}={}){
   if(hit.code) set("mCode", hit.code);
   const note=document.getElementById("mKnown");
   if(note){
-    if(hit.code && hit.provisional && !codeIsConfirmed(hit.code))
-      note.innerHTML='Barcode <b>'+hit.code+'</b> is derived — <b>scan the item to confirm</b>.';
+    const edited = hit.art && catFixes()[hit.art];
+    if(edited)
+      note.innerHTML='Your correction is in use. Edit any field and Save to change it.';
+    else if(hit.code && hit.provisional && !codeIsConfirmed(hit.code))
+      note.innerHTML='Barcode <b>'+hit.code+'</b> is derived — scan the item, or fix any field and Save.';
     else if(hit.code)
-      note.textContent='Barcode '+hit.code+(codeIsConfirmed(hit.code)?" (confirmed)":"");
+      note.textContent='Barcode '+hit.code+(codeIsConfirmed(hit.code)?" (confirmed)":"")+' — edit and Save to correct.';
     else
-      note.textContent='No barcode on file yet — scan the item to add one.';
+      note.textContent='No barcode yet — scan the item, or type name/barcode and Save.';
   }
 }
 document.getElementById("mArticle").addEventListener("input", e=>{
@@ -3349,13 +3433,13 @@ function buildVocab(){
   }));
   // The imported DC catalog is YOUR store's words — treat them like your own 254
   // so the mic recognises "shang bok choy", "apriplum", "steam and go", etc.
-  CATALOG.forEach(c=>pluTokens(c.name).forEach(t=>{
+  CATALOG.forEach(c0=>{ const c=applyFix(c0); pluTokens(c.name).forEach(t=>{
     if(t.length < 3 || /\d/.test(t)) return;
     VOCAB.add(t); OWNVOCAB.add(t);
     const k = soundex(t);
     if(!PHON.has(k)) PHON.set(k, new Set());
     PHON.get(k).add(t);
-  }));
+  }); });
 }
 /* pick the closest word from a candidate set */
 function nearest(t, pool, maxD){
@@ -3681,7 +3765,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v23";
+const APP_VERSION = "v25";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -4214,7 +4298,25 @@ document.getElementById("mSave").addEventListener("click", ()=>{
   const code = document.getElementById("mCode").value.trim();
   const name = document.getElementById("mName").value.trim();
   const plu  = document.getElementById("mPlu").value.trim();
+  const article = document.getElementById("mArticle").value.trim();
+  const pack = document.getElementById("mPack").value.trim();
+  const size = document.getElementById("mSize").value.trim();
   if(!name && !code && !plu) return toast("Enter a name, barcode or PLU");
+  // If this is a known catalog article and you edited any field, save the fix.
+  if(article && CAT_BY_ART.get(article.replace(/\D/g,""))){
+    const base = CAT_BY_ART.get(article.replace(/\D/g,""));
+    const patch = {};
+    if(name && name !== base.name) patch.name = name;
+    if(code && code !== base.code) patch.code = code;
+    if(pack !== (base.pack||"")) patch.pack = pack;
+    if(size !== (base.size||"")) patch.size = size;
+    if(Object.keys(patch).length){
+      setCatFix(article, patch);
+      // A hand-typed barcode correction is authoritative, so mark it confirmed.
+      if(patch.code) confirmCatalogCode(patch.code);
+      toast("Catalog updated for " + (patch.name || base.name));
+    }
+  }
   const qty = mKg ? kg3(parseFloat(document.getElementById("mQty").value)||0)
                   : (parseInt(document.getElementById("mQty").value)||0);
   const key = code || (plu ? "PLU"+plu : "");
@@ -4247,6 +4349,8 @@ document.getElementById("mSave").addEventListener("click", ()=>{
               notes:document.getElementById("mNotes").value.trim() });
     toast("Added");
   }
+  // Learn how this product is counted so it defaults right next time.
+  rememberUnit({ article, code, name }, mKg);
   persist(); renderList(); closeManual();
 });
 
@@ -4373,15 +4477,15 @@ function rowHtml(r, key){
     ${open ? `<div class="s-edit">
         <div class="se-row">
           <input class="s-nm" value="${esc(r.name)}" placeholder="Item name" autofocus>
-          <button class="s-say" aria-label="Say it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
-        </div>
-        <div class="se-row">
-          <input class="s-code-in" value="${esc(r.plu || r.code)}" inputmode="numeric"
-                 placeholder="PLU or barcode" aria-label="PLU or barcode">
-          <button class="s-scan" aria-label="Scan barcode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></button>
+          <button class="s-say" aria-label="Say it" title="Say it"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
+          <input class="s-code-in" value="${esc(r.plu || r.code)}" inputmode="numeric" placeholder="code" aria-label="PLU or barcode">
+          <button class="s-scan" aria-label="Scan" title="Scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></button>
         </div>
         <div class="se-row se-btns">
-          <button class="s-unit${r.kg?" on":""}">${r.kg ? "By weight" : "Per each"}</button>
+          <div class="useg s-uwrap">
+            <button type="button" class="s-uEA${r.kg?"":" on"}" data-u="each" title="Per each">EA</button>
+            <button type="button" class="s-uKG${r.kg?" on":""}" data-u="kg" title="By weight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 3a2 2 0 0 0-2 2H5l-3 8a4 4 0 0 0 8 0L7 5"/><path d="M12 3a2 2 0 0 1 2 2h5l3 8a4 4 0 0 1-8 0l3-8"/><path d="M12 5v14"/><path d="M8 21h8"/></svg></button>
+          </div>
           <button class="s-move">→ ${key==="loop"?"Flash":"Loop"}</button>
           <button class="s-ok">Done</button>
         </div>
@@ -4455,14 +4559,17 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
       r.qty = r.kg ? kg3((parseFloat(r.qty)||0) + 0.1) : (parseInt(r.qty,10)||0) + 1;
       renderLists(); return;
     }
-    if(e.target.classList.contains("s-unit")){
-      // flipping the unit here teaches the app, same as saying "kg" out loud
-      r.kg = !r.kg;
-      r.qty = r.kg ? kg3(parseFloat(r.qty)||0) : Math.max(1, Math.round(parseFloat(r.qty)||1));
-      rememberWeighed(r.name, r.kg);
-      renderLists();
-      toast(r.name ? (r.name + (r.kg ? " sells by weight — remembered" : " sells each — remembered")) : "");
-      return;
+    const uBtn = e.target.closest(".s-uEA, .s-uKG");
+    if(uBtn){
+      // explicit choice (EA or scale) teaches the app how this item is counted
+      const wantKg = uBtn.dataset.u === "kg";
+      if(wantKg !== r.kg){
+        r.kg = wantKg;
+        r.qty = r.kg ? kg3(parseFloat(r.qty)||0) : Math.max(1, Math.round(parseFloat(r.qty)||1));
+        rememberWeighed(r.name, r.kg);
+        toast(r.name ? (r.name + (r.kg ? " sells by weight — remembered" : " sells each — remembered")) : "");
+      }
+      renderLists(); return;
     }
     if(e.target.closest(".s-code")){ openCodeSheet(r, list); return; }
   });
@@ -7073,7 +7180,19 @@ async function doSync(quiet){
    Items already live in localStorage, so entry works with no signal either way.
    What this adds: the app SHELL loads offline (service worker), and anything
    saved while offline syncs itself the moment the connection returns.       */
+// Some errors are expected and not the user's problem: a service-worker or
+// network fetch that fails simply because the phone is offline is normal, and
+// showing a red "something broke" bar over it just alarms people. Filter those
+// out; only surface genuine, actionable faults.
+function isNoise(text){
+  const t = String(text||"").toLowerCase();
+  return t.includes("serviceworker") || t.includes("service worker") ||
+         t.includes("fetching the script") || t.includes("failed to fetch") ||
+         t.includes("networkerror") || t.includes("load failed") ||
+         t.includes("importscripts") || (t.includes("fetch") && !navigator.onLine);
+}
 window.addEventListener("error", ev=>{
+  if(isNoise(ev.message)) return;
   const b = document.getElementById("errbar");
   if(!b) return;
   b.classList.remove("hidden");
@@ -7081,11 +7200,12 @@ window.addEventListener("error", ev=>{
     esc(ev.message + "  @ line " + ev.lineno);
 });
 window.addEventListener("unhandledrejection", ev=>{
+  const txt = String(ev.reason && ev.reason.message || ev.reason);
+  if(isNoise(txt)) return;
   const b = document.getElementById("errbar");
   if(!b) return;
   b.classList.remove("hidden");
-  b.innerHTML = "<b>Something broke — tell Faisal this bit</b>" +
-    esc(String(ev.reason && ev.reason.message || ev.reason));
+  b.innerHTML = "<b>Something broke — tell Faisal this bit</b>" + esc(txt);
 });
 
 if("serviceWorker" in navigator){
@@ -7105,8 +7225,8 @@ if("serviceWorker" in navigator){
           }
         });
       });
-      reg.update();
-    }).catch(()=>{ /* file:// or no HTTPS */ });
+      try{ reg.update(); }catch(e){ /* offline: nothing to update against */ }
+    }).catch(()=>{ /* file://, no HTTPS, or offline — all fine */ });
   });
 }
 

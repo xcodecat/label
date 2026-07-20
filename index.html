@@ -222,7 +222,7 @@
   .lockring.pulse circle{animation:ringPulse 1s ease-in-out infinite}
   @keyframes ringPulse{0%,100%{stroke-width:4px}50%{stroke-width:9px}}
   /* the morphing bar: password box -> red line -> feeds the ring */
-  .lockline{position:fixed;z-index:96;box-sizing:border-box;opacity:0;pointer-events:none;
+  .lockline{position:fixed;z-index:210;box-sizing:border-box;opacity:0;pointer-events:none;
     transition:left .42s cubic-bezier(.4,0,.2,1), top .42s cubic-bezier(.4,0,.2,1),
       width .42s cubic-bezier(.4,0,.2,1), height .3s ease, background .3s ease,
       border-radius .3s ease, border-color .3s ease, opacity .2s ease}
@@ -932,7 +932,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=39">
+  <link rel="manifest" href="./manifest.json?v=40">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4180,7 +4180,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v39";
+const APP_VERSION = "v40";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is

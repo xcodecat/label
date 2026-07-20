@@ -209,7 +209,7 @@
      takes centre stage, larger. The password bar morphs into a red ring that
      runs around the rim like a train to show the check is in progress. */
   .lock-logo{position:relative;transition:transform .5s cubic-bezier(.4,0,.2,1)}
-  .lock.checking .lock-logo{transform:translateY(calc(36vh - 128px)) scale(1.5)}
+  .lock.checking.big .lock-logo{transform:translateY(calc(36vh - 128px)) scale(1.5)}
   .lock.checking .lock-form,
   .lock.checking .lock-name,
   .lock.checking .lock-hint,
@@ -856,10 +856,11 @@
   .s-code i{font-style:normal;font-size:8px;letter-spacing:.08em;color:var(--muted);
     text-transform:uppercase}
   .s-code.none b{color:var(--muted)}
-  /* full-width, scannable barcode under a saved barcoded row */
+  .s-name.wide{grid-column:1 / 3}
+  /* full-width, scannable barcode (with its number) under a barcoded row */
   .s-bcstrip{grid-column:1 / -1;background:#fff;border-radius:5px;padding:5px 10px;margin-top:1px;
     display:flex;align-items:center;justify-content:center}
-  .s-bc{width:100%;height:34px;display:block}
+  .s-bc{width:100%;height:52px;display:block}
   .s-qty{display:flex;align-items:center;gap:2px}
   .s-qty button{width:26px;height:40px;flex:none;background:var(--surface-2);
     border:1px solid var(--line);color:var(--paper);border-radius:6px;font-size:17px;
@@ -931,7 +932,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=38">
+  <link rel="manifest" href="./manifest.json?v=39">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2763,14 +2764,14 @@ async function openApp(){
   markLive();
   const l = document.getElementById("lockScreen");
   l.classList.add("hidden");
-  l.classList.remove("checking", "spinning");
+  l.classList.remove("checking", "spinning", "big");
   document.getElementById("appWrap").classList.remove("hidden-until-open");
   document.body.style.overflow = "";
 }
 
 function showLock(msg, bad){
   const l = document.getElementById("lockScreen");
-  l.classList.remove("hidden", "checking", "spinning");
+  l.classList.remove("hidden", "checking", "spinning", "big");
   setCatSrc(CAT_IDLE);          // clear any lingering shake/smile back to calm
   resetLockFx();                // clear the ring + line morph
   // The subtitle asks; the note is for problems only. Both saying "enter the
@@ -2790,11 +2791,14 @@ function showLock(msg, bad){
 const CAT_IDLE = "./cat-idle.webp";
 const CAT_NO   = "./cat_no_obvious_headshake.gif";     // wrong password: head shakes "no"
 const CAT_YAY  = "./cat_smile_instant.gif";            // correct password: cat smiles
-const CAT_NO_MS  = 1200;   // short, clear head shake — you're usually in a rush
-const CAT_YAY_MS = 2800;   // let the smile linger before opening the app
+const CAT_NO_MS  = 1000;   // one loop of the quicker shake
+const CAT_YAY_MS = 2600;   // let the smile linger before opening the app
 const RING_C = 452.4;      // 2·π·72 — the ring circumference
-const VIB_OK = [35, 40, 120];            // soft tap then a firm confirm — "ta-da"
-const VIB_NO = [80, 50, 80, 50, 80];     // three sharp buzzes — "no-no-no"
+// Vibration can't set amplitude, so "stronger" = longer pulses. Kept clearly
+// distinct: success is short-short-LONG (rising, positive); wrong is three
+// long heavy buzzes (firm rejection).
+const VIB_OK = [45, 45, 240];
+const VIB_NO = [220, 100, 220, 100, 220];
 function setCatSrc(src){
   const img = document.getElementById("lockCatImg");
   if(!img) return;
@@ -2914,67 +2918,73 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
   setCatSrc(CAT_IDLE);
   input.blur();                                   // dismiss the keyboard
 
-  // Forward morph: password box -> red line -> cat grows/centres -> the line
-  // rises to the settled rim and the red runs around it like a train.
+  // Forward morph: the box becomes a red line, rises to the STILL-SMALL cat and
+  // draws a ring around it (so you actually see it circle), THEN the cat + ring
+  // grow together and centre.
   async function forwardMorph(){
     const ib = input.getBoundingClientRect();
     lineAsBox(ib);
     document.getElementById("lockLine").style.opacity = "1";
+    lock.classList.add("checking"); sub.textContent = "Checking…";   // hide the form; cat stays small
     await lockRaf();
-    lineAsLine(ib.left + ib.width/2, ib.top + ib.height/2, ib.width);   // collapse to a line
-    await lockDelay(340);
-    lock.classList.add("checking"); sub.textContent = "Checking…";
-    await lockDelay(540);                          // wait for the cat to settle BEFORE measuring
-    const rb = lockRimBottom();
-    lineAsLine(rb.x, rb.y, 34);                     // line rises to the rim
-    await lockDelay(420);
+    lineAsLine(ib.left + ib.width/2, ib.top + ib.height/2, ib.width); // collapse to a line
+    await lockDelay(320);
+    const rb = lockRimBottom();                       // rim of the SMALL cat (not enlarged yet)
+    lineAsLine(rb.x, rb.y, 34);                        // line rises to it
+    await lockDelay(400);
     document.getElementById("lockLine").style.opacity = "0";
-    ringC.style.strokeDashoffset = "0";            // red runs around the rim
-    await lockDelay(720);
+    ringC.style.strokeDashoffset = "0";               // ring runs around the small cat — visible
+    await lockDelay(660);
+    lock.classList.add("big");                         // now the cat + ring grow and centre together
+    await lockDelay(520);
     ring.classList.add("pulse");
-    await lockDelay(300);
+    await lockDelay(200);
   }
 
   try{
-    // run the animation and the real check together; branch once both are done
     const [d] = await Promise.all([ tryUnlock(p), forwardMorph() ]);
     ring.classList.remove("pulse");
     if(d && d.ok){
       localStorage.setItem(KEY_UNLOCK, p);
-      rememberPassword(p);                          // works next time there's no signal
+      rememberPassword(p);
       input.value = "";
       sub.textContent = "Welcome";
       ringC.style.strokeWidth = "7";
-      catReact("yay");                              // cat stays big & centred, smiling
-      ring.style.transition = "transform .5s ease, opacity .5s ease";
-      ring.style.transform = "scale(1.12)"; ring.style.opacity = "0";
-      if(navigator.vibrate) navigator.vibrate(VIB_OK);
-      setTimeout(openApp, CAT_YAY_MS);              // let the smile linger, then open
+      catReact("yay");                                 // 1) cat smiles first
+      await lockDelay(450);
+      if(navigator.vibrate) navigator.vibrate(VIB_OK); // 2) then the buzz
+      await lockDelay(150);
+      ring.style.transition = "transform .55s ease, opacity .55s ease";   // 3) then the ring expands + fades
+      ring.style.transform = "scale(1.25)"; ring.style.opacity = "0";
+      setTimeout(openApp, CAT_YAY_MS);
     } else {
       const msg = d && d.code === "BADPASS" ? "That's not it — try again."
                 : d && d.code === "OFFLINE" ? "No signal, and this phone hasn't unlocked here before. Connect once."
                 : ((d && d.error) || "Couldn't check.");
       sub.textContent = "Nope";
-      catReact("nope");                             // short, clear head shake
+      catReact("nope");                                // quick shake, matched to the buzz
       if(navigator.vibrate) navigator.vibrate(VIB_NO);
       await lockDelay(CAT_NO_MS);
       setCatSrc(CAT_IDLE);
-      // the train runs back off the rim, becomes a line, and drops into the box
+      // reverse: shrink back, the ring un-forms into a line, the line drops home
+      lock.classList.remove("big");
+      await lockDelay(500);
       ringC.style.strokeDashoffset = RING_C;
+      await lockDelay(360);
       const rb = lockRimBottom();
       lineAsLine(rb.x, rb.y, 34);
       document.getElementById("lockLine").style.opacity = "1";
-      await lockDelay(150);
-      lock.classList.remove("checking");            // cat shrinks back, form area returns
+      await lockDelay(140);
+      lock.classList.remove("checking");
       await lockRaf();
       const ib2 = input.getBoundingClientRect();
       lineAsLine(ib2.left + ib2.width/2, ib2.top + ib2.height/2, ib2.width);
       await lockDelay(420);
-      lineAsBox(ib2);                               // line opens back into the box
+      lineAsBox(ib2);
       await lockDelay(320);
       document.getElementById("lockLine").style.opacity = "0";
       showLock(msg, true);
-      input.focus(); input.select();                // keep the wrong password, selected to retype
+      input.focus(); input.select();
       btn.disabled = false; btn.textContent = "Open";
     }
   }catch(e){
@@ -4170,7 +4180,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v38";
+const APP_VERSION = "v39";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -4884,9 +4894,9 @@ function rowHtml(r, key){
   const just = justAdded.has(r.id) ? " just" : "";
   const realBc = !!(r.code && !r.plu);          // a scannable barcode (not a produce PLU)
   return `<div class="srow${just}${(realBc && !open) ? " has-bc" : ""}" data-id="${r.id}">
-    ${open ? "" : `<div class="s-name ${r.name?"":"blank"}">${esc(r.name || "tap to name")}${
+    ${open ? "" : `<div class="s-name ${r.name?"":"blank"}${(realBc)?" wide":""}">${esc(r.name || "tap to name")}${
         r.kg ? '<span class="wtag">'+esc(unitLabel())+'</span>' : ""}</div>`}
-    ${open ? "" : `<div class="s-code ${code?"":"none"}">
+    ${(open || realBc) ? "" : `<div class="s-code ${code?"":"none"}">
         <b>${esc(code || "—")}</b>${kind?`<i>${kind}</i>`:""}</div>`}
     ${open ? "" : `<div class="s-qty">
         <button class="qm" aria-label="Less">−</button>
@@ -4925,12 +4935,13 @@ function renderRowBarcodes(){
     const fmt = /^\d{13}$/.test(c) ? "EAN13" : /^\d{12}$/.test(c) ? "UPC"
               : /^\d{8}$/.test(c) ? "EAN8" : "CODE128";
     try{
-      JsBarcode(svg, c, { format:fmt, width:2, height:34, margin:0, displayValue:false,
-                          background:"#ffffff", lineColor:"#000000" });
+      JsBarcode(svg, c, { format:fmt, width:2, height:34, margin:0, displayValue:true,
+                          fontSize:13, textMargin:1, background:"#ffffff", lineColor:"#000000" });
       svg.dataset.done = "1";
     }catch(e){
       try{ JsBarcode(svg, c, { format:"CODE128", width:2, height:34, margin:0,
-                               displayValue:false, background:"#ffffff", lineColor:"#000000" });
+                               displayValue:true, fontSize:13, textMargin:1,
+                               background:"#ffffff", lineColor:"#000000" });
            svg.dataset.done = "1"; }catch(_){}
     }
   });
@@ -5015,6 +5026,7 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
       }
       renderLists(); return;
     }
+    if(e.target.closest(".s-bcstrip")){ if(r.code) showBarcodeView(r.code, r.name); return; }
     if(e.target.closest(".s-code")){
       if(r.code) showBarcodeView(r.code, r.name);   // a barcode: see it / scan it off the screen
       else openCodeSheet(r, list);                    // PLU or empty: pick or change a code
@@ -5225,9 +5237,9 @@ function renderSaved(){
               ${x.rows.map((r,ri)=>{
                 const realBc = !!(r.code && !r.plu);
                 return `<div class="srow ro${realBc?" has-bc":""}" data-ridx="${ri}">
-                <div class="s-name">${esc(r.name)}${r.kg?'<span class="wtag">'+esc(unitLabel())+'</span>':""}</div>
-                <div class="s-code ${(r.plu||r.code)?"":"none"}">
-                  <b>${esc(r.plu || r.code || "—")}</b>${r.plu?"<i>PLU</i>":(r.code?"<i>BC</i>":"")}</div>
+                <div class="s-name${realBc?" wide":""}">${esc(r.name)}${r.kg?'<span class="wtag">'+esc(unitLabel())+'</span>':""}</div>
+                ${realBc?"":`<div class="s-code ${(r.plu||r.code)?"":"none"}">
+                  <b>${esc(r.plu || r.code || "—")}</b>${r.plu?"<i>PLU</i>":(r.code?"<i>BC</i>":"")}</div>`}
                 <div class="ro-q">
                   <button class="ro-u" data-ridx="${ri}" title="Switch each / by weight">${r.kg?esc(unitLabel()):"ea"}</button>
                   <span>${esc(fmtQty(r))}</span>
@@ -5274,8 +5286,8 @@ document.getElementById("savedWrap").addEventListener("click", e=>{
     return;
   }
 
-  // tapping a saved line's barcode chip shows it big enough to scan off the screen
-  const codeCell = e.target.closest(".s-code");
+  // tapping a saved line's barcode chip (or strip) shows it big enough to scan
+  const codeCell = e.target.closest(".s-code, .s-bcstrip");
   if(codeCell){
     const rowEl = e.target.closest(".srow.ro");
     const ri = rowEl ? parseInt(rowEl.dataset.ridx, 10) : -1;

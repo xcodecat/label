@@ -123,9 +123,24 @@
   .qty-row input{text-align:center;font-family:var(--mono);font-size:18px}
   .qty-btn{width:52px;flex:none;border:1.5px solid #c9c4b4;background:#fffdf6;border-radius:8px;
     font-size:22px;font-weight:700;color:var(--paper);cursor:pointer}
-  .snap{display:flex;gap:12px;align-items:center;margin-bottom:12px}
-  .snap img{width:110px;height:74px;object-fit:cover;border-radius:6px;border:1.5px solid #c9c4b4;background:#ddd}
-  .snap .meta{font-family:var(--mono);font-size:13px;line-height:1.6;color:#3a372e;word-break:break-all}
+  .snap{margin-bottom:12px}
+  .snap-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;border-radius:8px;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;border:1.5px solid #c9c4b4}
+  .snap-track::-webkit-scrollbar{display:none}
+  .snap-slide{position:relative;flex:0 0 100%;scroll-snap-align:start;height:160px;
+    background:#e7e3d5;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .snap-slide img{width:100%;height:100%;object-fit:contain;background:#e7e3d5}
+  .snap-empty{position:absolute;color:#8a8676;font-size:12px;font-family:var(--sans)}
+  .snap-cam{position:absolute;bottom:8px;right:8px;width:42px;height:42px;border-radius:50%;
+    background:rgba(20,23,26,.7);border:0;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .snap-cam:active{background:var(--laser)}
+  .snap-cap{position:absolute;top:6px;left:8px;z-index:2;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+    color:#fff;background:rgba(20,23,26,.5);padding:2px 8px;border-radius:20px;font-family:var(--sans)}
+  .snap-dots{display:flex;gap:6px;justify-content:center;margin-top:8px}
+  .snap-dots i{width:6px;height:6px;border-radius:50%;background:#c9c4b4;transition:background .2s}
+  .snap-dots i.on{background:var(--laser)}
+  .snap .meta{font-family:var(--mono);font-size:12px;line-height:1.5;color:#3a372e;
+    word-break:break-all;text-align:center;margin-top:7px}
   .dupe{background:#fff3cd;border:1.5px solid #e0c96b;border-radius:8px;padding:10px 12px;font-size:13px;
     color:#6b5b13;margin-bottom:12px;display:none}
   .sec-h{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
@@ -190,23 +205,27 @@
   .lock-logo{margin-top:14vh}
   .lock-form{margin-top:auto;margin-bottom:8vh}
   .lock.hidden{display:none}
-  /* While deciding (and while the cat is reacting), the form steps aside and the
-     cat takes centre stage — larger, centred, with a progress ring. */
-  .lock-logo{transition:transform .5s cubic-bezier(.4,0,.2,1)}
+  /* While deciding (and while the cat reacts), the form steps aside and the cat
+     takes centre stage, larger. The password bar morphs into a red ring that
+     runs around the rim like a train to show the check is in progress. */
+  .lock-logo{position:relative;transition:transform .5s cubic-bezier(.4,0,.2,1)}
   .lock.checking .lock-logo{transform:translateY(calc(36vh - 128px)) scale(1.5)}
   .lock.checking .lock-form,
   .lock.checking .lock-name,
   .lock.checking .lock-hint,
   .lock.checking .lock-note{visibility:hidden;opacity:0;transition:opacity .25s}
-  /* "Checking…" label + spinner sit just under the enlarged cat, near centre */
-  .lock.checking .lock-sub{position:fixed;left:0;right:0;top:calc(50vh + 128px);
+  .lock.checking .lock-sub{position:fixed;left:0;right:0;top:calc(50vh + 150px);
     opacity:1;visibility:visible;margin:0}
-  .lock-prog{position:fixed;left:50%;top:calc(50vh + 156px);transform:translateX(-50%);
-    width:24px;height:24px;border-radius:50%;pointer-events:none;
-    border:3px solid var(--line);border-top-color:var(--laser);
-    opacity:0;animation:spin .8s linear infinite}
-  .lock:not(.checking) .lock-prog{display:none}
-  .lock.spinning .lock-prog{opacity:1}
+  /* the ring lives on the cat's canvas so it scales + moves with it */
+  .lockring{position:absolute;inset:0;width:200px;height:200px;overflow:visible;pointer-events:none}
+  .lockring circle{transition:stroke-dashoffset .7s cubic-bezier(.5,0,.3,1), stroke-width .3s ease}
+  .lockring.pulse circle{animation:ringPulse 1s ease-in-out infinite}
+  @keyframes ringPulse{0%,100%{stroke-width:4px}50%{stroke-width:9px}}
+  /* the morphing bar: password box -> red line -> feeds the ring */
+  .lockline{position:fixed;z-index:96;box-sizing:border-box;opacity:0;pointer-events:none;
+    transition:left .42s cubic-bezier(.4,0,.2,1), top .42s cubic-bezier(.4,0,.2,1),
+      width .42s cubic-bezier(.4,0,.2,1), height .3s ease, background .3s ease,
+      border-radius .3s ease, border-color .3s ease, opacity .2s ease}
   .lock-form{width:100%;max-width:280px;display:flex;flex-direction:column;align-items:center}
   .lock-logo{width:200px;height:200px;margin-bottom:20px;display:flex;align-items:center;justify-content:center}
   /* the login logo is now a pre-made animation (idle still + a "no" shake and a
@@ -331,11 +350,26 @@
   /* When something throws, every listener after it silently stops working and
      the app just feels broken. Say so instead. */
   .errbar{position:fixed;left:0;right:0;bottom:0;z-index:95;background:#7a1f14;color:#fff;
-    font-size:10px;font-family:var(--mono);padding:8px 12px;line-height:1.4;
+    font-size:10px;font-family:var(--mono);padding:8px 34px 8px 12px;line-height:1.4;
     max-height:33vh;overflow:auto}
   .errbar.hidden{display:none}
+  .errbar.info{background:#1f4a5a}
+  .errbar-x{position:absolute;top:5px;right:8px;width:24px;height:24px;background:transparent;
+    border:0;color:#fff;font-size:20px;line-height:1;opacity:.85;cursor:pointer;font-family:var(--sans)}
+  .errbar-x:active{opacity:1}
   .errbar b{display:block;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
     opacity:.75;margin-bottom:3px;font-family:var(--sans)}
+  .bcview{position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.72);
+    display:flex;align-items:center;justify-content:center;padding:24px}
+  .bcview.hidden{display:none}
+  .bcview-card{position:relative;background:#fff;border-radius:14px;padding:24px 20px 16px;
+    max-width:340px;width:100%;text-align:center}
+  .bcview-x{position:absolute;top:6px;right:10px;width:30px;height:30px;background:transparent;
+    border:0;font-size:26px;color:#333;line-height:1;cursor:pointer}
+  .bcview-name{color:#111;font-family:var(--sans);font-weight:700;font-size:15px;margin-bottom:12px}
+  .bcview-num{color:#333;font-family:var(--mono);font-size:14px;letter-spacing:.04em;margin-top:8px}
+  .bcview-hint{color:#999;font-size:11px;margin-top:8px}
+  #bcViewSvg{max-width:100%;height:auto}
   .offbar{position:fixed;left:0;right:0;top:0;z-index:80;background:#8a6d1f;color:#fff;
     font-size:11px;letter-spacing:.06em;text-align:center;
     padding:calc(6px + env(safe-area-inset-top)) 10px 6px}
@@ -374,6 +408,8 @@
     border-radius:8px;padding:10px 12px;margin-bottom:12px;font-family:var(--mono);word-break:break-all}
   .detail-photo{width:100%;max-height:220px;object-fit:cover;border-radius:8px;
     border:1.5px solid #c9c4b4;margin-bottom:12px;background:#ddd}
+  .dphotos{margin-bottom:12px}
+  .dphotos .snap-slide{height:200px}
   .detail-meta{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.7}
   .btn-danger{background:none;border:1.5px solid #c9c4b4;color:#a8322a}
 
@@ -665,6 +701,8 @@
   .se-btns{margin-bottom:0;gap:6px}
   .s-uwrap{flex:none}
   .mic-sm.on{animation:pulse 1s ease-in-out infinite}
+  .s-say.on{background:var(--laser);border-color:var(--laser);color:#fff;border-radius:8px;
+    animation:pulse 1s ease-in-out infinite}
   /* product tab */
   .prod-tags{display:flex;gap:6px;overflow-x:auto;margin-top:9px;padding-bottom:2px;
     -webkit-overflow-scrolling:touch;scrollbar-width:none}
@@ -799,30 +837,36 @@
   .thead .n .brk{width:100%;font-size:10px;opacity:.8}
   .thead .tag{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:7px}
   .tag.scrap{background:var(--laser)} .tag.flash{background:#4CAF7D}
-  .srow{display:grid;grid-template-columns:1fr 72px 104px 26px;gap:5px;align-items:center;
+  .srow{display:grid;grid-template-columns:1fr 88px 84px 22px;gap:5px;align-items:center;
     min-height:48px;border-bottom:1px solid var(--line)}
+  .srow.has-bc{padding-bottom:6px}
   .srow:last-child{border-bottom:none}
   .s-name{font-size:14px;color:var(--paper);padding:6px 2px;cursor:pointer;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:44px;
     display:flex;align-items:center}
   .s-name:active{opacity:.6}
   .s-name.blank{color:var(--muted);font-style:italic}
+  /* PLU and barcode chips are the same fixed width so the column lines up */
   .s-code{background:var(--surface);border:1px solid var(--line);border-radius:6px;
     min-height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    cursor:pointer;line-height:1.15;padding:3px 2px}
+    cursor:pointer;line-height:1.15;padding:3px 2px;overflow:hidden}
   .s-code:active{background:var(--surface-2)}
-  .s-code b{font-family:var(--mono);font-size:12px;color:var(--paper);
-    max-width:70px;overflow:hidden;text-overflow:ellipsis}
+  .s-code b{font-family:var(--mono);font-size:10px;color:var(--paper);letter-spacing:-.2px;
+    max-width:84px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .s-code i{font-style:normal;font-size:8px;letter-spacing:.08em;color:var(--muted);
     text-transform:uppercase}
   .s-code.none b{color:var(--muted)}
+  /* full-width, scannable barcode under a saved barcoded row */
+  .s-bcstrip{grid-column:1 / -1;background:#fff;border-radius:5px;padding:5px 10px;margin-top:1px;
+    display:flex;align-items:center;justify-content:center}
+  .s-bc{width:100%;height:34px;display:block}
   .s-qty{display:flex;align-items:center;gap:2px}
-  .s-qty button{width:29px;height:40px;flex:none;background:var(--surface-2);
+  .s-qty button{width:26px;height:40px;flex:none;background:var(--surface-2);
     border:1px solid var(--line);color:var(--paper);border-radius:6px;font-size:17px;
     cursor:pointer;padding:0;line-height:1}
-  .s-qty input{width:32px;min-width:0;background:none;border:none;color:var(--paper);
+  .s-qty input{width:28px;min-width:0;background:none;border:none;color:var(--paper);
     font-family:var(--mono);font-size:15px;text-align:center;padding:0;height:40px}
-  .s-qty input.kg{width:46px;font-size:13px}
+  .s-qty input.kg{width:40px;font-size:13px}
   .s-del{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;
     padding:0;height:44px}
   .s-edit{grid-column:1/-1;display:flex;flex-direction:column;gap:6px;padding:2px 0 8px}
@@ -887,20 +931,24 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=36">
+  <link rel="manifest" href="./manifest.json?v=38">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CatCaddy">
 </head>
 <body>
-<div id="lockScreen" class="lock checking spinning">
+<div id="lockScreen" class="lock checking">
   <div class="lock-logo" id="lockCat" role="img" aria-label="CatCaddy">
     <img id="lockCatImg" class="catgif" src="./cat-idle.webp" alt="CatCaddy">
+    <svg class="lockring" id="lockRing" viewBox="0 0 200 200">
+      <circle id="lockRingC" cx="100" cy="94.6" r="72" fill="none" stroke="#e8402a"
+        stroke-width="5" stroke-linecap="round" stroke-dasharray="452.4" stroke-dashoffset="452.4"
+        transform="rotate(90 100 94.6)"/>
+    </svg>
   </div>
   <h1 class="lock-name"><span class="w1">Cat</span><span class="w2">Caddy</span></h1>
   <p class="lock-sub" id="lockSub">Checking…</p>
-  <div class="lock-prog" id="lockProg" aria-hidden="true"></div>
   <p class="lock-hint" id="lockHint">Locks itself after 30 minutes.</p>
   <div class="lock-form">
     <input id="lockPass" type="password" placeholder="Password" autocomplete="current-password"
@@ -909,6 +957,7 @@
   </div>
   <p class="lock-note" id="lockNote"></p>
 </div>
+<div class="lockline" id="lockLine"></div>
 
 <div id="appWrap" class="hidden-until-open">
 <header>
@@ -944,8 +993,24 @@
       <div class="perf"></div>
       <h2>New scan</h2>
       <div class="snap">
-        <img id="snapImg" alt="Captured barcode">
+        <div class="snap-track" id="snapTrack">
+          <div class="snap-slide">
+            <span class="snap-cap">Front</span>
+            <img id="frontImg" alt="Front of product" style="display:none">
+            <div class="snap-empty" id="frontEmpty">No front photo yet</div>
+            <button type="button" class="snap-cam" id="btnFront" aria-label="Take front photo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </button>
+          </div>
+          <div class="snap-slide">
+            <span class="snap-cap">Barcode</span>
+            <img id="snapImg" alt="Captured barcode">
+          </div>
+        </div>
+        <div class="snap-dots" id="snapDots"><i class="on"></i><i></i></div>
         <div class="meta" id="snapMeta"></div>
+        <input type="file" accept="image/*" capture="environment" id="frontFile" hidden>
       </div>
       <div class="dupe" id="dupeNote"></div>
       <div class="field">
@@ -1053,10 +1118,6 @@
         <button class="wtab active" data-list="loop">Loop</button>
         <button class="wtab" data-list="flashfood">Flashfood</button>
       </div>
-      <button class="scrapfind" id="btnScrapFind" aria-label="Scan to find an item on your lists" title="Scan to find">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
-        Scan to find
-      </button>
     </div>
     <div class="heard hidden" id="heard"></div>
     <div class="tbl" id="tblActive"></div>
@@ -1465,7 +1526,13 @@
     <div class="bc-card" id="bcCard"><svg id="bcSvg"></svg></div>
     <div class="bc-fail hidden" id="bcFail"></div>
 
-    <img class="detail-photo hidden" id="dPhoto" alt="Barcode photo captured at scan">
+    <div class="dphotos hidden" id="dPhotos">
+      <div class="snap-track" id="dTrack">
+        <div class="snap-slide" id="dFrontSlide"><span class="snap-cap">Front</span><img id="dFront" alt="Front of product"></div>
+        <div class="snap-slide" id="dBackSlide"><span class="snap-cap">Barcode</span><img id="dPhoto" alt="Barcode photo"></div>
+      </div>
+      <div class="snap-dots" id="dDots"></div>
+    </div>
 
     <div class="price-line" id="dPrice"></div>
     <div class="detail-meta" id="dMeta"></div>
@@ -1576,7 +1643,7 @@
         <button type="button" class="qty-btn" id="mQtyPlus">+</button>
         <div class="useg" id="mUnitSeg" role="group" aria-label="Counted per each or by weight">
           <button type="button" class="on" data-u="each" aria-label="Per each" title="Per each">EA</button>
-          <button type="button" data-u="kg" aria-label="By weight" title="By weight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3a2 2 0 0 0-2 2H5l-3 8a4 4 0 0 0 8 0L7 5"/><path d="M12 3a2 2 0 0 1 2 2h5l3 8a4 4 0 0 1-8 0l3-8"/><path d="M12 5v14"/><path d="M8 21h8"/></svg></button>
+          <button type="button" id="mUKG" data-u="kg" aria-label="By weight" title="By weight">kg</button>
         </div>
       </div>
     </div>
@@ -1604,6 +1671,15 @@
 </div>
 
 <div class="errbar hidden" id="errbar"></div>
+<div class="bcview hidden" id="bcView">
+  <div class="bcview-card">
+    <button class="bcview-x" id="bcViewX" aria-label="Close">&times;</button>
+    <div class="bcview-name" id="bcViewName"></div>
+    <svg id="bcViewSvg"></svg>
+    <div class="bcview-num" id="bcViewNum"></div>
+    <div class="bcview-hint">Hold the phone up to a scanner.</div>
+  </div>
+</div>
 <div class="offbar hidden" id="offbar">Offline — saving to this phone, will sync when you're back</div>
 <datalist id="originList"><option value="Afghanistan"><option value="Albania"><option value="Algeria"><option value="Andorra"><option value="Angola"><option value="Antigua and Barbuda"><option value="Argentina"><option value="Armenia"><option value="Australia"><option value="Austria"><option value="Azerbaijan"><option value="Bahamas"><option value="Bahrain"><option value="Bangladesh"><option value="Barbados"><option value="Belarus"><option value="Belgium"><option value="Belize"><option value="Benin"><option value="Bhutan"><option value="Bolivia"><option value="Bosnia and Herzegovina"><option value="Botswana"><option value="Brazil"><option value="Brunei"><option value="Bulgaria"><option value="Burkina Faso"><option value="Burundi"><option value="Cambodia"><option value="Cameroon"><option value="Canada"><option value="Cape Verde"><option value="Central African Republic"><option value="Chad"><option value="Chile"><option value="China"><option value="Colombia"><option value="Comoros"><option value="Costa Rica"><option value="Croatia"><option value="Cuba"><option value="Cyprus"><option value="Czech Republic"><option value="Democratic Republic of the Congo"><option value="Denmark"><option value="Djibouti"><option value="Dominica"><option value="Dominican Republic"><option value="Ecuador"><option value="Egypt"><option value="El Salvador"><option value="Equatorial Guinea"><option value="Eritrea"><option value="Estonia"><option value="Eswatini"><option value="Ethiopia"><option value="Fiji"><option value="Finland"><option value="France"><option value="Gabon"><option value="Gambia"><option value="Georgia"><option value="Germany"><option value="Ghana"><option value="Greece"><option value="Grenada"><option value="Guatemala"><option value="Guinea"><option value="Guinea-Bissau"><option value="Guyana"><option value="Haiti"><option value="Honduras"><option value="Hungary"><option value="Iceland"><option value="India"><option value="Indonesia"><option value="Iran"><option value="Iraq"><option value="Ireland"><option value="Israel"><option value="Italy"><option value="Ivory Coast"><option value="Jamaica"><option value="Japan"><option value="Jordan"><option value="Kazakhstan"><option value="Kenya"><option value="Kiribati"><option value="Kosovo"><option value="Kuwait"><option value="Kyrgyzstan"><option value="Laos"><option value="Latvia"><option value="Lebanon"><option value="Lesotho"><option value="Liberia"><option value="Libya"><option value="Liechtenstein"><option value="Lithuania"><option value="Luxembourg"><option value="Madagascar"><option value="Malawi"><option value="Malaysia"><option value="Maldives"><option value="Mali"><option value="Malta"><option value="Marshall Islands"><option value="Mauritania"><option value="Mauritius"><option value="Mexico"><option value="Micronesia"><option value="Moldova"><option value="Monaco"><option value="Mongolia"><option value="Montenegro"><option value="Morocco"><option value="Mozambique"><option value="Myanmar"><option value="Namibia"><option value="Nauru"><option value="Nepal"><option value="Netherlands"><option value="New Zealand"><option value="Nicaragua"><option value="Niger"><option value="Nigeria"><option value="North Korea"><option value="North Macedonia"><option value="Norway"><option value="Oman"><option value="Pakistan"><option value="Palau"><option value="Palestine"><option value="Panama"><option value="Papua New Guinea"><option value="Paraguay"><option value="Peru"><option value="Philippines"><option value="Poland"><option value="Portugal"><option value="Qatar"><option value="Republic of the Congo"><option value="Romania"><option value="Russia"><option value="Rwanda"><option value="Saint Kitts and Nevis"><option value="Saint Lucia"><option value="Saint Vincent and the Grenadines"><option value="Samoa"><option value="San Marino"><option value="Sao Tome and Principe"><option value="Saudi Arabia"><option value="Senegal"><option value="Serbia"><option value="Seychelles"><option value="Sierra Leone"><option value="Singapore"><option value="Slovakia"><option value="Slovenia"><option value="Solomon Islands"><option value="Somalia"><option value="South Africa"><option value="South Korea"><option value="South Sudan"><option value="Spain"><option value="Sri Lanka"><option value="Sudan"><option value="Suriname"><option value="Sweden"><option value="Switzerland"><option value="Syria"><option value="Taiwan"><option value="Tajikistan"><option value="Tanzania"><option value="Thailand"><option value="Timor-Leste"><option value="Togo"><option value="Tonga"><option value="Trinidad and Tobago"><option value="Tunisia"><option value="Turkey"><option value="Turkmenistan"><option value="Tuvalu"><option value="Uganda"><option value="Ukraine"><option value="United Arab Emirates"><option value="United Kingdom"><option value="United States"><option value="Uruguay"><option value="Uzbekistan"><option value="Vanuatu"><option value="Vatican City"><option value="Venezuela"><option value="Vietnam"><option value="Yemen"><option value="Zambia"><option value="Zimbabwe"></datalist>
 <div class="toast" id="toast"></div>
@@ -2332,22 +2408,32 @@ function onScanSuccess(text){
   if(target && target.type === "row"){
     const f = rowById(target.id);
     if(f){
-      f.r.code = text; f.r.plu = "";
-      const hit = catalogByCode(text);
-      if(hit){
-        if(!f.r.name) f.r.name = hit.name;
-        // A real scan that matches a provisional derived code CONFIRMS it.
-        confirmCatalogCode(text);
-        toast(hit.name + " — barcode confirmed");
-      } else {
-        toast("Barcode " + text);
+      const c = String(text).replace(/\D/g, "");
+      // Scan-to-find, built in: if this barcode is already on a current list,
+      // jump to that line instead of making a duplicate.
+      let jumped = false;
+      for(const key of ["loop","flashfood"]){
+        const ex = lists[key].find(x=> x.id !== f.r.id && (x.code||"") === c);
+        if(ex){
+          lists[f.list] = lists[f.list].filter(x=> x.id !== f.r.id);   // drop the row we were on
+          activeList = key; openRow = null; renderLists();
+          const box = document.querySelector('.srow[data-id="'+ex.id+'"]');
+          if(box){ box.classList.add("found"); box.scrollIntoView({ behavior:"smooth", block:"center" }); }
+          toast((ex.name || "Item") + " — already on " + LIST_META[key].label);
+          jumped = true; break;
+        }
       }
+      if(jumped) return;
+      // otherwise fill this row with the scanned code + name
+      f.r.code = c; f.r.plu = "";
+      const hit = catalogByCode(c);
+      if(hit){ if(!f.r.name) f.r.name = hit.name; confirmCatalogCode(c); }
+      const prev = sessions().find(s=> s.rows.some(rr=>(rr.code||"") === c));
+      let msg = hit ? (hit.name + " — barcode confirmed") : ("Barcode " + c);
+      if(prev) msg += " · also scrapped " + new Date(prev.ts).toLocaleDateString(undefined,{ month:"short", day:"numeric" });
+      toast(msg);
       openRow = f.r.id; renderLists();
     }
-    return;
-  }
-  if(target && target.type === "scrapfind"){
-    findScrapByCode(text);
     return;
   }
   openEntry(text, shot);
@@ -2376,6 +2462,50 @@ const fCode = document.getElementById("fCode"),
       lookupNote = document.getElementById("lookupNote");
 
 let pendingScan = null, pendingMatch = null;
+
+/* ---- two product photos: a front-face shot (the pretty default) and the
+   barcode shot. The front one is optional and can be added any time. ---- */
+let pendingFront = null;   // dataURL of the front photo for the item on the form
+function setFrontPhoto(dataUrl){
+  pendingFront = dataUrl || null;
+  const img = document.getElementById("frontImg");
+  const empty = document.getElementById("frontEmpty");
+  if(pendingFront){ img.src = pendingFront; img.style.display = ""; empty.style.display = "none"; }
+  else { img.removeAttribute("src"); img.style.display = "none"; empty.style.display = ""; }
+}
+function snapTo(i){
+  const t = document.getElementById("snapTrack");
+  if(t) t.scrollTo({ left: i * t.clientWidth, behavior: "smooth" });
+}
+// shrink a camera photo before we keep it, so localStorage doesn't fill up
+function downscaleImage(dataUrl, maxDim, quality){
+  return new Promise(res=>{
+    const im = new Image();
+    im.onload = ()=>{
+      const scale = Math.min(1, maxDim / Math.max(im.width, im.height));
+      const cw = Math.max(1, Math.round(im.width * scale)), ch = Math.max(1, Math.round(im.height * scale));
+      const c = document.createElement("canvas"); c.width = cw; c.height = ch;
+      c.getContext("2d").drawImage(im, 0, 0, cw, ch);
+      try{ res(c.toDataURL("image/jpeg", quality)); }catch(e){ res(dataUrl); }
+    };
+    im.onerror = ()=>res(dataUrl);
+    im.src = dataUrl;
+  });
+}
+document.getElementById("btnFront").addEventListener("click", ()=>document.getElementById("frontFile").click());
+document.getElementById("frontFile").addEventListener("change", e=>{
+  const f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if(!f) return;
+  const rd = new FileReader();
+  rd.onload = async ()=>{ setFrontPhoto(await downscaleImage(rd.result, 1000, 0.75)); snapTo(0); };
+  rd.readAsDataURL(f);
+});
+document.getElementById("snapTrack").addEventListener("scroll", ()=>{
+  const t = document.getElementById("snapTrack");
+  const i = Math.round(t.scrollLeft / Math.max(1, t.clientWidth));
+  document.querySelectorAll("#snapDots i").forEach((d,k)=>d.classList.toggle("on", k===i));
+});
 let mKg = false;   // is the current manual entry counted by weight?
 
 /* The default follows Settings: if your store weighs in kg, a new manual entry
@@ -2453,6 +2583,9 @@ function openEntryForm(scan){
   document.getElementById("fPluDrop").classList.add("hidden");
   lookupNote.textContent = "";
   document.getElementById("snapImg").src = scan.img || "";
+  setFrontPhoto(null);
+  const mukg = document.getElementById("mUKG"); if(mukg) mukg.textContent = unitLabel();
+  const st = document.getElementById("snapTrack"); if(st) st.scrollLeft = 0;   // default = front
   document.getElementById("snapMeta").textContent =
     new Date(scan.ts).toLocaleString();
 
@@ -2465,6 +2598,7 @@ function openEntryForm(scan){
     fPlu.value = existing.plu || "";
     fOrigins = originList(existing.origin);
     fFr.value = existing.nameFr || "";
+    setFrontPhoto(existing.frontImg || null);
     document.getElementById("frRow").style.display = existing.nameFr ? "" : "none";
   } else {
     dupeNote.style.display = "none";
@@ -2493,6 +2627,7 @@ function openItemEdit(it){
   fFr.value    = it.nameFr || "";
   fNotes.value = it.notes || "";
   fQty.value   = it.kg ? kgStr(it.qty || 0) : (it.qty || 1);
+  setFrontPhoto(it.frontImg || null);
   fOrigins     = originList(it.origin);
   document.getElementById("frRow").style.display = it.nameFr ? "" : "none";
   drawFOrigins();
@@ -2637,6 +2772,7 @@ function showLock(msg, bad){
   const l = document.getElementById("lockScreen");
   l.classList.remove("hidden", "checking", "spinning");
   setCatSrc(CAT_IDLE);          // clear any lingering shake/smile back to calm
+  resetLockFx();                // clear the ring + line morph
   // The subtitle asks; the note is for problems only. Both saying "enter the
   // password" just told you twice.
   document.getElementById("lockSub").textContent = "Enter the password to open";
@@ -2653,22 +2789,48 @@ function showLock(msg, bad){
    (a browser won't rewind a GIF just by re-setting the same src). */
 const CAT_IDLE = "./cat-idle.webp";
 const CAT_NO   = "./cat_no_obvious_headshake.gif";     // wrong password: head shakes "no"
-const CAT_YAY  = "./cat_smile_instant.gif";// correct password: cat smiles
-const CAT_NO_MS  = 3400;   // ~2 full loops of the new shake so the refusal is clear
+const CAT_YAY  = "./cat_smile_instant.gif";            // correct password: cat smiles
+const CAT_NO_MS  = 1200;   // short, clear head shake — you're usually in a rush
 const CAT_YAY_MS = 2800;   // let the smile linger before opening the app
-let catRevertT = null;
+const RING_C = 452.4;      // 2·π·72 — the ring circumference
+const VIB_OK = [35, 40, 120];            // soft tap then a firm confirm — "ta-da"
+const VIB_NO = [80, 50, 80, 50, 80];     // three sharp buzzes — "no-no-no"
 function setCatSrc(src){
   const img = document.getElementById("lockCatImg");
   if(!img) return;
-  const fresh = img.cloneNode(false);      // keeps id + class, forces a fresh decode
+  const fresh = img.cloneNode(false);      // keeps id + class, forces a fresh GIF decode
   fresh.src = src;
   img.replaceWith(fresh);
 }
 function catReact(kind){
-  clearTimeout(catRevertT);
-  if(kind === "nope") setCatSrc(CAT_NO);   // loops; the caller decides when to stop
+  if(kind === "nope") setCatSrc(CAT_NO);
   else if(kind === "yay") setCatSrc(CAT_YAY);
   else setCatSrc(CAT_IDLE);
+}
+const lockDelay = ms => new Promise(r=>setTimeout(r, ms));
+const lockRaf   = () => new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+function lineAsBox(rect){
+  const b = document.getElementById("lockLine");
+  Object.assign(b.style, { left:rect.left+"px", top:rect.top+"px", width:rect.width+"px",
+    height:rect.height+"px", borderRadius:"9px", background:"var(--surface-2)", border:"1.5px solid var(--line)" });
+}
+function lineAsLine(cx, cy, w){
+  const b = document.getElementById("lockLine");
+  Object.assign(b.style, { left:(cx-w/2)+"px", top:(cy-2)+"px", width:w+"px", height:"4px",
+    borderRadius:"3px", background:"var(--laser)", border:"0 solid var(--laser)" });
+}
+// bottom rim of the disc, measured LIVE (only call once the cat has settled)
+function lockRimBottom(){
+  const rc = document.getElementById("lockRing").getBoundingClientRect();
+  return { x: rc.left + rc.width * 0.5, y: rc.top + rc.height * ((94.6 + 72) / 200) };
+}
+function resetLockFx(){
+  const ring = document.getElementById("lockRing"),
+        rc   = document.getElementById("lockRingC"),
+        line = document.getElementById("lockLine");
+  if(ring){ ring.classList.remove("pulse"); ring.style.transition=""; ring.style.transform=""; ring.style.opacity="1"; }
+  if(rc){ rc.style.strokeDashoffset = RING_C; rc.style.strokeWidth = "5"; }
+  if(line) line.style.opacity = "0";
 }
 
 async function tryUnlock(pass){
@@ -2745,44 +2907,82 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
   const lock = document.getElementById("lockScreen");
   const btn  = document.getElementById("lockGo");
   const sub  = document.getElementById("lockSub");
-  // hide the form, bring the cat to centre + larger, start the progress ring
-  lock.classList.add("checking", "spinning");
+  const input = document.getElementById("lockPass");
+  const ring = document.getElementById("lockRing"), ringC = document.getElementById("lockRingC");
+
+  resetLockFx();
   setCatSrc(CAT_IDLE);
-  sub.textContent = "Checking…";
-  document.getElementById("lockPass").blur();      // dismiss the keyboard
+  input.blur();                                   // dismiss the keyboard
+
+  // Forward morph: password box -> red line -> cat grows/centres -> the line
+  // rises to the settled rim and the red runs around it like a train.
+  async function forwardMorph(){
+    const ib = input.getBoundingClientRect();
+    lineAsBox(ib);
+    document.getElementById("lockLine").style.opacity = "1";
+    await lockRaf();
+    lineAsLine(ib.left + ib.width/2, ib.top + ib.height/2, ib.width);   // collapse to a line
+    await lockDelay(340);
+    lock.classList.add("checking"); sub.textContent = "Checking…";
+    await lockDelay(540);                          // wait for the cat to settle BEFORE measuring
+    const rb = lockRimBottom();
+    lineAsLine(rb.x, rb.y, 34);                     // line rises to the rim
+    await lockDelay(420);
+    document.getElementById("lockLine").style.opacity = "0";
+    ringC.style.strokeDashoffset = "0";            // red runs around the rim
+    await lockDelay(720);
+    ring.classList.add("pulse");
+    await lockDelay(300);
+  }
+
   try{
-    const d = await tryUnlock(p);
-    lock.classList.remove("spinning");             // check done: stop the ring
+    // run the animation and the real check together; branch once both are done
+    const [d] = await Promise.all([ tryUnlock(p), forwardMorph() ]);
+    ring.classList.remove("pulse");
     if(d && d.ok){
       localStorage.setItem(KEY_UNLOCK, p);
       rememberPassword(p);                          // works next time there's no signal
-      document.getElementById("lockPass").value = "";
+      input.value = "";
       sub.textContent = "Welcome";
+      ringC.style.strokeWidth = "7";
       catReact("yay");                              // cat stays big & centred, smiling
-      if(navigator.vibrate) navigator.vibrate(30);
+      ring.style.transition = "transform .5s ease, opacity .5s ease";
+      ring.style.transform = "scale(1.12)"; ring.style.opacity = "0";
+      if(navigator.vibrate) navigator.vibrate(VIB_OK);
       setTimeout(openApp, CAT_YAY_MS);              // let the smile linger, then open
     } else {
       const msg = d && d.code === "BADPASS" ? "That's not it — try again."
                 : d && d.code === "OFFLINE" ? "No signal, and this phone hasn't unlocked here before. Connect once."
                 : ((d && d.error) || "Couldn't check.");
       sub.textContent = "Nope";
-      catReact("nope");                             // long, clear head shake at centre
-      if(navigator.vibrate) navigator.vibrate([40,60,40]);
-      // let the refusal play out, THEN shrink the cat back and bring the form home
-      setTimeout(()=>{
-        showLock(msg, true);                        // removes .checking: cat returns, form reappears
-        const pw = document.getElementById("lockPass");
-        pw.focus(); pw.select();                    // keep the wrong password, selected to retype
-        btn.disabled = false; btn.textContent = "Open";
-      }, CAT_NO_MS);
+      catReact("nope");                             // short, clear head shake
+      if(navigator.vibrate) navigator.vibrate(VIB_NO);
+      await lockDelay(CAT_NO_MS);
+      setCatSrc(CAT_IDLE);
+      // the train runs back off the rim, becomes a line, and drops into the box
+      ringC.style.strokeDashoffset = RING_C;
+      const rb = lockRimBottom();
+      lineAsLine(rb.x, rb.y, 34);
+      document.getElementById("lockLine").style.opacity = "1";
+      await lockDelay(150);
+      lock.classList.remove("checking");            // cat shrinks back, form area returns
+      await lockRaf();
+      const ib2 = input.getBoundingClientRect();
+      lineAsLine(ib2.left + ib2.width/2, ib2.top + ib2.height/2, ib2.width);
+      await lockDelay(420);
+      lineAsBox(ib2);                               // line opens back into the box
+      await lockDelay(320);
+      document.getElementById("lockLine").style.opacity = "0";
+      showLock(msg, true);
+      input.focus(); input.select();                // keep the wrong password, selected to retype
+      btn.disabled = false; btn.textContent = "Open";
     }
   }catch(e){
-    lock.classList.remove("spinning");
-    catReact("nope");
-    setTimeout(()=>{
-      showLock("Couldn't reach the script: " + e.message, true);
-      btn.disabled = false; btn.textContent = "Open";
-    }, CAT_NO_MS);
+    ring.classList.remove("pulse");
+    setCatSrc(CAT_IDLE);
+    await lockDelay(200);
+    showLock("Couldn't reach the script: " + e.message, true);
+    btn.disabled = false; btn.textContent = "Open";
   }
 });
 document.getElementById("lockPass").addEventListener("keydown", e=>{
@@ -2962,6 +3162,7 @@ document.getElementById("btnSave").addEventListener("click", ()=>{
     existing.notes = fNotes.value.trim();
     existing.ts = pendingScan.ts;
     existing.img = pendingScan.img || existing.img;
+    existing.frontImg = pendingFront || existing.frontImg || "";
     existing.plu = fPlu.value.trim() || existing.plu || "";
     existing.origin = fOrigins.slice();
     existing.nameFr = fFr.value.trim() || existing.nameFr || "";
@@ -2977,6 +3178,7 @@ document.getElementById("btnSave").addEventListener("click", ()=>{
       qty: qty,
       notes: fNotes.value.trim(),
       img: pendingScan.img,
+      frontImg: pendingFront || "",
       plu: fPlu.value.trim(),
       origin: fOrigins.slice(),
       nameFr: fFr.value.trim(),
@@ -3191,9 +3393,17 @@ function openItem(id){
     pl.style.display = "block";
   } else pl.style.display = "none";
 
-  const photo = document.getElementById("dPhoto");
-  if(it.img){ photo.src = it.img; photo.classList.remove("hidden"); }
-  else photo.classList.add("hidden");
+  const hasFront = !!it.frontImg, hasBack = !!it.img;
+  document.getElementById("dFrontSlide").style.display = hasFront ? "" : "none";
+  document.getElementById("dBackSlide").style.display  = hasBack ? "" : "none";
+  if(hasFront) document.getElementById("dFront").src = it.frontImg;
+  if(hasBack)  document.getElementById("dPhoto").src = it.img;
+  const dPhotos = document.getElementById("dPhotos");
+  if(hasFront || hasBack){
+    dPhotos.classList.remove("hidden");
+    document.getElementById("dDots").innerHTML = (hasFront && hasBack) ? '<i class="on"></i><i></i>' : "";
+    const dt = document.getElementById("dTrack"); if(dt) dt.scrollLeft = 0;   // front is the default
+  } else dPhotos.classList.add("hidden");
 
   renderBarcode(it.code && !/^PLU/.test(it.code) ? it.code
                 : (it.plu ? it.plu : ""));
@@ -3233,6 +3443,45 @@ function renderBarcode(code){
 }
 
 document.getElementById("detailClose").addEventListener("click", closeDetail);
+document.getElementById("dTrack").addEventListener("scroll", ()=>{
+  const t = document.getElementById("dTrack");
+  const i = Math.round(t.scrollLeft / Math.max(1, t.clientWidth));
+  document.querySelectorAll("#dDots i").forEach((d,k)=>d.classList.toggle("on", k===i));
+});
+
+/* A big, scannable version of a stored barcode — so a scrap line (current OR
+   saved) can be scanned straight off the phone with a handheld reader. */
+function showBarcodeView(code, name){
+  const c = String(code || "").trim();
+  if(!c) return;
+  document.getElementById("bcViewName").textContent = name || "";
+  document.getElementById("bcViewNum").textContent = c;
+  const svg = document.getElementById("bcViewSvg");
+  let formats;
+  if(/^\d{13}$/.test(c))      formats = ["EAN13","CODE128"];
+  else if(/^\d{12}$/.test(c)) formats = ["UPC","CODE128"];
+  else if(/^\d{8}$/.test(c))  formats = ["EAN8","CODE128"];
+  else                        formats = ["CODE128"];
+  let ok = false;
+  for(const f of formats){
+    try{
+      JsBarcode("#bcViewSvg", c, { format:f, width:2.4, height:110, margin:10,
+        displayValue:false, background:"#ffffff", lineColor:"#000000" });
+      ok = true; break;
+    }catch(e){ /* try next symbology */ }
+  }
+  svg.style.display = ok ? "" : "none";
+  document.getElementById("bcView").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+function closeBarcodeView(){
+  document.getElementById("bcView").classList.add("hidden");
+  document.body.style.overflow = "";
+}
+document.getElementById("bcViewX").addEventListener("click", closeBarcodeView);
+document.getElementById("bcView").addEventListener("click", e=>{
+  if(e.target.id === "bcView") closeBarcodeView();
+});
 dOverlay.addEventListener("click", e=>{ if(e.target===dOverlay) closeDetail(); });
 function closeDetail(){
   dOverlay.classList.add("hidden");
@@ -3921,7 +4170,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v36";
+const APP_VERSION = "v38";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -4278,21 +4527,36 @@ function saveLock(on){
     if(b){ b.disabled = on; b.textContent = on ? "Listening…" : (id==="mSave" ? "Add item" : "Save item"); }
   });
 }
-function dictateInto(input, row){
+let dictTimer = null;
+function dictateInto(input, row, btn){
   if(!SR) return toast("No speech support here — use Chrome on Android or Safari on iOS");
-  if(dictating){ try{ dictating.stop(); }catch(e){} return; }
+  if(dictating){ dictating._stopped = true; try{ dictating.stop(); }catch(e){} return; }  // tap again = stop
   const d = new SR();
-  dictating = d;
+  dictating = d; d._stopped = false;
   saveLock(true);
-  d.lang = "en-CA"; d.interimResults = true; d.continuous = false;
+  d.lang = "en-CA"; d.interimResults = true; d.continuous = true;   // keep listening through pauses
+  const clearHi = ()=>document.querySelectorAll(".mic-sm.on,.s-say.on,.fSay.on").forEach(b=>b.classList.remove("on"));
+  if(btn) btn.classList.add("on");
   d.onresult = ev=>{
     let txt = "";
     for(let i = 0; i < ev.results.length; i++) txt += ev.results[i][0].transcript;
     input.value = txt.trim();
+    // commit shortly after you stop talking
+    clearTimeout(dictTimer);
+    dictTimer = setTimeout(()=>{ d._stopped = true; try{ d.stop(); }catch(e){} }, 1300);
+  };
+  d.onerror = ev=>{
+    // a gap in speech or a benign abort shouldn't kill the session — let onend
+    // decide whether to restart
+    if(ev.error === "no-speech" || ev.error === "aborted") return;
+    d._stopped = true;
+    if(ev.error === "not-allowed") toast("Mic blocked — allow it in browser settings");
   };
   d.onend = ()=>{
-    dictating = null; saveLock(false);
-    document.querySelectorAll(".mic-sm.on,.s-say.on").forEach(b=>b.classList.remove("on"));
+    // the browser often ends recognition on its own mid-use; restart unless the
+    // pause-timer (or a second tap) actually meant to stop
+    if(!d._stopped){ try{ d.start(); return; }catch(e){} }
+    dictating = null; saveLock(false); clearTimeout(dictTimer); clearHi();
     const v = input.value.trim();
     if(!v) return;
     const clean = repairName(v) || v;
@@ -4306,18 +4570,13 @@ function dictateInto(input, row){
       if(plu && !plu.value.trim()){ const h = pluFor(clean); if(h) plu.value = h; }
     }
   };
-  d.onerror = ev=>{
-    dictating = null; saveLock(false);
-    document.querySelectorAll(".mic-sm.on,.s-say.on").forEach(b=>b.classList.remove("on"));
-    toast(ev.error === "not-allowed" ? "Mic blocked — allow it in browser settings" : "Didn't catch that");
-  };
-  try{ d.start(); toast("Speak the name…"); }catch(e){}
+  try{ d.start(); toast("Speak the name…"); }catch(e){ dictating = null; saveLock(false); clearHi(); }
 }
 document.getElementById("fSay").addEventListener("click", e=>{
-  e.target.classList.add("on"); dictateInto(document.getElementById("fName"), null);
+  const b = e.currentTarget; dictateInto(document.getElementById("fName"), null, b);
 });
 document.getElementById("mSay").addEventListener("click", e=>{
-  e.target.classList.add("on"); dictateInto(document.getElementById("mName"), null);
+  const b = e.currentTarget; dictateInto(document.getElementById("mName"), null, b);
 });
 
 /* ---- push saved Loop/Flashfood lists to their own Sheet tabs ----
@@ -4597,6 +4856,7 @@ function renderLists(){
     </div>` + (rows.length
       ? rows.map(r=>rowHtml(r, activeList)).join("")
       : '<div class="tbl-empty">Nothing here yet — tap the mic and say what you\'ve got.</div>');
+  renderRowBarcodes();
 }
 
 document.getElementById("listTabs").addEventListener("click", e=>{
@@ -4622,9 +4882,10 @@ function rowHtml(r, key){
   const kind = r.plu ? "PLU" : (r.code ? "BC" : "");
   const open = openRow === r.id;
   const just = justAdded.has(r.id) ? " just" : "";
-  return `<div class="srow${just}" data-id="${r.id}">
+  const realBc = !!(r.code && !r.plu);          // a scannable barcode (not a produce PLU)
+  return `<div class="srow${just}${(realBc && !open) ? " has-bc" : ""}" data-id="${r.id}">
     ${open ? "" : `<div class="s-name ${r.name?"":"blank"}">${esc(r.name || "tap to name")}${
-        r.kg ? '<span class="wtag">kg</span>' : ""}</div>`}
+        r.kg ? '<span class="wtag">'+esc(unitLabel())+'</span>' : ""}</div>`}
     ${open ? "" : `<div class="s-code ${code?"":"none"}">
         <b>${esc(code || "—")}</b>${kind?`<i>${kind}</i>`:""}</div>`}
     ${open ? "" : `<div class="s-qty">
@@ -4633,7 +4894,8 @@ function rowHtml(r, key){
                value="${esc(r.kg ? kgStr(r.qty) : String(r.qty))}">
         <button class="qp" aria-label="More">+</button>
       </div>
-      <button class="s-del" aria-label="Remove">✕</button>`}
+      <button class="s-del" aria-label="Remove">✕</button>
+      ${realBc ? `<div class="s-bcstrip"><svg class="s-bc" data-bccode="${esc(r.code)}"></svg></div>` : ""}`}
     ${open ? `<div class="s-edit">
         <div class="se-row">
           <input class="s-nm" value="${esc(r.name)}" placeholder="Item name" autofocus>
@@ -4644,7 +4906,7 @@ function rowHtml(r, key){
         <div class="se-row se-btns">
           <div class="useg s-uwrap">
             <button type="button" class="s-uEA${r.kg?"":" on"}" data-u="each" title="Per each">EA</button>
-            <button type="button" class="s-uKG${r.kg?" on":""}" data-u="kg" title="By weight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M12 3a2 2 0 0 0-2 2H5l-3 8a4 4 0 0 0 8 0L7 5"/><path d="M12 3a2 2 0 0 1 2 2h5l3 8a4 4 0 0 1-8 0l3-8"/><path d="M12 5v14"/><path d="M8 21h8"/></svg></button>
+            <button type="button" class="s-uKG${r.kg?" on":""}" data-u="kg" title="By weight">${esc(unitLabel())}</button>
           </div>
           <button class="s-move">→ ${key==="loop"?"Flash":"Loop"}</button>
           <button class="s-ok">Done</button>
@@ -4653,62 +4915,30 @@ function rowHtml(r, key){
   </div>`;
 }
 
+/* Draw the actual scannable barcode onto each saved row that carries one, so a
+   handheld reader can scan it straight off the list. */
+function renderRowBarcodes(){
+  if(typeof JsBarcode !== "function") return;
+  document.querySelectorAll("svg.s-bc[data-bccode]").forEach(svg=>{
+    if(svg.dataset.done) return;
+    const c = svg.getAttribute("data-bccode");
+    const fmt = /^\d{13}$/.test(c) ? "EAN13" : /^\d{12}$/.test(c) ? "UPC"
+              : /^\d{8}$/.test(c) ? "EAN8" : "CODE128";
+    try{
+      JsBarcode(svg, c, { format:fmt, width:2, height:34, margin:0, displayValue:false,
+                          background:"#ffffff", lineColor:"#000000" });
+      svg.dataset.done = "1";
+    }catch(e){
+      try{ JsBarcode(svg, c, { format:"CODE128", width:2, height:34, margin:0,
+                               displayValue:false, background:"#ffffff", lineColor:"#000000" });
+           svg.dataset.done = "1"; }catch(_){}
+    }
+  });
+}
+
 document.getElementById("btnScrapRow").addEventListener("click", ()=>{
   const r = newRow(); lists[activeList].push(r); openRow = r.id; renderLists();
 });
-
-document.getElementById("btnScrapFind").addEventListener("click", ()=>{
-  openScanner({ type:"scrapfind" });
-});
-
-/* Scan a product and jump to it wherever it already sits — the current Loop or
-   Flashfood list, or any saved session. Barcodes are exact; a PLU match is the
-   fallback so produce (which carries a PLU, not a barcode) is findable too. */
-function findScrapByCode(code){
-  const c = String(code||"").replace(/\D/g,"");
-  if(!c) return;
-  const matches = r => (r.code||"") === c || (r.plu||"") === c;
-
-  // 1) current lists — switch to the list, open the row, pulse it
-  for(const key of ["loop","flashfood"]){
-    const r = lists[key].find(matches);
-    if(r){
-      activeList = key; openRow = null; renderLists();
-      const box = document.querySelector('.srow[data-id="'+r.id+'"]');
-      if(box){ box.classList.add("found"); box.scrollIntoView({ behavior:"smooth", block:"center" }); }
-      toast(r.name ? ("On the " + LIST_META[key].label + " list: " + r.name) : ("Found on " + LIST_META[key].label));
-      return;
-    }
-  }
-
-  // 2) saved sessions — expand the card holding it, pulse the row
-  const all = sessions();
-  for(const x of all){
-    const idx = x.rows.findIndex(matches);
-    if(idx >= 0){
-      activeList = x.list; renderLists();
-      const card = document.querySelector('#savedWrap .sess[data-id="'+x.id+'"]');
-      if(card){
-        card.classList.add("open");
-        const rows = card.querySelectorAll(".sess-b .srow");
-        const row = rows[idx];
-        if(row){ row.classList.add("found"); row.scrollIntoView({ behavior:"smooth", block:"center" }); }
-      }
-      const nm = x.rows[idx].name;
-      toast("Saved on " + LIST_META[x.list].label + (nm ? ": " + nm : "") + " — " +
-            new Date(x.ts).toLocaleDateString(undefined,{month:"short",day:"numeric"}));
-      return;
-    }
-  }
-
-  // 3) nothing yet — offer to start a line with it, pre-named if we know it
-  const hit = catalogByCode(c) || knownIndex()[c];
-  const r = newRow({ code:c, name: hit ? hit.name : "" });
-  lists[activeList].push(r); openRow = r.id; renderLists();
-  const box = document.querySelector('.srow[data-id="'+r.id+'"]');
-  if(box) box.scrollIntoView({ behavior:"smooth", block:"center" });
-  toast(hit ? (hit.name + " — not on a list yet, added a line") : ("Barcode " + c + " — not on any list, added a line"));
-}
 
 document.getElementById("btnScrapClear").addEventListener("click", ()=>{
   const n = lists[activeList].length;
@@ -4754,7 +4984,8 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
       toast("Moved to " + (list==="loop"?"Flashfood":"Loop"));
       return;
     }
-    if(e.target.classList.contains("s-say")){ dictateInto(e.target.closest(".s-edit").querySelector(".s-nm"), r); return; }
+    const sayBtn = e.target.closest(".s-say");
+    if(sayBtn){ dictateInto(sayBtn.closest(".s-edit").querySelector(".s-nm"), r, sayBtn); return; }
     if(e.target.closest(".s-scan")){ openRow = r.id; openScanner({ type:"row", id:r.id }); return; }
     if(e.target.classList.contains("s-del")){
       const idx = lists[list].indexOf(r);
@@ -4784,7 +5015,11 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
       }
       renderLists(); return;
     }
-    if(e.target.closest(".s-code")){ openCodeSheet(r, list); return; }
+    if(e.target.closest(".s-code")){
+      if(r.code) showBarcodeView(r.code, r.name);   // a barcode: see it / scan it off the screen
+      else openCodeSheet(r, list);                    // PLU or empty: pick or change a code
+      return;
+    }
   });
 
   host.addEventListener("blur", e=>{
@@ -4873,12 +5108,17 @@ function knownIndex(){
 function knownFor(name){
   const q = pluTokens(name).map(stem).filter(t=>!GENERIC.has(t));
   if(!q.length) return null;
+  const qset = new Set(q);
   let best = null, bestScore = 0;
   for(const k of knownIndex()){
-    const nt = new Set(pluTokens(k.name).map(stem));
-    let hit = 0;
-    q.forEach(t=>{ if(nt.has(t)) hit++; });
-    const cov = hit / q.length;
+    const nt = pluTokens(k.name).map(stem).filter(t=>!GENERIC.has(t));
+    if(!nt.length) continue;
+    const ntset = new Set(nt);
+    let hitQ = 0; q.forEach(t=>{ if(ntset.has(t)) hitQ++; });
+    let hitN = 0; nt.forEach(t=>{ if(qset.has(t)) hitN++; });
+    // match either way: the spoken name covers the saved one, OR vice versa —
+    // so "cucumber" (saved with a barcode) still answers to "English cucumber"
+    const cov = Math.max(hitQ / q.length, hitN / nt.length);
     if(cov >= 0.85 && cov > bestScore){ bestScore = cov; best = k; }
   }
   return best;
@@ -4982,7 +5222,9 @@ function renderSaved(){
               <span class="sum">Σ ${kgStr(tally)}</span>
             </div>
             <div class="sess-b">
-              ${x.rows.map((r,ri)=>`<div class="srow ro" data-ridx="${ri}">
+              ${x.rows.map((r,ri)=>{
+                const realBc = !!(r.code && !r.plu);
+                return `<div class="srow ro${realBc?" has-bc":""}" data-ridx="${ri}">
                 <div class="s-name">${esc(r.name)}${r.kg?'<span class="wtag">'+esc(unitLabel())+'</span>':""}</div>
                 <div class="s-code ${(r.plu||r.code)?"":"none"}">
                   <b>${esc(r.plu || r.code || "—")}</b>${r.plu?"<i>PLU</i>":(r.code?"<i>BC</i>":"")}</div>
@@ -4990,7 +5232,8 @@ function renderSaved(){
                   <button class="ro-u" data-ridx="${ri}" title="Switch each / by weight">${r.kg?esc(unitLabel()):"ea"}</button>
                   <span>${esc(fmtQty(r))}</span>
                 </div>
-              </div>`).join("")}
+                ${realBc?`<div class="s-bcstrip"><svg class="s-bc" data-bccode="${esc(r.code)}"></svg></div>`:""}
+              </div>`;}).join("")}
               <div class="sess-f">
                 <button data-act="restore">Put back to edit</button>
                 <button data-act="csv">CSV</button>
@@ -5029,6 +5272,15 @@ document.getElementById("savedWrap").addEventListener("click", e=>{
     if(card) card.classList.add("open");
     toast(row.name + (row.kg ? " → by weight" : " → each"));
     return;
+  }
+
+  // tapping a saved line's barcode chip shows it big enough to scan off the screen
+  const codeCell = e.target.closest(".s-code");
+  if(codeCell){
+    const rowEl = e.target.closest(".srow.ro");
+    const ri = rowEl ? parseInt(rowEl.dataset.ridx, 10) : -1;
+    const row = x.rows[ri];
+    if(row && row.code){ showBarcodeView(row.code, row.name); return; }
   }
 
   if(!act){ sess.classList.toggle("open"); return; }     // header taps just fold
@@ -7390,7 +7642,8 @@ async function doSync(quiet){
       corrected: i.corrected ? "YES" : "", notes: i.notes||"",
       price: i.flyer?Number(i.flyer.price).toFixed(2):"",
       promo: !!i.flyer,
-      img: i.img || ""
+      img: i.img || "",
+      frontImg: i.frontImg || ""
     }));
     // Through callProxy, not a fetch of its own — this one built its own
     // request and would have sailed off without the secret or the device id,
@@ -7446,21 +7699,66 @@ function isNoise(text){
          t.includes("onabort") || t.includes("camera stream") ||
          t.includes("no multiformat readers");
 }
-window.addEventListener("error", ev=>{
-  if(isNoise(ev.message)) return;
+let errBarT = null;
+function dismissErr(){
+  const b = document.getElementById("errbar");
+  if(b) b.classList.add("hidden");
+  clearTimeout(errBarT);
+}
+/* Show the banner with a close (×), and (for real faults) queue it for the Sheet.
+   Errors clear themselves after 10s so a stray glitch doesn't block the app; the
+   × lets you dismiss sooner and keep working. */
+function showErr(title, detail, opts){
+  opts = opts || {};
   const b = document.getElementById("errbar");
   if(!b) return;
   b.classList.remove("hidden");
-  b.innerHTML = "<b>Something broke — tell Faisal this bit</b>" +
-    esc(ev.message + "  @ line " + ev.lineno);
+  b.classList.toggle("info", !!opts.info);
+  b.innerHTML = '<button class="errbar-x" aria-label="Close" onclick="dismissErr()">\u00d7</button>' +
+    "<b>" + title + "</b>" + esc(detail || "");
+  clearTimeout(errBarT);
+  if(opts.auto !== false) errBarT = setTimeout(dismissErr, 10000);
+  if(opts.log) queueError(detail);
+}
+
+/* Errors are logged to the Sheet's "Errors" tab, with the device name, whenever
+   there's a connection. Offline, they wait in a small local queue and flush when
+   the phone is back online (or on the next error that happens while online). */
+const KEY_ERRQ = "label_errq_v1";
+function queueError(msg){
+  try{
+    const q = JSON.parse(localStorage.getItem(KEY_ERRQ) || "[]");
+    const dev = deviceInfo();
+    q.push({ ts: Date.now(), device: dev.name || "", deviceId: dev.id || "",
+             who: (localStorage.getItem(KEY_ME_NAME) || ""), ver: APP_VERSION,
+             msg: String(msg || "").slice(0, 800),
+             ua: (navigator.userAgent || "").slice(0, 180) });
+    localStorage.setItem(KEY_ERRQ, JSON.stringify(q.slice(-50)));
+  }catch(e){}
+  flushErrors();
+}
+async function flushErrors(){
+  if(!navigator.onLine) return;
+  const url = proxyUrl(); if(!url) return;
+  let q;
+  try{ q = JSON.parse(localStorage.getItem(KEY_ERRQ) || "[]"); }catch(e){ return; }
+  if(!q.length) return;
+  try{
+    await fetch(url, { method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      body: JSON.stringify({ action:"logError", errors:q }) });
+    localStorage.removeItem(KEY_ERRQ);          // sent — clear the queue
+  }catch(e){ /* keep them queued for the next attempt */ }
+}
+window.addEventListener("online", flushErrors);
+
+window.addEventListener("error", ev=>{
+  if(isNoise(ev.message)) return;
+  showErr("Something broke — tell Faisal this bit", ev.message + "  @ line " + ev.lineno, { log:true });
 });
 window.addEventListener("unhandledrejection", ev=>{
   const txt = String(ev.reason && ev.reason.message || ev.reason);
   if(isNoise(txt)) return;
-  const b = document.getElementById("errbar");
-  if(!b) return;
-  b.classList.remove("hidden");
-  b.innerHTML = "<b>Something broke — tell Faisal this bit</b>" + esc(txt);
+  showErr("Something broke — tell Faisal this bit", txt, { log:true });
 });
 
 if("serviceWorker" in navigator){
@@ -7473,10 +7771,8 @@ if("serviceWorker" in navigator){
         if(!w) return;
         w.addEventListener("statechange", ()=>{
           if(w.state === "installed" && navigator.serviceWorker.controller){
-            const b = document.getElementById("errbar");
-            if(!b) return;
-            b.classList.remove("hidden");
-            b.innerHTML = "<b>New version ready</b>Close and reopen CatCaddy for " + APP_VERSION + ".";
+            showErr("New version ready", "Close and reopen CatCaddy for " + APP_VERSION + ".",
+                    { info:true, auto:false });
           }
         });
       });

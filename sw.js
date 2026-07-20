@@ -10,14 +10,14 @@
    went on serving the first index.html it ever saw — every update invisible
    until you cleared site data. The comment next to the fetch handler said the
    shell "barely changes", which was wrong the day it was written. */
-const CACHE = "catcaddy-v35-2026-07-19";
+const CACHE = "catcaddy-v36-2026-07-20";
 const SHELL = [
   "./",
   "./index.html",
   "./logo.png",
   "./icon-192.png",
   "./cat-idle.webp",
-  "./cat_no_clean.gif",
+  "./cat_no_obvious_headshake.gif",
   "./cat_smile_instant.gif",
   "https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js",
   "https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"

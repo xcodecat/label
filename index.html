@@ -58,7 +58,7 @@
 
   /* ---------- header ---------- */
   header{position:sticky;top:0;z-index:20;background:var(--ink);border-bottom:1px solid var(--line);
-    padding:14px 16px 12px;display:flex;align-items:baseline;justify-content:space-between}
+    padding:12px 16px 11px}
   /* A logo, not a shout. The two halves are set apart by weight and colour
      rather than capitals — the camel case is the whole idea of the name. */
   .wordmark{font-size:19px;letter-spacing:-.01em;display:flex;align-items:center}
@@ -927,12 +927,164 @@
   .wtag{display:inline-block;background:var(--surface-2);border:1px solid var(--line);
     color:var(--muted);border-radius:3px;padding:0 3px;font-size:8px;margin-left:4px;
     font-family:var(--sans);letter-spacing:.04em;vertical-align:middle}
+  /* ---------- top section switcher ---------- */
+  .htop{display:flex;align-items:baseline;justify-content:space-between}
+  .sections{display:flex;gap:2px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:999px;padding:3px;margin-top:11px}
+  .sections button{flex:1;background:none;border:0;border-radius:999px;color:var(--muted);
+    cursor:pointer;font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.01em;
+    padding:7px 4px;white-space:nowrap}
+  .sections button.on{background:var(--laser);color:#fff}
+
+  /* ---------- restock list ---------- */
+  #view-restock{padding-bottom:138px}
+  .rk-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px}
+  .rk-eyebrow{color:var(--laser);font-family:var(--mono);font-size:9px;font-weight:700;
+    letter-spacing:.15em;margin:0 0 4px}
+  .rk-head h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.03em}
+  .rk-live{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);
+    color:var(--muted);font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.08em;
+    border-radius:20px;padding:5px 8px;margin-bottom:4px}
+  .rk-live span{width:6px;height:6px;border-radius:50%;background:var(--ok);
+    box-shadow:0 0 0 3px rgba(76,175,125,.14)}
+  .rk-strip{display:grid;grid-template-columns:auto auto 1fr;border:1px solid var(--line);
+    background:var(--surface);border-radius:12px;overflow:hidden;margin-bottom:12px}
+  .rk-strip>div{padding:0 13px;min-height:50px;display:flex;flex-direction:column;
+    justify-content:center;border-right:1px solid var(--line)}
+  .rk-strip>div:last-child{border-right:0}
+  .rk-strip strong{font-family:var(--mono);font-size:16px;line-height:1;color:var(--paper)}
+  .rk-strip .rk-lab{color:var(--muted);font-size:9px;margin-top:4px}
+  .rk-strip .rk-sy{flex-direction:row;align-items:center;justify-content:flex-end;gap:6px;color:var(--ok)}
+  .rk-strip .rk-sy svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
+  .rk-strip .rk-sy .rk-lab{margin:0;text-align:right;max-width:130px}
+  .rk-cap{border:1px solid var(--line);background:var(--surface);border-radius:14px;
+    padding:14px;margin-bottom:14px}
+  .rk-flab{display:block;color:var(--muted);font-family:var(--mono);font-size:8px;font-weight:700;
+    letter-spacing:.11em;margin-bottom:6px}
+  .rk-inwrap{position:relative}
+  .rk-tin{width:100%;height:45px;border:1px solid var(--line);background:var(--surface-2);
+    color:var(--paper);border-radius:9px;padding:0 54px 0 12px;font-size:14px;outline:0;
+    font-family:var(--sans)}
+  .rk-tin:focus{border-color:var(--laser);box-shadow:0 0 0 3px rgba(232,68,46,.12)}
+  .rk-mic{position:absolute;top:5px;right:5px;width:35px;height:35px;border-radius:8px;
+    border:1px solid rgba(232,68,46,.42);background:rgba(232,68,46,.10);color:var(--laser);
+    cursor:pointer;display:grid;place-items:center}
+  .rk-mic.live{background:var(--laser);color:#fff}
+  .rk-mic svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round}
+  .rk-vfx{min-height:14px;color:var(--muted);font-size:9px;line-height:1.4;margin:6px 1px 0}
+  .rk-grid{display:grid;grid-template-columns:1.45fr 1fr;gap:9px;margin-top:11px}
+  .rk-selw{position:relative}
+  .rk-selw span{display:block;color:var(--muted);font-family:var(--mono);font-size:8px;
+    font-weight:700;letter-spacing:.11em;margin-bottom:6px}
+  .rk-selw select{width:100%;height:45px;border:1px solid var(--line);background:var(--surface-2);
+    color:var(--paper);border-radius:9px;padding:0 30px 0 11px;font-size:12px;outline:0;
+    appearance:none;-webkit-appearance:none;font-family:var(--sans)}
+  .rk-selw:after{content:"\25BE";position:absolute;right:11px;bottom:12px;color:var(--muted);
+    pointer-events:none;font-size:11px}
+  .rk-qtrig{height:45px;align-self:end;border:1px dashed #424950;border-radius:9px;background:none;
+    color:var(--paper);cursor:pointer;display:grid;grid-template-columns:auto 1fr;
+    grid-template-rows:1fr 1fr;column-gap:7px;align-items:center;padding:5px 10px;
+    font-size:11px;font-weight:650;text-align:left;font-family:var(--sans)}
+  .rk-qtrig svg{grid-row:1/3;width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:2}
+  .rk-qtrig small{color:var(--muted);font-size:9px;font-weight:500}
+  .rk-qwrap span{display:block;color:var(--muted);font-family:var(--mono);font-size:8px;
+    font-weight:700;letter-spacing:.11em;margin-bottom:6px}
+  .rk-qwrap input{width:100%;height:45px;border:1px solid var(--line);background:var(--surface-2);
+    color:var(--paper);border-radius:9px;padding:0 10px;font-size:12px;outline:0;font-family:var(--sans)}
+  .rk-qwrap input:focus,.rk-selw select:focus{border-color:var(--laser)}
+  .rk-add{width:100%;height:43px;margin-top:12px;border:0;border-radius:9px;background:var(--laser);
+    color:#fff;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;
+    justify-content:center;gap:8px;font-family:var(--sans)}
+  .rk-add svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.4}
+  .rk-toolbar{display:flex;gap:8px;margin:16px 0 9px}
+  .rk-sw{flex:1;position:relative}
+  .rk-sw svg{position:absolute;left:11px;top:11px;width:17px;height:17px;stroke:var(--muted);
+    fill:none;stroke-width:2}
+  .rk-sw input{width:100%;height:39px;border:1px solid var(--line);background:var(--surface);
+    color:var(--paper);border-radius:9px;padding:0 11px 0 36px;font-size:12px;outline:0;font-family:var(--sans)}
+  .rk-sw input:focus{border-color:var(--laser)}
+  .rk-tables{display:flex;flex-direction:column;gap:9px}
+  .rk-card{border:1px solid var(--line);background:var(--surface);border-radius:12px;overflow:hidden}
+  .rk-card.rk-fridge{border-style:dashed}
+  .rk-thead{display:grid;grid-template-columns:34px 1fr auto auto;align-items:center;gap:9px;
+    padding:10px 12px;background:#191D21;border-left:3px solid var(--tc);cursor:pointer}
+  .rk-mark{width:31px;height:31px;border-radius:9px;display:grid;place-items:center;
+    border:1px solid var(--tc);background:color-mix(in srgb,var(--tc) 12%,transparent);
+    color:var(--tc);font-family:var(--mono);font-size:12px;font-weight:800}
+  .rk-ttl h2{margin:0;font-size:12px;font-weight:730;display:inline;color:var(--paper)}
+  .rk-run{border:1px solid var(--tc);color:var(--tc);font-family:var(--mono);font-size:7px;
+    font-weight:750;letter-spacing:.05em;border-radius:20px;padding:2px 6px;margin-left:7px;
+    vertical-align:1px}
+  .rk-ttl p{color:var(--muted);margin:3px 0 0;font-size:9px;line-height:1.35}
+  .rk-count{min-width:24px;height:24px;background:var(--surface-2);color:var(--muted);
+    font-family:var(--mono);font-size:10px;border-radius:20px;display:grid;place-items:center;
+    padding:0 7px}
+  .rk-caret{color:var(--muted);font-size:10px;transition:transform .15s;width:12px;text-align:center}
+  .rk-card.rk-closed .rk-caret{transform:rotate(-90deg)}
+  .rk-card.rk-closed .rk-ilist{display:none}
+  .rk-ilist{padding-left:44px}
+  .rk-row{display:grid;grid-template-columns:18px minmax(0,1fr) auto auto;align-items:center;
+    gap:8px;min-height:56px;padding:8px 10px 8px 0;border-bottom:1px solid var(--line)}
+  .rk-row:last-child{border-bottom:0}
+  .rk-row.rk-claimed{background:rgba(76,175,125,.05)}
+  .rk-st{width:17px;height:17px;border:1px solid #424950;border-radius:50%;display:grid;
+    place-items:center;color:var(--ok);flex:none}
+  .rk-row.rk-claimed .rk-st{background:rgba(76,175,125,.12);border-color:rgba(76,175,125,.55)}
+  .rk-st svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.6}
+  .rk-copy{min-width:0}
+  .rk-copy strong{display:block;font-size:12px;font-weight:630;color:#EEEAE1;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
+  .rk-meta{display:flex;align-items:center;gap:6px;margin-top:4px}
+  .rk-meta span{color:#666D75;font-size:8px}
+  .rk-meta .rk-qty{color:#C8C2B7;font-family:var(--mono);border:1px solid #3A4148;border-radius:20px;
+    padding:2px 6px;font-size:8px}
+  .rk-claim{min-width:50px;height:28px;border:1px solid #444B52;border-radius:7px;background:none;
+    color:#B1B7BD;font-size:9px;font-weight:720;cursor:pointer;display:inline-flex;
+    align-items:center;justify-content:center;gap:3px;padding:0 8px;font-family:var(--sans)}
+  .rk-claim.rk-mine{color:var(--ok);background:rgba(76,175,125,.12);border-color:rgba(76,175,125,.5)}
+  .rk-claim svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.4}
+  .rk-owner{display:flex;align-items:center;gap:4px}
+  .rk-owner b{width:24px;height:24px;border-radius:50%;background:#3D4650;color:var(--paper);
+    display:grid;place-items:center;font-size:9px;font-weight:800;flex:none}
+  .rk-owner small{color:var(--muted);font-size:8px;max-width:58px;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .rk-del{width:26px;height:26px;border:0;background:none;color:#5E656D;cursor:pointer;
+    border-radius:6px;display:grid;place-items:center}
+  .rk-del:active{color:var(--laser);background:rgba(232,68,46,.10)}
+  .rk-del svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8}
+  .rk-empty{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:10px;
+    padding:13px 12px 13px 0}
+  .rk-empty svg{width:16px;height:16px;stroke:var(--ok);fill:none;stroke-width:2}
+  .rk-dock{position:fixed;left:0;right:0;bottom:calc(57px + env(safe-area-inset-bottom));z-index:24;
+    background:rgba(27,31,35,.97);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+    border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;
+    gap:10px;padding:8px 14px;min-height:52px}
+  .rk-dock .rk-l{display:flex;align-items:center;gap:8px;min-width:0}
+  .rk-dock .rk-sd{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+  .rk-dock.rk-dirty .rk-sd{background:var(--laser);box-shadow:0 0 0 3px rgba(232,68,46,.16)}
+  .rk-dock strong{display:block;font-size:10px;color:#D9D4CB}
+  .rk-dock small{display:block;color:var(--muted);font-size:8px;margin-top:1px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;max-width:190px}
+  .rk-syncbtn{height:36px;border:1px solid #3A4148;border-radius:8px;background:var(--surface-2);
+    color:var(--muted);font-size:10px;font-weight:750;cursor:pointer;padding:0 13px;
+    display:inline-flex;align-items:center;gap:6px;flex:none;font-family:var(--sans)}
+  .rk-dock.rk-dirty .rk-syncbtn{background:var(--laser);color:#fff;border-color:var(--laser)}
+  .rk-syncbtn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+  .rk-syncbtn.rk-spin svg{animation:rkspin 1s linear infinite}
+  @keyframes rkspin{to{transform:rotate(360deg)}}
+  .rk-stub{border:1px dashed var(--line);border-radius:12px;padding:34px 18px;text-align:center;
+    color:var(--muted);font-size:13px;line-height:1.6;margin-top:20px}
+  .rk-stub b{color:var(--paper);display:block;font-size:16px;margin-bottom:6px}
+  .rk-stub .rk-tag{display:inline-block;margin-top:14px;font-family:var(--mono);font-size:10px;
+    letter-spacing:.06em;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:20px;padding:4px 10px;color:var(--muted)}
 </style>
   <!-- The ?v is not decoration. A service worker caches manifest.json, and if an
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=41">
+  <link rel="manifest" href="./manifest.json?v=42">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -962,12 +1114,20 @@
 
 <div id="appWrap" class="hidden-until-open">
 <header>
-  <h1 class="wordmark"><span class="stripes" aria-hidden="true"></span><span class="w1">Cat</span><span class="w2">Caddy</span></h1>
+  <div class="htop">
+    <h1 class="wordmark"><span class="stripes" aria-hidden="true"></span><span class="w1">Cat</span><span class="w2">Caddy</span></h1>
 
-  <button class="gear burger" id="btnGear" aria-label="Settings">
-    <span class="bl b1"></span><span class="bl b2"></span><span class="bl b3"></span>
-    <span class="tri" aria-hidden="true"></span>
-  </button>
+    <button class="gear burger" id="btnGear" aria-label="Settings">
+      <span class="bl b1"></span><span class="bl b2"></span><span class="bl b3"></span>
+      <span class="tri" aria-hidden="true"></span>
+    </button>
+  </div>
+  <div class="sections" id="sections">
+    <button data-s="store" onclick="setSection('store')">Store</button>
+    <button data-s="floor" onclick="setSection('floor')">Floor</button>
+    <button data-s="handoff" onclick="setSection('handoff')">Handoff</button>
+    <button data-s="inv" onclick="setSection('inv')">Inventory</button>
+  </div>
 </header>
 
 <main>
@@ -1367,6 +1527,87 @@
     </div>
   </div>
 
+  <!-- ============ RESTOCK LIST VIEW ============ -->
+  <section id="view-restock" class="view">
+    <div class="rk-head">
+      <div>
+        <p class="rk-eyebrow">FLOOR · RESTOCK</p>
+        <h1>Restock List</h1>
+      </div>
+      <div class="rk-live"><span></span>SHARED</div>
+    </div>
+
+    <div class="rk-strip" id="rkStrip"></div>
+
+    <div class="rk-cap">
+      <label class="rk-flab" for="rkTin">ADD AN ITEM</label>
+      <div class="rk-inwrap">
+        <input id="rkTin" class="rk-tin" placeholder="Type an item, or tap the mic…" autocomplete="off" enterkeyhint="done">
+        <button class="rk-mic" id="rkMic" type="button" aria-label="Say an item, tap to stop">
+          <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M6 11a6 6 0 0 0 12 0"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </button>
+      </div>
+      <div class="rk-vfx" id="rkHeard"></div>
+      <div class="rk-grid">
+        <div class="rk-selw">
+          <span>TABLE</span>
+          <select id="rkSel"></select>
+        </div>
+        <div class="rk-qwrap">
+          <span>QTY · OPTIONAL</span>
+          <input id="rkQty" placeholder="e.g. 3 or 2 kg" autocomplete="off">
+        </div>
+      </div>
+      <button class="rk-add" id="rkAdd" type="button" onclick="rkAddManual()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
+        Add to list
+      </button>
+    </div>
+
+    <div class="rk-toolbar">
+      <div class="rk-sw">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+        <input id="rkFind" placeholder="Filter items…" autocomplete="off" oninput="renderRestock()">
+      </div>
+    </div>
+
+    <div class="rk-tables" id="rkTables"></div>
+
+    <div class="rk-dock" id="rkDock">
+      <div class="rk-l">
+        <span class="rk-sd"></span>
+        <div>
+          <strong id="rkDockTitle">All synced</strong>
+          <small id="rkDockSub">Nothing to send yet</small>
+        </div>
+      </div>
+      <button class="rk-syncbtn" id="rkSyncBtn" type="button" onclick="rkSync()">
+        <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><polyline points="21 3 21 9 15 9"/></svg>
+        Sync
+      </button>
+    </div>
+  </section>
+
+  <!-- ============ PLANOGRAM VIEW (stub) ============ -->
+  <section id="view-planogram" class="view">
+    <div class="rk-head"><div><p class="rk-eyebrow">FLOOR · PLANOGRAM</p><h1>Planogram</h1></div></div>
+    <div class="rk-stub">
+      <b>Built in the Planogram session</b>
+      This tab is being put together in a separate chat. When it's ready it drops straight in here under Floor — the slot's reserved.
+      <span class="rk-tag">FLOOR · not yet wired</span>
+    </div>
+  </section>
+
+  <!-- ============ HANDOFF VIEW (stub) ============ -->
+  <section id="view-handoff" class="view">
+    <div class="rk-head"><div><p class="rk-eyebrow">HANDOFF</p><h1>Handoff</h1></div></div>
+    <div class="rk-stub">
+      <b>Shift handoff — not built yet</b>
+      End-of-shift notes for the next person will live here. This is a placeholder so the section is in place.
+      <span class="rk-tag">HANDOFF · not yet built</span>
+    </div>
+  </section>
+
   <!-- ============ EXPORT VIEW ============ -->
   <section id="view-settings" class="view">
     <div class="panel">
@@ -1492,35 +1733,7 @@
   </section>
 </main>
 
-<nav>
-  <button id="nav-list" class="active" onclick="showView('list')">
-    <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
-    Add<span class="navdot"></span>
-  </button>
-  <button id="nav-sales" onclick="showView('sales')">
-    <svg viewBox="0 0 24 24"><path d="M20.6 13.4 12.4 21.6a2 2 0 0 1-2.8 0l-7.2-7.2a2 2 0 0 1-.6-1.4V4a2 2 0 0 1 2-2h9a2 2 0 0 1 1.4.6l6.4 6.4a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>
-    Sales<span class="navdot"></span>
-  </button>
-  <button id="nav-scrap" onclick="showView('scrap')">
-    <svg viewBox="0 0 24 24"><path d="M3 9a2 2 0 0 1 2-2h1.6a2 2 0 0 0 1.7-.9l.9-1.3a2 2 0 0 1 1.7-.8h2.2a2 2 0 0 1 1.7.8l.9 1.3a2 2 0 0 0 1.7.9H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.2"/></svg>
-    Scrap<span class="navdot"></span>
-  </button>
-  <button id="nav-order" onclick="showView('order')">
-    <svg viewBox="0 0 24 24"><path d="M3 3h4l2 12h9l2-8H7"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
-    Order<span class="navdot"></span>
-  </button>
-  <button id="nav-claims" onclick="showView('claims')">
-    <svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 4.5-3.2 8.3-8 9-4.8-.7-8-4.5-8-9V7l8-4z"/><path d="M9.5 12l1.8 1.8 3.4-3.6"/></svg>
-    Claims<span class="navdot"></span>
-  </button>
-  <button id="nav-product" onclick="showView('product')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-         stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/>
-      <line x1="12" y1="7.6" x2="12" y2="7.7"/></svg>
-    Info<span class="navdot"></span>
-  </button>
-</nav>
+<nav id="nav"></nav>
 </div>
 
 <div class="overlay hidden" id="detailOverlay">
@@ -2205,7 +2418,59 @@ function updateCount(){}
 updateCount();
 
 /* ================= views ================= */
+/* ================= section + tab navigation =================
+   Four top-level sections, each with its own bottom-nav tabs. The header pill
+   switches sections; the bottom nav switches tabs inside one. showView stays
+   the single entry point everything uses, so it also brings the pill and the
+   bottom nav into line — even when code jumps straight to a view (the gear to
+   settings, a toast that opens Claims, and so on).                          */
+const NAV_ICON = {
+  list:'<svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
+  sales:'<svg viewBox="0 0 24 24"><path d="M20.6 13.4 12.4 21.6a2 2 0 0 1-2.8 0l-7.2-7.2a2 2 0 0 1-.6-1.4V4a2 2 0 0 1 2-2h9a2 2 0 0 1 1.4.6l6.4 6.4a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>',
+  scrap:'<svg viewBox="0 0 24 24"><path d="M3 9a2 2 0 0 1 2-2h1.6a2 2 0 0 0 1.7-.9l.9-1.3a2 2 0 0 1 1.7-.8h2.2a2 2 0 0 1 1.7.8l.9 1.3a2 2 0 0 0 1.7.9H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.2"/></svg>',
+  product:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="7.6" x2="12" y2="7.7"/></svg>',
+  planogram:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
+  restock:'<svg viewBox="0 0 24 24"><path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 12l9 4 9-4"/><path d="M3 17l9 4 9-4"/></svg>',
+  handoff:'<svg viewBox="0 0 24 24"><path d="M4 12h13"/><path d="M13 6l6 6-6 6"/><path d="M20 4v16"/></svg>',
+  order:'<svg viewBox="0 0 24 24"><path d="M3 3h4l2 12h9l2-8H7"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>',
+  claims:'<svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 4.5-3.2 8.3-8 9-4.8-.7-8-4.5-8-9V7l8-4z"/><path d="M9.5 12l1.8 1.8 3.4-3.6"/></svg>'
+};
+const NAV = {
+  store:   { label:"Store",     tabs:[["list","Add"],["sales","Sales"],["scrap","Scrap"],["product","Info"]] },
+  floor:   { label:"Floor",     tabs:[["planogram","Planogram"],["restock","Restock List"]] },
+  handoff: { label:"Handoff",   tabs:[["handoff","Handoff"]] },
+  inv:     { label:"Inventory", tabs:[["order","Invoice"],["claims","Claim"]] }
+};
+const VIEW_SECTION = {};
+Object.keys(NAV).forEach(s => NAV[s].tabs.forEach(t => VIEW_SECTION[t[0]] = s));
+let curSection = "store";
+
+function renderNav(){
+  const nav = document.getElementById("nav");
+  if(!nav) return;
+  nav.innerHTML = NAV[curSection].tabs.map(t =>
+    '<button id="nav-'+t[0]+'" onclick="showView(\''+t[0]+'\')">' +
+      (NAV_ICON[t[0]]||"") + t[1] + '<span class="navdot"></span></button>'
+  ).join("");
+}
+function syncSectionPill(){
+  document.querySelectorAll("#sections button").forEach(b =>
+    b.classList.toggle("on", b.dataset.s === curSection));
+}
+/* Tap a section pill: switch section, redraw its tabs, land on its first tab. */
+function setSection(s){
+  if(!NAV[s]) return;
+  curSection = s;
+  syncSectionPill();
+  renderNav();
+  showView(NAV[s].tabs[0][0]);
+}
+
 function showView(name){
+  // Bring the header pill + bottom nav in line with the view being opened.
+  // Settings has no section, so it leaves the current one highlighted.
+  const sec = VIEW_SECTION[name];
+  if(sec){ curSection = sec; syncSectionPill(); renderNav(); }
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
@@ -2217,6 +2482,7 @@ function showView(name){
   if(name==="list") renderList();
   if(name==="sales"){ renderWeekTabs(); renderSales(); }
   if(name==="scrap") renderLists();
+  if(name==="restock"){ renderRestock(); rkPull(); }
   if(name==="product"){
     renderProduct();
     // Land in the search box — looking something up is what this tab is for,
@@ -4245,7 +4511,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v41";
+const APP_VERSION = "v42";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -4368,6 +4634,11 @@ function setMic(on){
       if(on) box.setAttribute("placeholder", micCont ? "Listening — say them one by one…" : "Listening…");
       else   box.setAttribute("placeholder", "PLU, barcode, product, country…");
     }
+  } else if(micMode === "restock"){
+    const b = document.getElementById("rkMic");
+    if(b) b.classList.toggle("live", on);
+    const h = document.getElementById("rkHeard");
+    if(h && on) h.textContent = "Listening…";
   } else {
     micBtn.classList.toggle("on", on);
     micBtn.classList.toggle("cont", on && micCont);
@@ -4439,6 +4710,12 @@ function startMic(continuous, mode){
       const box = document.getElementById("prodSearch");
       const live = (all || fin).trim();
       if(live){ box.value = live; clearTimeout(prodT); renderProduct(); }
+    } else if(micMode === "restock"){
+      // single-shot: echo the phrase live; onend files it to a table
+      heardText = fin;
+      const h = document.getElementById("rkHeard");
+      const live = (all || fin).trim();
+      if(h) h.textContent = live ? "\u201C" + live + "\u201D" : "Listening…";
     } else {
       heardText = fin;
       heardBox.innerHTML = esc(heardText) + (interim ? ' <span class="dim">' + esc(interim) + '</span>' : "");
@@ -4477,6 +4754,11 @@ function startMic(continuous, mode){
       micMode = "scrap";                 // back to default for the next press
       return;
     }
+    if(micMode === "restock"){
+      if(heardText.trim()) commitRestockSpoken(heardText);
+      micMode = "scrap";
+      return;
+    }
     if(micCont){ flushCont(); finishCont(); } else commitSpoken();
   };
   rec.onstart = ()=>{ setMic(true); };   // truth: the engine really began
@@ -4501,6 +4783,17 @@ pressHold(document.getElementById("btnProdMic"), {
   onTap:  ()=>{ if(micOn) stopMic(); else startMic(false, "look"); },
   onHold: ()=>{ if(micOn) stopMic(); else startMic(true,  "look"); }
 });
+
+/* Restock mic — single-shot only. One press captures one item and files it to
+   a table; hold behaves the same, so it never enters the continuous path that
+   feeds the scrap list. Same engine, new mode. */
+{
+  const rkMicEl = document.getElementById("rkMic");
+  if(rkMicEl) pressHold(rkMicEl, {
+    onTap:  ()=>{ if(micOn) stopMic(); else startMic(false, "restock"); },
+    onHold: ()=>{ if(micOn) stopMic(); else startMic(false, "restock"); }
+  });
+}
 
 /* Whatever's been said since the last pause becomes rows. */
 function flushCont(){
@@ -7945,6 +8238,285 @@ function addClearButton(id){
   sync();
 }
 ["search","saleSearch","ordSearch","prodSearch"].forEach(addClearButton);
+
+/* ============================================================
+   RESTOCK LIST — Floor · a shared, voice-filed restock board
+   ============================================================
+   Eight fixed tables (the five planogram runs, Pods, Case Lots, and a
+   refrigerated shelf). Voice auto-files to Runs 1-5 and the fridge by
+   keyword; Pods and Case Lots are filed by hand only, never automatically.
+   Any item can be claimed by one person. The whole board syncs to the Sheet
+   last-write-wins, and lives in localStorage so the tab still works with no
+   signal and sends the moment it can. */
+
+const KEY_RESTOCK = "label_restock_v1";
+
+/* id / name / run tag / accent / glyph / kind.
+   kind: "run" auto-fileable run · "loc" by-hand only (Pods, Case Lots) ·
+         "fridge" the auto catch-all (dashed card). */
+const RK_TABLES = [
+  { id:"apple",  name:"Apple",                     run:"RUN 1", tc:"#3ecf8e", g:"A", kind:"run" },
+  { id:"berry",  name:"Berry & Banana",            run:"RUN 2", tc:"#c0417a", g:"B", kind:"run" },
+  { id:"citrus", name:"Citrus & Stone",            run:"RUN 3", tc:"#e8a13a", g:"C", kind:"run" },
+  { id:"ctp",    name:"Cucumber \u00b7 Tomato \u00b7 Potato", run:"RUN 4", tc:"#4a90d9", g:"V", kind:"run" },
+  { id:"root",   name:"Root Veg & Onions",         run:"RUN 5", tc:"#b07d3a", g:"R", kind:"run" },
+  { id:"pods",   name:"Pods",                       run:"PODS",  tc:"#e0b23a", g:"P", kind:"loc" },
+  { id:"lots",   name:"Case Lots",                  run:"LOTS",  tc:"#6b8fa3", g:"L", kind:"loc" },
+  { id:"fridge", name:"Refrigerated Shelf",         run:"OTHER", tc:"#8c7cf0", g:"\u2744", kind:"fridge" }
+];
+const RK_BY_ID = {}; RK_TABLES.forEach(t=>RK_BY_ID[t.id]=t);
+
+/* Keyword -> table. First table with a matching keyword wins, so more specific
+   terms sit above looser ones (grapefruit above grape, sweet potato above
+   potato, carrots -> fridge above any run). Runs 1-5 and fridge only; Pods and
+   Case Lots are never auto-filed. The fridge is the catch-all default. Easy to
+   retune: move a word between lists. */
+const RK_ROUTE = [
+  ["citrus", ["orange","lemon","lime","grapefruit","clementine","mandarin","tangerine","peach","nectarine","plum","apricot","cherry","cherries","mango","kiwi","pineapple","cantaloupe","honeydew","melon","watermelon"]],
+  ["apple",  ["apple","gala","fuji","ambrosia","honeycrisp","mcintosh","macintosh","cortland","granny","spartan","pear","bosc","anjou"]],
+  ["berry",  ["banana","strawberr","blueberr","raspberr","blackberr","cranberr","berry","berries","grape"]],
+  ["root",   ["onion","garlic","ginger","squash","beet","turnip","sweet potato","yam","shallot","leek","fennel"]],
+  ["ctp",    ["cucumber","cuke","tomato","tomatoes","potato","potatoes","roma"]],
+  ["fridge", ["herb","cilantro","parsley","dill","basil","mint","thyme","rosemary","sage","mushroom","pepper","radish","carrot","parsnip","rutabaga","lettuce","spinach","kale","arugula","green","celery","broccoli","cauliflower","cabbage","sprout","asparagus","zucchini","eggplant","wet"]]
+];
+function tableFor(name){
+  const s = String(name||"").toLowerCase();
+  for(const [id, keys] of RK_ROUTE){ if(keys.some(k=>s.includes(k))) return id; }
+  return "fridge";                 // everything unrecognised waits on the fridge
+}
+
+/* ---- state ---- */
+let rkState = rkLoad();
+let rkDirty = false;
+let rkSyncing = false;
+const rkClosed = {};               // per-table collapse (view-only, not synced)
+
+function rkLoad(){
+  try{
+    const s = JSON.parse(localStorage.getItem(KEY_RESTOCK) || "null");
+    if(s && Array.isArray(s.items)) return s;
+  }catch(e){}
+  return { items: [], updatedBy:"", updatedAt:"" };
+}
+function rkSave(){ try{ localStorage.setItem(KEY_RESTOCK, JSON.stringify(rkState)); }catch(e){} }
+function rkNewId(){ return "r" + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function rkMeName(){ return (localStorage.getItem(KEY_ME_NAME)||"").trim() || deviceInfo().name || "You"; }
+function rkCap(s){ s = String(s||"").trim(); return s ? s[0].toUpperCase() + s.slice(1) : s; }
+function rkInitials(name){
+  const p = String(name||"").trim().split(/\s+/).filter(Boolean);
+  if(!p.length) return "?";
+  return (p[0][0] + (p.length>1 ? p[p.length-1][0] : "")).toUpperCase();
+}
+
+/* ---- mutations ---- every change stamps the board, saves, redraws ---- */
+function rkTouch(){
+  rkState.updatedBy = rkMeName();
+  rkState.updatedAt = new Date().toISOString();
+  rkDirty = true; rkSave(); renderRestock();
+}
+function rkAddItem(name, table, qty){
+  name = String(name||"").trim();
+  if(!name) return null;
+  const it = { id: rkNewId(), name: rkCap(name),
+    table: RK_BY_ID[table] ? table : "fridge",
+    qty: String(qty||"").trim(), by: rkMeName(),
+    claimId:"", claimBy:"", ts: Date.now() };
+  rkState.items.push(it);
+  rkTouch();
+  return it;
+}
+function rkAddManual(){
+  const nameEl = document.getElementById("rkTin");
+  const qtyEl  = document.getElementById("rkQty");
+  const selEl  = document.getElementById("rkSel");
+  const name = nameEl.value.trim();
+  if(!name){ nameEl.focus(); return; }
+  const it = rkAddItem(name, selEl.value, qtyEl.value);
+  if(it){
+    nameEl.value = ""; qtyEl.value = "";
+    document.getElementById("rkHeard").textContent = "";
+    toast("Added to " + RK_BY_ID[it.table].name);
+    nameEl.focus();
+  }
+}
+function rkClaim(id){
+  const it = rkState.items.find(x=>x.id===id); if(!it) return;
+  const me = deviceInfo().id;
+  if(it.claimId === me){ it.claimId=""; it.claimBy=""; }     // release my own
+  else { it.claimId = me; it.claimBy = rkMeName(); }          // claim or take over
+  it.ts = Date.now();
+  rkTouch();
+}
+function rkDel(id){
+  const i = rkState.items.findIndex(x=>x.id===id); if(i<0) return;
+  const gone = rkState.items[i];
+  rkState.items.splice(i,1);
+  rkTouch();
+  toastUndo("Removed " + gone.name, ()=>{ rkState.items.splice(i,0,gone); rkTouch(); });
+}
+function rkToggle(id){
+  rkClosed[id] = !rkClosed[id];
+  const card = document.getElementById("rkc-"+id);
+  if(card) card.classList.toggle("rk-closed", rkClosed[id]);
+}
+
+/* ---- voice ---- each heard item is auto-filed to a run or the fridge ---- */
+function commitRestockSpoken(text){
+  const rows = parseSpoken(text, "loop");
+  const h = document.getElementById("rkHeard");
+  if(!rows.length){ if(h) h.textContent = "Didn't catch an item \u2014 try again."; return; }
+  let n = 0, last = null;
+  rows.forEach(r=>{
+    const qty = r.kg ? (kgStr(r.qty) + " " + unitLabel())
+                     : (r.qty > 1 ? String(r.qty) : "");
+    const it = rkAddItem(r.name, tableFor(r.name), qty);
+    if(it){ n++; last = it; }
+  });
+  if(h) h.textContent = "";
+  if(n === 1 && last) toast("Filed \u201C" + last.name + "\u201D \u2192 " + RK_BY_ID[last.table].name);
+  else if(n)          toast("Filed " + n + " items");
+}
+
+/* ---- manual-add dropdown ---- all eight, so Pods/Case Lots are reachable ---- */
+function rkFillSelect(){
+  const sel = document.getElementById("rkSel");
+  if(!sel || sel.options.length) return;
+  sel.innerHTML = RK_TABLES.map(t=>'<option value="'+t.id+'">'+esc(t.name)+' \u00b7 '+esc(t.run)+'</option>').join("");
+}
+
+/* ---- render ---- */
+function renderRestock(){
+  rkFillSelect();
+  const items = rkState.items;
+  const q = ((document.getElementById("rkFind")||{}).value || "").toLowerCase().trim();
+  const me = deviceInfo().id;
+
+  const claimed = items.filter(x=>x.claimId).length;
+  const strip = document.getElementById("rkStrip");
+  if(strip){
+    strip.innerHTML =
+      '<div><strong>'+items.length+'</strong><span class="rk-lab">ON THE LIST</span></div>'+
+      '<div><strong>'+claimed+'</strong><span class="rk-lab">CLAIMED</span></div>'+
+      '<div class="rk-sy">'+
+        (rkDirty
+          ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span class="rk-lab">Unsynced changes</span>'
+          : '<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg><span class="rk-lab">'+(rkState.updatedAt?'All synced':'Nothing yet')+'</span>')+
+      '</div>';
+  }
+
+  const host = document.getElementById("rkTables");
+  if(host) host.innerHTML = RK_TABLES.map(t=>{
+    let list = items.filter(x=>x.table===t.id);
+    if(q) list = list.filter(x=>x.name.toLowerCase().includes(q));
+    if(q && !list.length) return "";
+    const closed = rkClosed[t.id] ? " rk-closed" : "";
+    const rows = list.length
+      ? list.map(x=>rkRow(x, me)).join("")
+      : '<div class="rk-empty"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>Nothing on this table</div>';
+    const sub = t.kind==="loc" ? "File by hand"
+              : t.kind==="fridge" ? "Auto catch-all \u00b7 wet case, herbs, mushrooms\u2026"
+              : "Auto-filed by voice";
+    return '<div class="rk-card'+(t.kind==="fridge"?" rk-fridge":"")+closed+'" id="rkc-'+t.id+'" style="--tc:'+t.tc+'">'+
+        '<div class="rk-thead" onclick="rkToggle(\''+t.id+'\')">'+
+          '<span class="rk-mark">'+esc(t.g)+'</span>'+
+          '<div class="rk-ttl"><h2>'+esc(t.name)+'</h2><span class="rk-run">'+esc(t.run)+'</span><p>'+sub+'</p></div>'+
+          '<span class="rk-count">'+list.length+'</span>'+
+          '<span class="rk-caret">\u25BE</span>'+
+        '</div>'+
+        '<div class="rk-ilist">'+rows+'</div>'+
+      '</div>';
+  }).join("");
+
+  rkDock();
+}
+function rkRow(x, me){
+  const mine = x.claimId && x.claimId===me;
+  const other = x.claimId && !mine;
+  const meta = [];
+  if(x.qty) meta.push('<span class="rk-qty">'+esc(x.qty)+'</span>');
+  if(x.by)  meta.push('<span>'+esc(x.by)+'</span>');
+  const claimCell = other
+    ? '<div class="rk-owner" onclick="rkClaim(\''+x.id+'\')" title="Tap to take over"><b>'+esc(rkInitials(x.claimBy))+'</b><small>'+esc(x.claimBy)+'</small></div>'
+    : '<button class="rk-claim'+(mine?' rk-mine':'')+'" onclick="rkClaim(\''+x.id+'\')">'+
+        (mine ? '<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>Mine' : 'Claim')+
+      '</button>';
+  return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+'">'+
+      '<span class="rk-st">'+(x.claimId?'<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>':'')+'</span>'+
+      '<div class="rk-copy"><strong>'+esc(x.name)+'</strong>'+(meta.length?'<div class="rk-meta">'+meta.join("")+'</div>':'')+'</div>'+
+      claimCell+
+      '<button class="rk-del" onclick="rkDel(\''+x.id+'\')" aria-label="Remove"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>'+
+    '</div>';
+}
+
+/* ---- dock ---- */
+function rkDock(){
+  const dock = document.getElementById("rkDock"); if(!dock) return;
+  dock.classList.toggle("rk-dirty", rkDirty);
+  const title = document.getElementById("rkDockTitle");
+  const sub   = document.getElementById("rkDockSub");
+  const btn   = document.getElementById("rkSyncBtn");
+  if(rkSyncing){
+    title.textContent = "Syncing\u2026"; sub.textContent = "Sending the board";
+    if(btn) btn.classList.add("rk-spin");
+  } else {
+    if(btn) btn.classList.remove("rk-spin");
+    if(rkDirty){ title.textContent = "Changes not sent"; sub.textContent = "Tap Sync to share with the floor"; }
+    else if(rkState.updatedAt){
+      title.textContent = "All synced";
+      sub.textContent = "Updated by " + (rkState.updatedBy||"\u2014") + " \u00b7 " + rkWhen(rkState.updatedAt);
+    } else { title.textContent = "All synced"; sub.textContent = "Nothing to send yet"; }
+  }
+}
+function rkWhen(iso){
+  const t = new Date(iso), now = new Date();
+  const s = Math.round((now - t)/1000);
+  if(s < 60) return "just now";
+  if(s < 3600) return Math.floor(s/60) + " min ago";
+  if(t.toDateString() === now.toDateString()) return t.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"});
+  return t.toLocaleDateString([], {month:"short", day:"numeric"});
+}
+
+/* ---- sync ---- whole board, last write wins ---- */
+async function rkSync(){
+  if(rkSyncing) return;
+  if(!proxyUrl()){ toast("Not set up yet \u2014 see Settings"); return; }
+  rkSyncing = true; rkDock();
+  try{
+    const d = await callProxy({ action:"restockSync", state: rkState });
+    if(d && d.ok && d.state){ rkState = d.state; rkSave(); }
+    rkDirty = false;
+    toast("Board synced");
+  }catch(err){
+    toast(authMessage(err) || "Couldn't sync \u2014 your changes are kept");
+  }finally{
+    rkSyncing = false; renderRestock();
+  }
+}
+async function rkPull(){
+  if(!proxyUrl() || !navigator.onLine) return;
+  if(rkDirty) return;                 // never clobber unsent local edits
+  try{
+    const d = await callProxy({ action:"restockGet" });
+    if(d && d.ok && d.state && Array.isArray(d.state.items)){
+      const theirs = d.state.updatedAt || "";
+      const mine   = rkState.updatedAt || "";
+      if(theirs && theirs >= mine){ rkState = d.state; rkSave(); renderRestock(); }
+    }
+  }catch(e){ /* offline or not approved yet — local board keeps working */ }
+}
+
+/* Enter in the item box files it, same as tapping Add. */
+{
+  const _rkTin = document.getElementById("rkTin");
+  if(_rkTin) _rkTin.addEventListener("keydown", e=>{
+    if(e.key === "Enter"){ e.preventDefault(); rkAddManual(); }
+  });
+  rkFillSelect();
+}
+
+/* Draw the dynamic nav + section pill for the opening view (Add). Without this
+   the bottom nav renders empty until a section pill is tapped. */
+showView("list");
 
 /* ================= boot ================= */
 // Last thing in the file: everything it might reveal is already wired.

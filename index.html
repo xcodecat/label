@@ -1084,7 +1084,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=42">
+  <link rel="manifest" href="./manifest.json?v=43">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1581,7 +1581,7 @@
           <small id="rkDockSub">Nothing to send yet</small>
         </div>
       </div>
-      <button class="rk-syncbtn" id="rkSyncBtn" type="button" onclick="rkSync()">
+      <button class="rk-syncbtn" id="rkSyncBtn" type="button" onclick="rkSync(true)">
         <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><polyline points="21 3 21 9 15 9"/></svg>
         Sync
       </button>
@@ -1592,9 +1592,8 @@
   <section id="view-planogram" class="view">
     <div class="rk-head"><div><p class="rk-eyebrow">FLOOR · PLANOGRAM</p><h1>Planogram</h1></div></div>
     <div class="rk-stub">
-      <b>Built in the Planogram session</b>
-      This tab is being put together in a separate chat. When it's ready it drops straight in here under Floor — the slot's reserved.
-      <span class="rk-tag">FLOOR · not yet wired</span>
+      <b>Coming soon</b>
+      <span class="rk-tag">FLOOR · PLANOGRAM</span>
     </div>
   </section>
 
@@ -1602,9 +1601,9 @@
   <section id="view-handoff" class="view">
     <div class="rk-head"><div><p class="rk-eyebrow">HANDOFF</p><h1>Handoff</h1></div></div>
     <div class="rk-stub">
-      <b>Shift handoff — not built yet</b>
-      End-of-shift notes for the next person will live here. This is a placeholder so the section is in place.
-      <span class="rk-tag">HANDOFF · not yet built</span>
+      <b>Coming soon</b>
+      End-of-shift notes for the next person.
+      <span class="rk-tag">HANDOFF</span>
     </div>
   </section>
 
@@ -2437,7 +2436,7 @@ const NAV_ICON = {
 };
 const NAV = {
   store:   { label:"Store",     tabs:[["list","Add"],["sales","Sales"],["scrap","Scrap"],["product","Info"]] },
-  floor:   { label:"Floor",     tabs:[["planogram","Planogram"],["restock","Restock List"]] },
+  floor:   { label:"Floor",     tabs:[["planogram","Planogram"],["restock","Restock List"]], open:"restock" },
   handoff: { label:"Handoff",   tabs:[["handoff","Handoff"]] },
   inv:     { label:"Inventory", tabs:[["order","Invoice"],["claims","Claim"]] }
 };
@@ -2457,13 +2456,14 @@ function syncSectionPill(){
   document.querySelectorAll("#sections button").forEach(b =>
     b.classList.toggle("on", b.dataset.s === curSection));
 }
-/* Tap a section pill: switch section, redraw its tabs, land on its first tab. */
+/* Tap a section pill: switch section, redraw its tabs, land on its default tab
+   (or the first one). Floor opens on Restock List, not the Planogram stub. */
 function setSection(s){
   if(!NAV[s]) return;
   curSection = s;
   syncSectionPill();
   renderNav();
-  showView(NAV[s].tabs[0][0]);
+  showView(NAV[s].open || NAV[s].tabs[0][0]);
 }
 
 function showView(name){
@@ -2471,6 +2471,7 @@ function showView(name){
   // Settings has no section, so it leaves the current one highlighted.
   const sec = VIEW_SECTION[name];
   if(sec){ curSection = sec; syncSectionPill(); renderNav(); }
+  if(name !== "restock") rkStopPoll();   // only poll while the board is on screen
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
@@ -2482,7 +2483,7 @@ function showView(name){
   if(name==="list") renderList();
   if(name==="sales"){ renderWeekTabs(); renderSales(); }
   if(name==="scrap") renderLists();
-  if(name==="restock"){ renderRestock(); rkPull(); }
+  if(name==="restock"){ renderRestock(); rkPull(); rkStartPoll(); }
   if(name==="product"){
     renderProduct();
     // Land in the search box — looking something up is what this tab is for,
@@ -4511,7 +4512,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v42";
+const APP_VERSION = "v43";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -8289,6 +8290,9 @@ function tableFor(name){
 let rkState = rkLoad();
 let rkDirty = false;
 let rkSyncing = false;
+let rkOffline = false;             // last push failed for a network reason
+let rkSyncTimer = null;            // debounces auto-sync after edits
+let rkPollTimer = null;            // pulls the shared board while the tab is open
 const rkClosed = {};               // per-table collapse (view-only, not synced)
 
 function rkLoad(){
@@ -8313,6 +8317,7 @@ function rkTouch(){
   rkState.updatedBy = rkMeName();
   rkState.updatedAt = new Date().toISOString();
   rkDirty = true; rkSave(); renderRestock();
+  rkAutoSync();                     // send it to the floor on its own, shortly
 }
 function rkAddItem(name, table, qty){
   name = String(name||"").trim();
@@ -8399,7 +8404,7 @@ function renderRestock(){
       '<div><strong>'+claimed+'</strong><span class="rk-lab">CLAIMED</span></div>'+
       '<div class="rk-sy">'+
         (rkDirty
-          ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span class="rk-lab">Unsynced changes</span>'
+          ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span class="rk-lab">'+(rkOffline?'Offline \u2014 will sync':'Saving\u2026')+'</span>'
           : '<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg><span class="rk-lab">'+(rkState.updatedAt?'All synced':'Nothing yet')+'</span>')+
       '</div>';
   }
@@ -8456,11 +8461,12 @@ function rkDock(){
   const sub   = document.getElementById("rkDockSub");
   const btn   = document.getElementById("rkSyncBtn");
   if(rkSyncing){
-    title.textContent = "Syncing\u2026"; sub.textContent = "Sending the board";
+    title.textContent = "Syncing\u2026"; sub.textContent = "Sharing the board";
     if(btn) btn.classList.add("rk-spin");
   } else {
     if(btn) btn.classList.remove("rk-spin");
-    if(rkDirty){ title.textContent = "Changes not sent"; sub.textContent = "Tap Sync to share with the floor"; }
+    if(rkDirty && rkOffline){ title.textContent = "Waiting for signal"; sub.textContent = "Saved here \u2014 syncs when you're back online"; }
+    else if(rkDirty){ title.textContent = "Saving\u2026"; sub.textContent = "Sharing with the floor automatically"; }
     else if(rkState.updatedAt){
       title.textContent = "All synced";
       sub.textContent = "Updated by " + (rkState.updatedBy||"\u2014") + " \u00b7 " + rkWhen(rkState.updatedAt);
@@ -8476,21 +8482,32 @@ function rkWhen(iso){
   return t.toLocaleDateString([], {month:"short", day:"numeric"});
 }
 
-/* ---- sync ---- whole board, last write wins ---- */
-async function rkSync(){
+/* ---- sync ---- whole board, last write wins ----
+   Runs on its own after any edit (silent), and can be forced from the dock
+   button (manual, with a toast). Two people editing the very same second can
+   still overwrite each other — the board is sent whole — but the poll below
+   pulls everyone back into step within seconds. */
+async function rkSync(manual){
   if(rkSyncing) return;
-  if(!proxyUrl()){ toast("Not set up yet \u2014 see Settings"); return; }
+  if(!proxyUrl()){ if(manual) toast("Not set up yet \u2014 see Settings"); return; }
   rkSyncing = true; rkDock();
   try{
     const d = await callProxy({ action:"restockSync", state: rkState });
     if(d && d.ok && d.state){ rkState = d.state; rkSave(); }
-    rkDirty = false;
-    toast("Board synced");
+    rkDirty = false; rkOffline = false;
+    if(manual) toast("Board synced");
   }catch(err){
-    toast(authMessage(err) || "Couldn't sync \u2014 your changes are kept");
+    // Auth problems are worth surfacing; a dropped signal just waits and retries.
+    if(err && err.auth){ rkOffline = false; if(manual) toast(authMessage(err)); }
+    else { rkOffline = true; }        // keep rkDirty true so it sends later
   }finally{
     rkSyncing = false; renderRestock();
   }
+}
+/* Debounced auto-send: bursts of edits collapse into one push. */
+function rkAutoSync(){
+  clearTimeout(rkSyncTimer);
+  rkSyncTimer = setTimeout(()=>rkSync(false), 1200);
 }
 async function rkPull(){
   if(!proxyUrl() || !navigator.onLine) return;
@@ -8504,6 +8521,21 @@ async function rkPull(){
     }
   }catch(e){ /* offline or not approved yet — local board keeps working */ }
 }
+/* Poll the shared board only while the Restock tab is open and visible. */
+function rkStartPoll(){
+  rkStopPoll();
+  rkPollTimer = setInterval(()=>{ if(!document.hidden) rkPull(); }, 30000);
+}
+function rkStopPoll(){ if(rkPollTimer){ clearInterval(rkPollTimer); rkPollTimer = null; } }
+
+/* Send the moment a signal returns, and re-check the board when the app comes
+   back to the foreground on the Restock tab. */
+window.addEventListener("online", ()=>{ if(rkDirty) rkSync(false); });
+document.addEventListener("visibilitychange", ()=>{
+  if(document.hidden) return;
+  const v = document.getElementById("view-restock");
+  if(v && v.classList.contains("active")){ if(rkDirty) rkSync(false); else rkPull(); }
+});
 
 /* Enter in the item box files it, same as tapping Add. */
 {

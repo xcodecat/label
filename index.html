@@ -1079,12 +1079,141 @@
   .rk-stub .rk-tag{display:inline-block;margin-top:14px;font-family:var(--mono);font-size:10px;
     letter-spacing:.06em;background:var(--surface-2);border:1px solid var(--line);
     border-radius:20px;padding:4px 10px;color:var(--muted)}
+
+  /* ---------- handoff (shift pass-down) ---------- */
+  #view-handoff{padding-bottom:138px}
+  .ho-hero{position:relative;overflow:hidden;border:1px solid var(--line);background:var(--surface);
+    border-radius:14px;padding:15px 16px;display:flex;align-items:center;gap:13px;margin:0 0 18px;
+    border-left:3px solid var(--laser)}
+  .ho-hero.ho-clear{border-left-color:var(--ok)}
+  .ho-glow{position:absolute;left:-30px;top:-30px;width:120px;height:120px;border-radius:50%;
+    background:radial-gradient(circle,rgba(232,68,46,.18),transparent 65%);pointer-events:none}
+  .ho-hero.ho-clear .ho-glow{background:radial-gradient(circle,rgba(76,175,125,.16),transparent 65%)}
+  .ho-ring{position:absolute;right:-34px;top:-34px;width:104px;height:104px;pointer-events:none}
+  .ho-dot{width:12px;height:12px;border-radius:50%;background:var(--laser);flex:none;
+    box-shadow:0 0 0 0 rgba(232,68,46,.5);animation:hopulse 2.4s infinite}
+  .ho-hero.ho-clear .ho-dot{background:var(--ok);animation:none}
+  @keyframes hopulse{0%{box-shadow:0 0 0 0 rgba(232,68,46,.45)}70%{box-shadow:0 0 0 11px rgba(232,68,46,0)}100%{box-shadow:0 0 0 0 rgba(232,68,46,0)}}
+  .ho-htext{flex:1;min-width:0}
+  .ho-hbig{font-size:16px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:var(--paper)}
+  .ho-hsub{font-size:10px;color:var(--muted);margin-top:4px}
+  .ho-hcount{text-align:right;flex:none;position:relative;z-index:1}
+  .ho-hnum{font-family:var(--mono);font-size:22px;font-weight:700;line-height:1;color:var(--paper)}
+  .ho-hlab{font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);margin-top:5px}
+
+  .ho-sechead{display:flex;align-items:center;margin:0 0 11px}
+  .ho-seclbl{color:var(--muted);font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.14em}
+  .ho-addbtn{margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:none;border:0;
+    color:var(--laser);font-family:var(--sans);font-size:13px;font-weight:750;cursor:pointer;padding:2px}
+  .ho-addbtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round}
+
+  .ho-seg{display:flex;gap:8px;margin:0 0 15px}
+  .ho-seg button{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
+    background:var(--surface-2);border:1px solid var(--line);color:var(--muted);font-family:var(--sans);
+    font-size:13px;font-weight:700;padding:11px 6px;border-radius:10px;cursor:pointer}
+  .ho-seg button.on{background:var(--laser);border-color:var(--laser);color:#fff}
+  .ho-fc{min-width:20px;height:20px;padding:0 6px;border-radius:20px;background:rgba(255,255,255,.08);
+    color:inherit;font-family:var(--mono);font-size:11px;display:grid;place-items:center}
+  .ho-seg button.on .ho-fc{background:rgba(0,0,0,.22);color:#fff}
+
+  .ho-list{display:flex;flex-direction:column;gap:10px}
+  .ho-note{border:1px solid var(--line);background:var(--surface);border-radius:13px;padding:14px 15px}
+  .ho-note.done{opacity:.6}
+  .ho-ntop{display:flex;align-items:center;margin-bottom:11px}
+  .ho-prio{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;
+    font-weight:750;letter-spacing:.09em;text-transform:uppercase}
+  .ho-prio .pd{width:8px;height:8px;border-radius:50%}
+  .ho-prio.high{color:var(--laser)}.ho-prio.high .pd{background:var(--laser)}
+  .ho-prio.medium{color:#E0A53A}.ho-prio.medium .pd{background:#E0A53A}
+  .ho-prio.low{color:var(--ok)}.ho-prio.low .pd{background:var(--ok)}
+  .ho-meta{margin-left:auto;font-size:10px;color:var(--muted)}
+  .ho-main{display:flex;gap:12px;align-items:flex-start}
+  .ho-check{width:40px;height:40px;flex:none;border:2px solid var(--line);border-radius:10px;
+    background:none;cursor:pointer;display:grid;place-items:center;color:transparent;margin-top:1px}
+  .ho-note.done .ho-check{background:var(--ok);border-color:var(--ok);color:#fff}
+  .ho-check svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:3.2;
+    stroke-linecap:round;stroke-linejoin:round}
+  .ho-ntxt{flex:1;min-width:0}
+  .ho-ntitle{font-size:14px;font-weight:730;letter-spacing:-.01em;line-height:1.3;color:var(--paper)}
+  .ho-note.done .ho-ntitle{text-decoration:line-through;text-decoration-color:var(--muted)}
+  .ho-ndetail{font-size:12px;color:var(--muted);line-height:1.5;margin-top:6px;
+    white-space:pre-wrap;word-break:break-word}
+  .ho-div{height:1px;background:var(--line);margin:13px 0 11px}
+  .ho-nfoot{display:flex;align-items:center;gap:12px}
+  .ho-loc{min-width:0}
+  .ho-loc .lc{font-size:12px;font-weight:700;color:var(--paper)}
+  .ho-loc .ls{font-size:10px;color:var(--muted);margin-top:2px}
+  .ho-assignee{margin-left:auto;display:inline-flex;align-items:center;gap:8px;background:var(--surface-2);
+    border:1px solid var(--line);border-radius:9px;padding:8px 11px;cursor:pointer;font-size:12px;
+    font-weight:700;color:var(--paper);font-family:var(--sans)}
+  .ho-assignee .adot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
+  .ho-assignee .chev{color:var(--muted);display:grid;place-items:center}
+  .ho-assignee .chev svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.4;
+    stroke-linecap:round;stroke-linejoin:round}
+  .ho-empty{border:1px dashed var(--line);border-radius:12px;padding:30px 18px;text-align:center;
+    color:var(--muted);font-size:12px;line-height:1.6}
+  .ho-empty b{color:var(--paper);display:block;font-size:14px;margin-bottom:5px}
+
+  .ho-scrim{position:fixed;inset:0;z-index:60;background:rgba(10,12,14,.72);
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);display:none;
+    align-items:flex-end;justify-content:center}
+  .ho-scrim.show{display:flex}
+  .ho-sheet,.ho-menu{width:100%;max-width:560px;background:var(--surface);border-top:1px solid var(--line);
+    border-top-left-radius:20px;border-top-right-radius:20px;
+    padding:16px 18px calc(22px + env(safe-area-inset-bottom));
+    animation:horise .26s cubic-bezier(.2,.8,.2,1);max-height:88vh;overflow-y:auto}
+  @keyframes horise{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .ho-grip{width:38px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 15px}
+  .ho-sheet h2{margin:0 0 5px;font-size:18px;font-weight:800;letter-spacing:-.01em;color:var(--paper)}
+  .ho-lead{margin:0 0 17px;color:var(--muted);font-size:13px;line-height:1.5}
+  .ho-lead b{color:var(--laser)}
+  .ho-field{margin-bottom:13px}
+  .ho-field>label{display:block;font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.11em;
+    text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  .ho-field input[type=text],.ho-field textarea,.ho-field select{width:100%;background:var(--surface-2);
+    border:1px solid var(--line);color:var(--paper);font-family:var(--sans);font-size:14px;padding:11px 12px;
+    border-radius:9px;outline:0}
+  .ho-field textarea{resize:none;min-height:48px;line-height:1.45}
+  .ho-field select{appearance:none;-webkit-appearance:none}
+  .ho-field input:focus,.ho-field textarea:focus,.ho-field select:focus{border-color:var(--laser)}
+  .ho-chips{display:flex;gap:8px}
+  .ho-chips button{flex:1;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);
+    font-family:var(--sans);font-size:13px;font-weight:700;padding:10px;border-radius:9px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:7px}
+  .ho-chips button .cd{width:8px;height:8px;border-radius:50%}
+  .ho-chips button[data-p=high] .cd{background:var(--laser)}
+  .ho-chips button[data-p=medium] .cd{background:#E0A53A}
+  .ho-chips button[data-p=low] .cd{background:var(--ok)}
+  .ho-chips button.sel[data-p=high]{border-color:var(--laser);color:var(--laser);background:rgba(232,68,46,.12)}
+  .ho-chips button.sel[data-p=medium]{border-color:#E0A53A;color:#E0A53A;background:rgba(224,165,58,.13)}
+  .ho-chips button.sel[data-p=low]{border-color:var(--ok);color:var(--ok);background:rgba(76,175,125,.13)}
+  .ho-postingas{font-size:11px;color:var(--muted);margin:2px 0 15px}
+  .ho-postingas b{color:var(--paper)}
+  .ho-postingas .edit{color:var(--laser);cursor:pointer;margin-left:6px;text-decoration:underline}
+  .ho-sheet-actions{display:flex;gap:10px}
+  .ho-btn-primary{flex:1;font-family:var(--sans);font-size:14px;font-weight:800;color:#fff;
+    background:var(--laser);border:0;padding:13px;border-radius:10px;cursor:pointer}
+  .ho-btn-primary:disabled{opacity:.4;cursor:default}
+  .ho-btn-ghost{font-family:var(--sans);font-size:14px;font-weight:700;color:var(--muted);
+    background:var(--surface-2);border:1px solid var(--line);padding:13px 17px;border-radius:10px;cursor:pointer}
+  .ho-menu{padding:12px 10px calc(16px + env(safe-area-inset-bottom))}
+  .ho-menu .mtitle{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);padding:6px 12px 10px}
+  .ho-menu button{width:100%;text-align:left;display:flex;align-items:center;gap:11px;background:none;
+    border:0;color:var(--paper);font-family:var(--sans);font-size:15px;font-weight:650;padding:12px;
+    border-radius:9px;cursor:pointer}
+  .ho-menu button:active{background:var(--surface-2)}
+  .ho-menu button .adot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
+  .ho-menu button .tick{margin-left:auto;color:var(--ok);display:grid;place-items:center}
+  .ho-menu button .tick svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:3;
+    stroke-linecap:round;stroke-linejoin:round}
 </style>
   <!-- The ?v is not decoration. A service worker caches manifest.json, and if an
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=43">
+  <link rel="manifest" href="./manifest.json?v=44">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1597,14 +1726,61 @@
     </div>
   </section>
 
-  <!-- ============ HANDOFF VIEW (stub) ============ -->
+  <!-- ============ HANDOFF VIEW ============ -->
   <section id="view-handoff" class="view">
-    <div class="rk-head"><div><p class="rk-eyebrow">HANDOFF</p><h1>Handoff</h1></div></div>
-    <div class="rk-stub">
-      <b>Coming soon</b>
-      End-of-shift notes for the next person.
-      <span class="rk-tag">HANDOFF</span>
+    <div class="rk-head">
+      <div><p class="rk-eyebrow">HANDOFF</p><h1>Shift Handoff</h1></div>
+      <div class="rk-live"><span></span>SHARED</div>
     </div>
+
+    <div class="ho-hero" id="hoHero"></div>
+
+    <div class="ho-sechead">
+      <span class="ho-seclbl">PASS IT FORWARD</span>
+      <button class="ho-addbtn" type="button" onclick="hoOpenAdd()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add note
+      </button>
+    </div>
+
+    <div class="ho-seg" id="hoSeg">
+      <button data-f="all" onclick="hoSetFilter('all')">All <span class="ho-fc" id="hoCAll">0</span></button>
+      <button data-f="open" class="on" onclick="hoSetFilter('open')">Open <span class="ho-fc" id="hoCOpen">0</span></button>
+      <button data-f="done" onclick="hoSetFilter('done')">Done <span class="ho-fc" id="hoCDone">0</span></button>
+    </div>
+
+    <div class="ho-list" id="hoList"></div>
+
+    <div class="rk-dock" id="hoDock">
+      <div class="rk-l">
+        <span class="rk-sd"></span>
+        <div>
+          <strong id="hoDockTitle">All synced</strong>
+          <small id="hoDockSub">Nothing to send yet</small>
+        </div>
+      </div>
+      <button class="rk-syncbtn" id="hoSyncBtn" type="button" onclick="hoSync(true)">
+        <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><polyline points="21 3 21 9 15 9"/></svg>
+        Sync
+      </button>
+    </div>
+
+    <!-- shift-start review prompt -->
+    <div class="ho-scrim" id="hoPromptScrim">
+      <div class="ho-sheet">
+        <div class="ho-grip"></div>
+        <h2>Starting your shift?</h2>
+        <p class="ho-lead">You have <b id="hoPromptN">0</b> to read before you're on the floor. Tick each one off as you clear it.</p>
+        <div class="ho-sheet-actions">
+          <button class="ho-btn-primary" type="button" onclick="hoPromptReview()">Review now</button>
+          <button class="ho-btn-ghost" type="button" onclick="hoPromptLater()">Later</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- add-note + assignee sheets render into these -->
+    <div class="ho-scrim" id="hoAddScrim"></div>
+    <div class="ho-scrim" id="hoMenuScrim"></div>
   </section>
 
   <!-- ============ EXPORT VIEW ============ -->
@@ -2472,6 +2648,7 @@ function showView(name){
   const sec = VIEW_SECTION[name];
   if(sec){ curSection = sec; syncSectionPill(); renderNav(); }
   if(name !== "restock") rkStopPoll();   // only poll while the board is on screen
+  if(name !== "handoff") hoStopPoll();
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
@@ -2484,6 +2661,7 @@ function showView(name){
   if(name==="sales"){ renderWeekTabs(); renderSales(); }
   if(name==="scrap") renderLists();
   if(name==="restock"){ renderRestock(); rkPull(); rkStartPoll(); }
+  if(name==="handoff"){ renderHandoff(); hoPull(); hoStartPoll(); hoMaybePrompt(); }
   if(name==="product"){
     renderProduct();
     // Land in the search box — looking something up is what this tab is for,
@@ -4512,7 +4690,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v43";
+const APP_VERSION = "v44";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -8544,6 +8722,290 @@ document.addEventListener("visibilitychange", ()=>{
     if(e.key === "Enter"){ e.preventDefault(); rkAddManual(); }
   });
   rkFillSelect();
+}
+
+/* ============================================================
+   SHIFT HANDOFF — a shared, synced pass-down board
+   ============================================================
+   Same shape as the Restock board: notes live in localStorage, sync to the
+   Sheet last-write-wins, and poll back while the tab is open. Each note carries
+   a priority, a place, and who it's for; ticking the box clears it. The author
+   is the phone's name — the same one Restock and Claims already use. */
+
+const KEY_HANDOFF   = "label_handoff_v1";
+const HO_ASSIGNEES  = ["You","Morning lead","Evening shift","Produce team","Overnight crew","Backroom crew"];
+const HO_LOC        = ["Floor","Backroom","Wet case","Cooler","Front end"];
+
+let hoState  = hoLoad();
+let hoDirty  = false;
+let hoSyncing= false;
+let hoOffline= false;
+let hoSyncTimer = null;
+let hoPollTimer = null;
+let hoFilter = "open";
+let hoPrompted = false;              // shift-start prompt shown once per session
+
+function hoLoad(){
+  try{
+    const s = JSON.parse(localStorage.getItem(KEY_HANDOFF) || "null");
+    if(s && Array.isArray(s.notes)) return s;
+  }catch(e){}
+  return { notes:[], updatedBy:"", updatedAt:"" };
+}
+function hoSave(){ try{ localStorage.setItem(KEY_HANDOFF, JSON.stringify(hoState)); }catch(e){} }
+function hoNewId(){ return "h" + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function hoMeName(){ return rkMeName(); }                 // shared phone / employee name
+function hoClock(ts){ return new Date(ts).toLocaleTimeString([], {hour:"numeric", minute:"2-digit"}); }
+function hoNewest(){ return hoState.notes.reduce((m,n)=>Math.max(m, n.ts||0), 0); }
+function hoOpenCount(){ return hoState.notes.filter(n=>!n.done).length; }
+function hoDoneCount(){ return hoState.notes.filter(n=> n.done).length; }
+
+/* every change stamps the board, saves, redraws, and sends on its own shortly */
+function hoTouch(){
+  hoState.updatedBy = hoMeName();
+  hoState.updatedAt = new Date().toISOString();
+  hoDirty = true; hoSave(); renderHandoff(); hoAutoSync();
+}
+function hoToggleDone(id){
+  const n = hoState.notes.find(x=>x.id===id); if(!n) return;
+  n.done = !n.done;
+  if(n.done){ n.doneBy = hoMeName(); n.doneTs = Date.now(); } else { n.doneBy = ""; n.doneTs = 0; }
+  hoTouch();
+  const left = hoOpenCount();
+  toast(n.done ? (left ? "Cleared \u00b7 " + left + " still open" : "That's everything \u2014 floor's clear") : "Reopened");
+}
+function hoSetAssignee(id, who){
+  const n = hoState.notes.find(x=>x.id===id); if(!n) return;
+  n.assignee = who; hoTouch(); toast("Passed to " + who);
+}
+function hoDel(id){
+  const i = hoState.notes.findIndex(x=>x.id===id); if(i<0) return;
+  const gone = hoState.notes[i];
+  hoState.notes.splice(i,1); hoTouch();
+  toastUndo("Removed note", ()=>{ hoState.notes.splice(i,0,gone); hoTouch(); });
+}
+function hoSetFilter(f){ hoFilter = f; renderHandoff(); }
+
+/* ---- render ---- */
+function renderHandoff(){
+  const open = hoOpenCount(), done = hoDoneCount(), total = hoState.notes.length;
+
+  const hero = document.getElementById("hoHero");
+  if(hero){
+    hero.classList.toggle("ho-clear", open===0);
+    const frac = total ? done/total : 0;
+    const off  = (263.9*(1-frac)).toFixed(1);
+    const rc   = open===0 ? "var(--ok)" : "var(--laser)";
+    hero.innerHTML =
+      '<div class="ho-glow"></div>'+
+      '<svg class="ho-ring" viewBox="0 0 100 100">'+
+        '<circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="6"/>'+
+        '<circle cx="50" cy="50" r="42" fill="none" style="stroke:'+rc+'" stroke-width="6" '+
+          'stroke-linecap="round" transform="rotate(-90 50 50)" stroke-dasharray="263.9" stroke-dashoffset="'+off+'"/>'+
+      '</svg>'+
+      '<span class="ho-dot"></span>'+
+      '<div class="ho-htext">'+
+        '<div class="ho-hbig">'+(open===0 ? "All caught up"
+            : open + (open===1 ? " thing needs attention" : " things need attention"))+'</div>'+
+        '<div class="ho-hsub">'+(total ? ("Latest update at " + hoClock(hoNewest())) : "No notes yet")+'</div>'+
+      '</div>'+
+      '<div class="ho-hcount"><div class="ho-hnum">'+done+'/'+total+'</div><div class="ho-hlab">Cleared</div></div>';
+  }
+
+  const setc = (id,v)=>{ const e = document.getElementById(id); if(e) e.textContent = v; };
+  setc("hoCAll", total); setc("hoCOpen", open); setc("hoCDone", done);
+  const seg = document.getElementById("hoSeg");
+  if(seg) [...seg.children].forEach(b=>b.classList.toggle("on", b.dataset.f===hoFilter));
+
+  const host = document.getElementById("hoList");
+  if(host){
+    let rows = hoState.notes.slice().sort((a,b)=>(b.ts||0)-(a.ts||0));
+    if(hoFilter==="open") rows = rows.filter(n=>!n.done);
+    if(hoFilter==="done") rows = rows.filter(n=> n.done);
+    if(!rows.length){
+      host.innerHTML = '<div class="ho-empty">'+
+        (hoFilter==="done" ? '<b>Nothing cleared yet</b>Ticked-off notes collect here.'
+        : hoFilter==="open" ? '<b>Floor\u2019s clear</b>No open handoff notes right now.'
+        : '<b>No handoff notes</b>Tap Add note to pass something to the next shift.')+'</div>';
+    } else {
+      host.innerHTML = rows.map(hoNoteHtml).join("");
+    }
+  }
+  hoDock();
+}
+function hoNoteHtml(n){
+  const done = !!n.done;
+  const prio = (n.prio==="high"||n.prio==="low") ? n.prio : "medium";
+  return '<div class="ho-note'+(done?' done':'')+'">'+
+    '<div class="ho-ntop">'+
+      '<span class="ho-prio '+prio+'"><span class="pd"></span>'+prio+'</span>'+
+      '<span class="ho-meta">'+esc(n.by||"")+' \u00b7 '+hoClock(n.ts)+'</span>'+
+    '</div>'+
+    '<div class="ho-main">'+
+      '<button class="ho-check" type="button" onclick="hoToggleDone(\''+n.id+'\')" aria-label="Clear">'+
+        (done ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>' : '')+'</button>'+
+      '<div class="ho-ntxt"><div class="ho-ntitle">'+esc(n.title||"")+'</div>'+
+        (n.detail ? '<div class="ho-ndetail">'+esc(n.detail)+'</div>' : '')+'</div>'+
+    '</div>'+
+    '<div class="ho-div"></div>'+
+    '<div class="ho-nfoot">'+
+      '<div class="ho-loc"><div class="lc">'+esc(n.locCat||"")+'</div>'+
+        (n.locSub ? '<div class="ls">'+esc(n.locSub)+'</div>' : '')+'</div>'+
+      '<button class="ho-assignee" type="button" onclick="hoOpenAssign(\''+n.id+'\')">'+
+        '<span class="adot"></span>'+esc(n.assignee||"\u2014")+
+        '<span class="chev"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span></button>'+
+    '</div>'+
+  '</div>';
+}
+
+/* ---- dock (reuses the restock dock styling) ---- */
+function hoDock(){
+  const dock = document.getElementById("hoDock"); if(!dock) return;
+  dock.classList.toggle("rk-dirty", hoDirty);
+  const title = document.getElementById("hoDockTitle");
+  const sub   = document.getElementById("hoDockSub");
+  const btn   = document.getElementById("hoSyncBtn");
+  if(hoSyncing){
+    if(title) title.textContent = "Syncing\u2026";
+    if(sub)   sub.textContent   = "Sharing the board";
+    if(btn)   btn.classList.add("rk-spin");
+    return;
+  }
+  if(btn) btn.classList.remove("rk-spin");
+  if(hoDirty && hoOffline){ title.textContent = "Waiting for signal"; sub.textContent = "Saved here \u2014 syncs when you're back online"; }
+  else if(hoDirty){ title.textContent = "Saving\u2026"; sub.textContent = "Sharing with the floor automatically"; }
+  else if(hoState.updatedAt){ title.textContent = "All synced"; sub.textContent = "Updated by " + (hoState.updatedBy||"\u2014") + " \u00b7 " + rkWhen(hoState.updatedAt); }
+  else { title.textContent = "All synced"; sub.textContent = "Nothing to send yet"; }
+}
+
+/* ---- sync — whole board, last write wins ---- */
+async function hoSync(manual){
+  if(hoSyncing) return;
+  if(!proxyUrl()){ if(manual) toast("Not set up yet \u2014 see Settings"); return; }
+  hoSyncing = true; hoDock();
+  try{
+    const d = await callProxy({ action:"handoffSync", state: hoState });
+    if(d && d.ok && d.state){ hoState = d.state; hoSave(); }
+    hoDirty = false; hoOffline = false;
+    if(manual) toast("Board synced");
+  }catch(err){
+    if(err && err.auth){ hoOffline = false; if(manual) toast(authMessage(err)); }
+    else { hoOffline = true; }
+  }finally{
+    hoSyncing = false; renderHandoff();
+  }
+}
+function hoAutoSync(){ clearTimeout(hoSyncTimer); hoSyncTimer = setTimeout(()=>hoSync(false), 1200); }
+async function hoPull(){
+  if(!proxyUrl() || !navigator.onLine) return;
+  if(hoDirty) return;                       // never clobber unsent local edits
+  try{
+    const d = await callProxy({ action:"handoffGet" });
+    if(d && d.ok && d.state && Array.isArray(d.state.notes)){
+      const theirs = d.state.updatedAt || "";
+      const mine   = hoState.updatedAt || "";
+      if(theirs && theirs >= mine){ hoState = d.state; hoSave(); renderHandoff(); }
+    }
+  }catch(e){ /* offline or not approved yet — local board keeps working */ }
+}
+function hoStartPoll(){ hoStopPoll(); hoPollTimer = setInterval(()=>{ if(!document.hidden) hoPull(); }, 30000); }
+function hoStopPoll(){ if(hoPollTimer){ clearInterval(hoPollTimer); hoPollTimer = null; } }
+
+window.addEventListener("online", ()=>{ if(hoDirty) hoSync(false); });
+document.addEventListener("visibilitychange", ()=>{
+  if(document.hidden) return;
+  const v = document.getElementById("view-handoff");
+  if(v && v.classList.contains("active")){ if(hoDirty) hoSync(false); else hoPull(); }
+});
+
+/* ---- shift-start prompt ---- */
+function hoMaybePrompt(){
+  const open = hoOpenCount();
+  const n = document.getElementById("hoPromptN");
+  if(n) n.textContent = open===1 ? "1 note" : open + " notes";
+  if(open>0 && !hoPrompted){
+    hoPrompted = true;
+    const s = document.getElementById("hoPromptScrim");
+    if(s) s.classList.add("show");
+  }
+}
+function hoPromptReview(){ const s = document.getElementById("hoPromptScrim"); if(s) s.classList.remove("show"); hoFilter = "open"; renderHandoff(); }
+function hoPromptLater(){  const s = document.getElementById("hoPromptScrim"); if(s) s.classList.remove("show"); }
+
+function hoCloseScrim(s){ if(s){ s.classList.remove("show"); s.onclick = null; } }
+
+/* ---- add-note sheet ---- */
+function hoOpenAdd(){
+  const scrim = document.getElementById("hoAddScrim"); if(!scrim) return;
+  let prio = "medium";
+  scrim.innerHTML =
+    '<div class="ho-sheet">'+
+      '<div class="ho-grip"></div>'+
+      '<h2>Pass it forward</h2>'+
+      '<div class="ho-field"><label>What needs doing</label>'+
+        '<input type="text" id="hoFTitle" placeholder="e.g. Fill wet wall gaps before opening" autocomplete="off"></div>'+
+      '<div class="ho-field"><label>Details</label>'+
+        '<textarea id="hoFDetail" placeholder="Where the product is, what to watch for\u2026"></textarea></div>'+
+      '<div class="ho-field"><label>Priority</label><div class="ho-chips" id="hoFPrio">'+
+        '<button type="button" data-p="high"><span class="cd"></span>High</button>'+
+        '<button type="button" data-p="medium" class="sel"><span class="cd"></span>Medium</button>'+
+        '<button type="button" data-p="low"><span class="cd"></span>Low</button></div></div>'+
+      '<div class="ho-field"><label>Where</label><select id="hoFLoc">'+
+        HO_LOC.map(l=>'<option'+(l==="Floor"?" selected":"")+'>'+esc(l)+'</option>').join("")+'</select></div>'+
+      '<div class="ho-field"><label>Spot (optional)</label>'+
+        '<input type="text" id="hoFSpot" placeholder="e.g. Run 4 \u00b7 Wet wall   \u00b7   Pod 2   \u00b7   Receiving" autocomplete="off"></div>'+
+      '<div class="ho-field"><label>For</label><select id="hoFFor">'+
+        HO_ASSIGNEES.map(a=>'<option>'+esc(a)+'</option>').join("")+'</select></div>'+
+      '<div class="ho-postingas">Posting as <b>'+esc(hoMeName())+'</b>'+
+        '<span class="edit" id="hoFRename">rename this phone</span></div>'+
+      '<div class="ho-sheet-actions">'+
+        '<button class="ho-btn-primary" id="hoFAdd" type="button" disabled>Add note</button>'+
+        '<button class="ho-btn-ghost" id="hoFCancel" type="button">Cancel</button></div>'+
+    '</div>';
+  scrim.classList.add("show");
+  const sheet = scrim.firstElementChild;
+  const title = sheet.querySelector("#hoFTitle");
+  const addB  = sheet.querySelector("#hoFAdd");
+  title.addEventListener("input", ()=>{ addB.disabled = !title.value.trim(); });
+  sheet.querySelectorAll("#hoFPrio button").forEach(b=>b.onclick = ()=>{
+    sheet.querySelectorAll("#hoFPrio button").forEach(x=>x.classList.remove("sel"));
+    b.classList.add("sel"); prio = b.dataset.p;
+  });
+  sheet.querySelector("#hoFRename").onclick = ()=>{
+    const v = prompt("Name this phone (used as the author on notes you post):", hoMeName());
+    if(v && v.trim()){ localStorage.setItem(KEY_ME_NAME, v.trim()); hoOpenAdd(); }
+  };
+  sheet.querySelector("#hoFCancel").onclick = ()=>hoCloseScrim(scrim);
+  scrim.onclick = e=>{ if(e.target===scrim) hoCloseScrim(scrim); };
+  addB.onclick = ()=>{
+    hoState.notes.unshift({
+      id: hoNewId(), prio: prio, title: title.value.trim(),
+      detail: sheet.querySelector("#hoFDetail").value.trim(),
+      by: hoMeName(), ts: Date.now(),
+      locCat: sheet.querySelector("#hoFLoc").value,
+      locSub: sheet.querySelector("#hoFSpot").value.trim(),
+      assignee: sheet.querySelector("#hoFFor").value,
+      done:false, doneBy:"", doneTs:0
+    });
+    hoCloseScrim(scrim);
+    if(hoFilter==="done") hoFilter = "open";
+    hoTouch();
+    toast("Note added \u2014 sync to share it");
+  };
+  setTimeout(()=>title.focus(), 250);
+}
+
+/* ---- assignee sheet ---- */
+function hoOpenAssign(id){
+  const n = hoState.notes.find(x=>x.id===id); if(!n) return;
+  const scrim = document.getElementById("hoMenuScrim"); if(!scrim) return;
+  scrim.innerHTML = '<div class="ho-menu"><div class="mtitle">Pass this to\u2026</div>'+
+    HO_ASSIGNEES.map(a=>'<button type="button" data-a="'+esc(a)+'"><span class="adot"></span>'+esc(a)+
+      (a===n.assignee ? '<span class="tick"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>' : '')+
+      '</button>').join("")+'</div>';
+  scrim.classList.add("show");
+  scrim.querySelectorAll(".ho-menu button").forEach(b=>b.onclick = ()=>{ hoSetAssignee(id, b.dataset.a); hoCloseScrim(scrim); });
+  scrim.onclick = e=>{ if(e.target===scrim) hoCloseScrim(scrim); };
 }
 
 /* Draw the dynamic nav + section pill for the opening view (Add). Without this

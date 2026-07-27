@@ -10,7 +10,16 @@
    went on serving the first index.html it ever saw — every update invisible
    until you cleared site data. The comment next to the fetch handler said the
    shell "barely changes", which was wrong the day it was written. */
-const CACHE = "catcaddy-v50-2026-07-27";
+const CACHE = "catcaddy-v51-cam-2026-07-27";
+/* The recognizer model (TensorFlow.js + weights, ~16MB) lives in its own cache
+   that activate() does NOT wipe, so an app update never forces a re-download.
+   It is filled the first time the produce camera loads while online. */
+const MODEL_CACHE = "catcaddy-model-v1";
+const PV_HOSTS = ["cdn.jsdelivr.net","storage.googleapis.com","tfhub.dev","www.kaggle.com","storage.kaggle.com"];
+function isRecognizerAsset(url){
+  if(PV_HOSTS.some(h=>url.hostname.includes(h))) return true;
+  return /(^|\/)model\.json$/.test(url.pathname) || /\.bin$/.test(url.pathname) || /group\d+-shard/.test(url.pathname);
+}
 const SHELL = [
   "./",
   "./index.html",
@@ -34,7 +43,7 @@ self.addEventListener("install", e=>{
 
 self.addEventListener("activate", e=>{
   e.waitUntil(
-    caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))))
+    caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE && k!==MODEL_CACHE).map(k=>caches.delete(k))))
       .then(()=>self.clients.claim())
   );
 });
@@ -68,6 +77,21 @@ self.addEventListener("fetch", e=>{
         }
         return r;
       }).catch(()=> caches.match(req).then(hit=> hit || caches.match("./index.html")))
+    );
+    return;
+  }
+
+  // Recognizer + model weights: cache-first into the long-lived model cache, so
+  // once the camera has loaded online it keeps working with no signal.
+  if(isRecognizerAsset(url)){
+    e.respondWith(
+      caches.match(req).then(hit=> hit || fetch(req).then(r=>{
+        if(r && (r.ok || r.type === "opaque")){
+          const copy = r.clone();
+          caches.open(MODEL_CACHE).then(c=>c.put(req, copy));
+        }
+        return r;
+      }))
     );
     return;
   }

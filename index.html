@@ -1041,6 +1041,14 @@
     padding:2px 6px;font-size:8px}
   .rk-meta .rk-plu{color:var(--laser);font-family:var(--mono);border:1px solid #4a2e28;border-radius:20px;
     padding:2px 6px;font-size:8px;letter-spacing:.03em}
+  .rk-copy .rk-bdg{display:inline-block;margin-left:5px;font-family:var(--mono);font-size:8px;font-weight:700;
+    letter-spacing:.04em;border-radius:5px;padding:1px 5px;vertical-align:middle;line-height:1.5}
+  .rk-copy .rk-bdg.brand{color:var(--laser);border:1px solid #4a2e28;background:#2a1a17}
+  .rk-copy .rk-bdg.pack{color:#C8C2B7;border:1px solid #3A4148;background:var(--surface-2)}
+  .nm-bdg{display:inline-block;margin-left:5px;font-family:var(--mono);font-size:8px;font-weight:700;
+    letter-spacing:.04em;border-radius:5px;padding:1px 5px;vertical-align:middle;line-height:1.5;white-space:nowrap}
+  .nm-bdg.brand{color:var(--laser);border:1px solid #4a2e28;background:#2a1a17}
+  .nm-bdg.pack{color:#C8C2B7;border:1px solid #3A4148;background:var(--surface-2)}
   .rk-claim{min-width:50px;height:28px;border:1px solid #444B52;border-radius:7px;background:none;
     color:#B1B7BD;font-size:9px;font-weight:720;cursor:pointer;display:inline-flex;
     align-items:center;justify-content:center;gap:3px;padding:0 8px;font-family:var(--sans)}
@@ -1249,7 +1257,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=48">
+  <link rel="manifest" href="./manifest.json?v=50">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4106,7 +4114,7 @@ function renderList(){
     <div class="item">
       ${i.img ? `<img src="${i.img}" alt="Barcode photo">` : `<div class="no-img">no photo</div>`}
       <div class="info" onclick="openItem('${i.id}')">
-        <div class="name">${esc(i.name)}${i.flyer?'<span class="badge">In flyer</span>':''}</div>
+        <div class="name">${nmNameHtml(i.name)}${i.flyer?'<span class="badge">In flyer</span>':''}</div>
         <div class="code">${[
             i.plu ? "PLU "+esc(i.plu) : "",
             (i.code && !/^PLU/.test(i.code)) ? esc(i.code) : ""
@@ -4933,7 +4941,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v48";
+const APP_VERSION = "v50";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -5567,7 +5575,7 @@ function addItem(o){
     id: "i"+Date.now()+Math.random().toString(36).slice(2,6),
     ts: Date.now(),
     code: o.code || "",
-    name: o.name || "(unnamed)",
+    name: nmShort(o.name || "(unnamed)"),
     plu: o.plu || "",
     nameFr: o.nameFr || "",
     origin: o.origin || "",
@@ -8761,12 +8769,13 @@ function rkTouch(){
   rkDirty = true; rkSave(); renderRestock();
   rkAutoSync();                     // send it to the floor on its own, shortly
 }
-function rkAddItem(name, table, qty, plu){
+function rkAddItem(name, table, qty, plu, tags){
   name = String(name||"").trim();
   if(!name) return null;
   const it = { id: rkNewId(), name: rkCap(name),
     table: RK_BY_ID[table] ? table : "fridge",
-    qty: String(qty||"").trim(), plu: String(plu||""), by: rkMeName(),
+    qty: String(qty||"").trim(), plu: String(plu||""),
+    tags: Array.isArray(tags) ? tags : [], by: rkMeName(),
     claimId:"", claimBy:"", ts: Date.now() };
   rkState.items.push(it);
   rkTouch();
@@ -8774,11 +8783,53 @@ function rkAddItem(name, table, qty, plu){
 }
 /* Strip catalogue qualifiers like "(Organic)"/"(Large)" for a tidy card name. */
 function rkTidy(n){ return String(n||"").replace(/\s*\([^)]*\)/g," ").replace(/\s{2,}/g," ").trim(); }
-/* Snap a heard name to the on-device catalogue (same matcher the Info tab uses).
-   Instant + offline-safe; the online pass below refines it against the Sheet. */
+/* Store shorthand: pull brand + pack out of a name into badges, so
+   "Farmers Market Cucumber 6 pack" and "FM Cucumber 6pk" both reduce to the
+   same core "Cucumber" (which matches + routes far better) plus [FM] [6pk].
+   Brands/packs are stored in short form and shown as chips. Reusable anywhere. */
+const NM_BRANDS = [
+  { tag:"FM",  re:/\b(farmer'?s?\s*market|farmers?\s*mkt)\b/ig },
+  { tag:"NNI", re:/\b(no\s*name\s*naturally\s*imperfect|naturally\s*imperfect|no\s*name|nn+i|n\s*n\s*n?\s*i)\b/ig },
+  { tag:"FM",  re:/\bfm\b/ig }        // bare abbreviation last, long form preferred
+];
+function nmNormalize(raw){
+  let s = " " + String(raw||"").replace(/\s+/g," ").trim() + " ";
+  const brands = [];
+  NM_BRANDS.forEach(b=>{
+    const before = s;
+    s = s.replace(b.re, " ");
+    if(s !== before && brands.indexOf(b.tag) < 0) brands.push(b.tag);
+  });
+  const packs = [];
+  s = s.replace(/\b(\d{1,2})[\s-]*(?:packs?|pk|p\s*k)\b/ig, (m,n)=>{
+    const t = n + "pk"; if(packs.indexOf(t) < 0) packs.push(t); return " ";
+  });
+  const core = s.replace(/\s{2,}/g," ").trim();
+  if(!core) return { core: String(raw||"").trim(), tags: [] };   // was all shorthand
+  return { core, tags: brands.concat(packs) };
+}
+function nmTagKind(t){ return /pk$/i.test(t) ? "pack" : "brand"; }
+/* Short-form string for saving anywhere: "Farmers Market Cucumber 6 pack"
+   -> "FM Cucumber 6pk" (brand in front, pack behind the core). */
+function nmShort(raw){
+  const nm = nmNormalize(raw);
+  const brand = nm.tags.filter(t=>nmTagKind(t)==="brand");
+  const pack  = nm.tags.filter(t=>nmTagKind(t)==="pack");
+  return [brand.join(" "), nm.core, pack.join(" ")].filter(Boolean).join(" ").trim() || String(raw||"").trim();
+}
+/* Render helpers — reused wherever a produce name is shown, so the FM/NNI/pack
+   chips look the same in Restock, Add and Planogram. */
+function nmBadgesHtml(tags){ return (tags&&tags.length) ? tags.map(t=>'<span class="nm-bdg '+nmTagKind(t)+'">'+esc(t)+'</span>').join("") : ""; }
+function nmNameHtml(name){ const n = nmNormalize(name); return esc(n.core) + nmBadgesHtml(n.tags); }
+
+/* Snap a heard name to the on-device catalogue (same matcher the Info tab uses),
+   after stripping brand/pack noise. Instant + offline-safe; the online pass
+   below refines it against the Sheet. */
 function rkResolve(heard){
-  try{ const r = pluSearch(heard); if(r.length && r[0]._score >= 90) return { name: rkTidy(r[0].name), plu: r[0].plu }; }catch(e){}
-  return { name: rkCap(heard), plu: "" };
+  const nm = nmNormalize(heard);
+  let name = rkCap(nm.core), plu = "";
+  try{ const r = pluSearch(nm.core); if(r.length && r[0]._score >= 90){ name = rkTidy(r[0].name); plu = r[0].plu; } }catch(e){}
+  return { name, plu, tags: nm.tags };
 }
 /* Check the Sheet's FULL PLU + Barcode DB — the device may not have it all
    cached — and, if it comes back with a confident match, correct the item's
@@ -8786,10 +8837,11 @@ function rkResolve(heard){
 async function rkUpgradeOnline(heard, id){
   if(!proxyUrl() || !navigator.onLine) return;
   try{
-    const d = await callProxy({ action:"pluLookup", q: heard });
+    const q = nmNormalize(heard).core;
+    const d = await callProxy({ action:"pluLookup", q });
     if(!d || !d.ok || !Array.isArray(d.matches) || !d.matches.length) return;
     const cand = d.matches.map(m=>({ plu: m.plu || m.code || "", name: m.name, own: true }));
-    const best = pluSearchIn(heard, cand)[0];
+    const best = pluSearchIn(q, cand)[0];
     if(!best || best._score < 90) return;
     const it = rkState.items.find(x=>x.id===id); if(!it) return;
     const name = rkTidy(best.name);
@@ -8810,9 +8862,10 @@ function rkAddManual(){
   const nameEl = document.getElementById("rkTin");
   const qtyEl  = document.getElementById("rkQty");
   const selEl  = document.getElementById("rkSel");
-  const name = nameEl.value.trim();
-  if(!name){ nameEl.focus(); return; }
-  const it = rkAddItem(name, selEl.value, qtyEl.value);
+  const raw = nameEl.value.trim();
+  if(!raw){ nameEl.focus(); return; }
+  const nm = nmNormalize(raw);
+  const it = rkAddItem(nm.core || raw, selEl.value, qtyEl.value, "", nm.tags);
   if(it){
     nameEl.value = ""; qtyEl.value = "";
     document.getElementById("rkHeard").textContent = "";
@@ -8855,12 +8908,12 @@ function commitRestockSpoken(text){
     const table = tableFor(m.name, m.plu);
     if(table === "none"){                       // taught that the store skips this
       toastUndo("Not carried: " + m.name + " \u2014 skipped", ()=>{
-        const it = rkAddItem(m.name, "fridge", qty, m.plu);
+        const it = rkAddItem(m.name, "fridge", qty, m.plu, m.tags);
         if(it) rkUpgradeOnline(r.name, it.id);
       });
       return;
     }
-    const it = rkAddItem(m.name, table, qty, m.plu);
+    const it = rkAddItem(m.name, table, qty, m.plu, m.tags);
     if(it){ n++; last = it; rkUpgradeOnline(r.name, it.id); }
   });
   if(h) h.textContent = "";
@@ -8934,7 +8987,7 @@ function rkRow(x, me){
       '</button>';
   return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+'">'+
       '<span class="rk-st">'+(x.claimId?'<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>':'')+'</span>'+
-      '<div class="rk-copy"><strong>'+esc(x.name)+'</strong>'+(meta.length?'<div class="rk-meta">'+meta.join("")+'</div>':'')+'</div>'+
+      '<div class="rk-copy"><strong>'+esc(x.name)+'</strong>'+((x.tags&&x.tags.length)?x.tags.map(t=>'<span class="rk-bdg '+nmTagKind(t)+'">'+esc(t)+'</span>').join(""):"")+(meta.length?'<div class="rk-meta">'+meta.join("")+'</div>':'')+'</div>'+
       claimCell+
       '<button class="rk-del" onclick="rkDel(\''+x.id+'\')" aria-label="Remove"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>'+
     '</div>';
@@ -9515,13 +9568,13 @@ function pgRenderPod1(){
   const el = document.getElementById("pgPod1"); if(!el) return;
   el.innerHTML = pgState.pod1.map((p,i)=>`
     <div class="pg-cell" onclick="pgEdit('pod1-${i}')">
-      <h3 class="${p.name?'':'pg-blank'}">${esc(p.name)||'tap to add'}</h3>
+      <h3 class="${p.name?'':'pg-blank'}">${nmNameHtml(p.name)||'tap to add'}</h3>
       <button class="pg-banner ${p.banner||'none'}" type="button" onclick="event.stopPropagation();pgCycleBanner(${i})">${pgBannerLabel(p.banner)} \u25be</button>
     </div>`).join("");
 }
 function pgRenderMango(){
   const el = document.getElementById("pgMango"); if(!el) return;
-  el.innerHTML = pgState.mango.map((v,i)=>`<div class="pg-cell" onclick="pgEdit('mango-${i}')">${esc(v)||'Mango Case'}</div>`).join("");
+  el.innerHTML = pgState.mango.map((v,i)=>`<div class="pg-cell" onclick="pgEdit('mango-${i}')">${nmNameHtml(v)||'Mango Case'}</div>`).join("");
 }
 function pgRenderPod2(){
   const el = document.getElementById("pgPod2"); if(!el) return;
@@ -9529,7 +9582,7 @@ function pgRenderPod2(){
   for(let i=0;i<pgState.podN;i++){
     const v = pgState.pod2[i]||"";
     h += `<div class="pg-cell" onclick="pgEdit('pod2-${i}')"><div class="pg-podnum">${i+1}</div>
-          <h3 class="${v?'':'pg-blank'}">${esc(v)||'Empty'}</h3></div>`;
+          <h3 class="${v?'':'pg-blank'}">${nmNameHtml(v)||'Empty'}</h3></div>`;
   }
   el.innerHTML = h;
   document.querySelectorAll('#pgPodCount button').forEach(b=>b.classList.toggle('on', +b.dataset.n===pgState.podN));
@@ -9546,10 +9599,10 @@ function pgRenderRuns(){
       </div>
       <div class="pg-ends">
         <div class="pg-endcol"><h5>\u25b2 WET CASES</h5>
-          ${st.wet.map((v,i)=>`<div class="pg-slot ${v?'':'pg-blank'}" onclick="pgEdit('run-${ri}-wet-${i}')">${esc(v)||'tap to add'}</div>`).join("")}
+          ${st.wet.map((v,i)=>`<div class="pg-slot ${v?'':'pg-blank'}" onclick="pgEdit('run-${ri}-wet-${i}')">${nmNameHtml(v)||'tap to add'}</div>`).join("")}
         </div>
         <div class="pg-endcol"><h5>\u25bc HMR</h5>
-          ${st.hmr.map((v,i)=>`<div class="pg-slot ${v?'':'pg-blank'}" onclick="pgEdit('run-${ri}-hmr-${i}')">${esc(v)||'tap to add'}</div>`).join("")}
+          ${st.hmr.map((v,i)=>`<div class="pg-slot ${v?'':'pg-blank'}" onclick="pgEdit('run-${ri}-hmr-${i}')">${nmNameHtml(v)||'tap to add'}</div>`).join("")}
         </div>
       </div>
     </div>`;
@@ -9560,7 +9613,7 @@ function pgRenderLots(){
   el.innerHTML = pgState.lots.map((v,i)=>`
     <div class="pg-lot" onclick="pgEdit('lot-${i}')">
       <span class="pg-lt">Lot ${i+1}</span>
-      <span class="pg-lv ${v?'':'pg-blank'}">${esc(v)||'empty'}</span>
+      <span class="pg-lv ${v?'':'pg-blank'}">${nmNameHtml(v)||'empty'}</span>
     </div>`).join("");
 }
 function renderPlanogram(){
@@ -9624,8 +9677,8 @@ function pgOnType(v){
     ? `<div class="pg-matchhdr">PLU / Barcode DB</div>` + top.map(d=>`<button class="pg-chip" type="button" onclick='pgAssign(${JSON.stringify(d.name)})'>${esc(d.name)} ${d.plu?`<span class="pg-plu">${d.plu}</span>`:""}</button>`).join("")
     : `<div class="pg-hint">No DB match \u2014 \u201cKeep what I typed\u201d files it as-is.</div>`;
 }
-function pgAssign(name){ pgCur.set(name); pgRemember(pgCur.spot, name); pgCloseSheet(); pgTouch(); toast("Filed: "+name); }
-function pgKeepTyped(){ const v=document.getElementById("pgSheetInput").value.trim(); if(!v){ pgCloseSheet(); return; } pgCur.set(v); pgRemember(pgCur.spot, v); pgCloseSheet(); pgTouch(); toast("Filed: "+v); }
+function pgAssign(name){ name = nmShort(name); pgCur.set(name); pgRemember(pgCur.spot, name); pgCloseSheet(); pgTouch(); toast("Filed: "+name); }
+function pgKeepTyped(){ let v=document.getElementById("pgSheetInput").value.trim(); if(!v){ pgCloseSheet(); return; } v = nmShort(v); pgCur.set(v); pgRemember(pgCur.spot, v); pgCloseSheet(); pgTouch(); toast("Filed: "+v); }
 function pgCloseSheet(){ document.getElementById("pgScrim").classList.remove("show"); document.getElementById("pgSheet").classList.remove("show"); pgStopMic(); }
 
 /* ---- voice (same engine as Scrap/Restock) ---- */

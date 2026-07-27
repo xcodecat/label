@@ -1213,7 +1213,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=45">
+  <link rel="manifest" href="./manifest.json?v=46">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4873,7 +4873,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v45";
+const APP_VERSION = "v46";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -9193,20 +9193,6 @@ function hoOpenAssign(id){
 
 /* Draw the dynamic nav + section pill for the opening view (Add). Without this
    the bottom nav renders empty until a section pill is tapped. */
-showView("list");
-
-/* ================= boot ================= */
-// Last thing in the file: everything it might reveal is already wired.
-bootLock();
-
-/* ================= clear all ================= */
-document.getElementById("btnClear").addEventListener("click", ()=>{
-  if(!items.length) return;
-  if(confirm("Delete ALL " + items.length + " items from this phone? This cannot be undone.")){
-    items = []; persist(); toast("All items deleted");
-  }
-});
-
 /* ============================================================
    PLANOGRAM — a shared, synced picture of where things live
    ============================================================
@@ -9561,6 +9547,20 @@ document.addEventListener("visibilitychange", ()=>{
   const _pgIn = document.getElementById("pgSheetInput");
   if(_pgIn) _pgIn.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); pgKeepTyped(); } });
 }
+
+showView("list");
+
+/* ================= boot ================= */
+// Last thing in the file: everything it might reveal is already wired.
+bootLock();
+
+/* ================= clear all ================= */
+document.getElementById("btnClear").addEventListener("click", ()=>{
+  if(!items.length) return;
+  if(confirm("Delete ALL " + items.length + " items from this phone? This cannot be undone.")){
+    items = []; persist(); toast("All items deleted");
+  }
+});
 
 </script>
 </body>

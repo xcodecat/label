@@ -1039,6 +1039,8 @@
   .rk-meta span{color:#666D75;font-size:8px}
   .rk-meta .rk-qty{color:#C8C2B7;font-family:var(--mono);border:1px solid #3A4148;border-radius:20px;
     padding:2px 6px;font-size:8px}
+  .rk-meta .rk-plu{color:var(--laser);font-family:var(--mono);border:1px solid #4a2e28;border-radius:20px;
+    padding:2px 6px;font-size:8px;letter-spacing:.03em}
   .rk-claim{min-width:50px;height:28px;border:1px solid #444B52;border-radius:7px;background:none;
     color:#B1B7BD;font-size:9px;font-weight:720;cursor:pointer;display:inline-flex;
     align-items:center;justify-content:center;gap:3px;padding:0 8px;font-family:var(--sans)}
@@ -1079,6 +1081,45 @@
   .rk-stub .rk-tag{display:inline-block;margin-top:14px;font-family:var(--mono);font-size:10px;
     letter-spacing:.06em;background:var(--surface-2);border:1px solid var(--line);
     border-radius:20px;padding:4px 10px;color:var(--muted)}
+
+  /* ---------- routing trainer ---------- */
+  .rk-trainbtn{display:flex;align-items:center;gap:6px;padding:0 13px;border-radius:9px;
+    border:1px solid var(--line);background:var(--surface);color:var(--paper);font-size:12px;
+    font-weight:700;cursor:pointer;white-space:nowrap}
+  .rk-trainbtn svg{width:15px;height:15px;stroke:var(--laser);fill:none;stroke-width:2;
+    stroke-linecap:round;stroke-linejoin:round}
+  .rk-tr{position:fixed;inset:0;z-index:80;background:var(--ink);display:none;flex-direction:column;
+    padding:calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom))}
+  .rk-tr.open{display:flex}
+  .rk-tr-top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .rk-tr-x{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);
+    background:var(--surface);color:var(--paper);font-size:14px;cursor:pointer}
+  .rk-tr-ttl{font-weight:800;font-size:16px;flex:1}
+  .rk-tr-prog{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:right}
+  .rk-tr-body{flex:1;overflow:auto}
+  .rk-tr-item{text-align:center;padding:22px 8px 22px}
+  .rk-tr-name{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.12}
+  .rk-tr-sub{margin-top:9px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .rk-tr-tables{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .rk-tr-tbl,.rk-tr-none{display:flex;align-items:center;gap:9px;text-align:left;padding:13px 12px;
+    border-radius:11px;border:1px solid var(--line);background:var(--surface);color:var(--paper);
+    cursor:pointer;font-size:13px}
+  .rk-tr-tbl b,.rk-tr-none b{font-weight:700;flex:1}
+  .rk-tr-tbl small,.rk-tr-none small{font-family:var(--mono);font-size:8px;color:var(--muted)}
+  .rk-tr-dot{width:12px;height:12px;border-radius:50%;background:var(--tc,#8A939C);flex:none}
+  .rk-tr-tbl.sug{border-color:#4a5560}
+  .rk-tr-tbl.on{border-color:var(--tc);box-shadow:inset 0 0 0 1px var(--tc)}
+  .rk-tr-none{grid-column:1 / -1}
+  .rk-tr-none .rk-tr-dot{background:#5a6169}
+  .rk-tr-none.on{border-color:var(--laser);box-shadow:inset 0 0 0 1px var(--laser)}
+  .rk-tr-hint{margin-top:13px;text-align:center;font-size:11px;color:var(--muted)}
+  .rk-tr-foot{display:flex;gap:8px;margin-top:12px}
+  .rk-tr-back,.rk-tr-skip{flex:1;padding:12px;border-radius:10px;border:1px solid var(--line);
+    background:var(--surface);color:var(--paper);font-size:13px;font-weight:700;cursor:pointer}
+  .rk-tr-load,.rk-tr-done{text-align:center;color:var(--muted);padding:44px 18px;line-height:1.6;
+    display:flex;flex-direction:column;align-items:center;gap:10px}
+  .rk-tr-done svg{width:44px;height:44px;stroke:var(--ok);fill:none;stroke-width:2}
+  .rk-tr-done b{color:var(--paper);font-size:18px}
 
   /* ---------- handoff (shift pass-down) ---------- */
   #view-handoff{padding-bottom:138px}
@@ -1213,7 +1254,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=44">
+  <link rel="manifest" href="./manifest.json?v=47">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1832,6 +1873,13 @@
       <p class="lookup-note" id="dbStatus"></p>
     </div>
     <div class="panel">
+      <h3>Restock routing <span class="hint">(developer)</span></h3>
+      <p>Teach which table each product belongs on, walking your PLU DB one item
+         at a time. Once it's trained you rarely need this — taught items always
+         file where you put them, on every phone.</p>
+      <button class="btn btn-ghost" onclick="rkTrainOpen()">Open routing trainer</button>
+    </div>
+    <div class="panel">
       <h3>This phone</h3>
       <div class="field">
         <label for="setSecret">Shared secret</label>
@@ -1907,6 +1955,20 @@
     </div>
   </section>
 </main>
+
+<!-- routing trainer (page-level overlay; opened from Settings) -->
+<div class="rk-tr" id="rkTrain" aria-hidden="true">
+  <div class="rk-tr-top">
+    <button class="rk-tr-x" type="button" onclick="rkTrainClose()" aria-label="Close">✕</button>
+    <div class="rk-tr-ttl">Train routing</div>
+    <div class="rk-tr-prog" id="rkTrProg"></div>
+  </div>
+  <div class="rk-tr-body" id="rkTrBody"></div>
+  <div class="rk-tr-foot">
+    <button class="rk-tr-back" type="button" onclick="rkTrainBack()">← Back</button>
+    <button class="rk-tr-skip" type="button" onclick="rkTrainSkip()">Skip →</button>
+  </div>
+</div>
 
 <nav id="nav"></nav>
 </div>
@@ -2497,16 +2559,19 @@ function stem(t){
   return t;
 }
 
-function pluSearch(q){
+function pluSearch(q){ return pluSearchIn(q, PLU); }
+/* Same scorer, but over any candidate list — lets the restock resolver rank the
+   Sheet's online matches with the exact logic the Info tab uses. */
+function pluSearchIn(q, list){
   const rawT = pluTokens(q);
-  if(!rawT.length || !PLU.length) return [];
+  if(!rawT.length || !list || !list.length) return [];
   const wantOrganic = rawT.includes("organic");
   const qt = rawT.filter(t => t !== "organic" && !GENERIC.has(t) && !GENERIC.has(stem(t)))
                  .map(stem).filter(t => t.length >= 2);
   if(!qt.length) return [];
 
   const scored = [];
-  for(const e of PLU){
+  for(const e of list){
     const isOrg = /^9\d{4}$/.test(e.plu);
     if(wantOrganic && !isOrg) continue;          // asked for organic, show organic
 
@@ -4690,7 +4755,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v44";
+const APP_VERSION = "v47";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -8445,22 +8510,43 @@ const RK_TABLES = [
 ];
 const RK_BY_ID = {}; RK_TABLES.forEach(t=>RK_BY_ID[t.id]=t);
 
-/* Keyword -> table. First table with a matching keyword wins, so more specific
-   terms sit above looser ones (grapefruit above grape, sweet potato above
-   potato, carrots -> fridge above any run). Runs 1-5 and fridge only; Pods and
-   Case Lots are never auto-filed. The fridge is the catch-all default. Easy to
-   retune: move a word between lists. */
+/* ---------- routing ----------
+   Three layers, best first:
+   1. What you've TAUGHT it — an explicit product->table map built in the trainer
+      (keyed by PLU when known, else by name). "none" means the store doesn't
+      carry it. A taught decision always wins.
+   2. Specific compound names that must beat a looser keyword (a "cherry tomato"
+      is a tomato, not a cherry; an "asian pear" sits on the stone table).
+   3. Keyword lists — the catch-all guess for anything untrained.
+   The fridge is the final default. */
+const KEY_RK_ROUTES = "label_rk_routes_v1";
+function rkRoutes(){ try{ return JSON.parse(localStorage.getItem(KEY_RK_ROUTES)||"{}"); }catch(e){ return {}; } }
+function rkRouteKey(name, plu){
+  const p = String(plu||"").replace(/\D/g,"");
+  if(p) return "plu:"+p;
+  return "n:"+String(name||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+}
+const RK_EXACT = [
+  ["tomatillo",  "fridge"],  // its catalogue name carries "tomatoes" — guard first
+  ["tomato",     "ctp"],     // every tomato -> the tomato table (beats "cherry")
+  ["asian pear", "citrus"],  // Asian/Nashi pear -> stone table, not with the apples
+  ["nashi",      "citrus"]
+];
 const RK_ROUTE = [
   ["citrus", ["orange","lemon","lime","grapefruit","clementine","mandarin","tangerine","peach","nectarine","plum","apricot","cherry","cherries","mango","kiwi","pineapple","cantaloupe","honeydew","melon","watermelon"]],
   ["apple",  ["apple","gala","fuji","ambrosia","honeycrisp","mcintosh","macintosh","cortland","granny","spartan","pear","bosc","anjou"]],
   ["berry",  ["banana","strawberr","blueberr","raspberr","blackberr","cranberr","berry","berries","grape"]],
   ["root",   ["onion","garlic","ginger","squash","beet","turnip","sweet potato","yam","shallot","leek","fennel"]],
-  ["ctp",    ["cucumber","cuke","tomato","tomatoes","potato","potatoes","roma"]],
+  ["ctp",    ["cucumber","cuke","tomato","tomatoes","potato","potatoes"]],
   ["fridge", ["herb","cilantro","parsley","dill","basil","mint","thyme","rosemary","sage","mushroom","pepper","radish","carrot","parsnip","rutabaga","lettuce","spinach","kale","arugula","green","celery","broccoli","cauliflower","cabbage","sprout","asparagus","zucchini","eggplant","wet"]]
 ];
-function tableFor(name){
+/* Returns a table id, or "none" if the product is marked as not carried. */
+function tableFor(name, plu){
+  const taught = rkRoutes()[rkRouteKey(name, plu)];
+  if(taught) return taught;                       // trained decision wins (may be "none")
   const s = String(name||"").toLowerCase();
-  for(const [id, keys] of RK_ROUTE){ if(keys.some(k=>s.includes(k))) return id; }
+  for(const [k,id] of RK_EXACT){ if(s.includes(k)) return id; }
+  for(const [id,keys] of RK_ROUTE){ if(keys.some(k=>s.includes(k))) return id; }
   return "fridge";                 // everything unrecognised waits on the fridge
 }
 
@@ -8497,16 +8583,50 @@ function rkTouch(){
   rkDirty = true; rkSave(); renderRestock();
   rkAutoSync();                     // send it to the floor on its own, shortly
 }
-function rkAddItem(name, table, qty){
+function rkAddItem(name, table, qty, plu){
   name = String(name||"").trim();
   if(!name) return null;
   const it = { id: rkNewId(), name: rkCap(name),
     table: RK_BY_ID[table] ? table : "fridge",
-    qty: String(qty||"").trim(), by: rkMeName(),
+    qty: String(qty||"").trim(), plu: String(plu||""), by: rkMeName(),
     claimId:"", claimBy:"", ts: Date.now() };
   rkState.items.push(it);
   rkTouch();
   return it;
+}
+/* Strip catalogue qualifiers like "(Organic)"/"(Large)" for a tidy card name. */
+function rkTidy(n){ return String(n||"").replace(/\s*\([^)]*\)/g," ").replace(/\s{2,}/g," ").trim(); }
+/* Snap a heard name to the on-device catalogue (same matcher the Info tab uses).
+   Instant + offline-safe; the online pass below refines it against the Sheet. */
+function rkResolve(heard){
+  try{ const r = pluSearch(heard); if(r.length && r[0]._score >= 90) return { name: rkTidy(r[0].name), plu: r[0].plu }; }catch(e){}
+  return { name: rkCap(heard), plu: "" };
+}
+/* Check the Sheet's FULL PLU + Barcode DB — the device may not have it all
+   cached — and, if it comes back with a confident match, correct the item's
+   name / PLU / table in place. Silent and best-effort: no signal, no change. */
+async function rkUpgradeOnline(heard, id){
+  if(!proxyUrl() || !navigator.onLine) return;
+  try{
+    const d = await callProxy({ action:"pluLookup", q: heard });
+    if(!d || !d.ok || !Array.isArray(d.matches) || !d.matches.length) return;
+    const cand = d.matches.map(m=>({ plu: m.plu || m.code || "", name: m.name, own: true }));
+    const best = pluSearchIn(heard, cand)[0];
+    if(!best || best._score < 90) return;
+    const it = rkState.items.find(x=>x.id===id); if(!it) return;
+    const name = rkTidy(best.name);
+    const table = tableFor(name, best.plu);
+    if(table === "none"){                       // trained as not carried -> drop it
+      const i = rkState.items.findIndex(x=>x.id===id);
+      if(i>=0){ rkState.items.splice(i,1); rkTouch(); toast("Not carried: " + name); }
+      return;
+    }
+    let changed = false;
+    if(name && name !== it.name){ it.name = name; changed = true; }
+    if(best.plu && best.plu !== it.plu){ it.plu = best.plu; changed = true; }
+    if(table !== it.table){ it.table = table; changed = true; }
+    if(changed){ it.ts = Date.now(); rkTouch(); }
+  }catch(e){ /* offline or refused — the local guess stands */ }
 }
 function rkAddManual(){
   const nameEl = document.getElementById("rkTin");
@@ -8543,7 +8663,8 @@ function rkToggle(id){
   if(card) card.classList.toggle("rk-closed", rkClosed[id]);
 }
 
-/* ---- voice ---- each heard item is auto-filed to a run or the fridge ---- */
+/* ---- voice ---- each heard item is resolved against the catalogue, filed to
+   its table (taught map first, then keywords), then refined against the Sheet. */
 function commitRestockSpoken(text){
   const rows = parseSpoken(text, "loop");
   const h = document.getElementById("rkHeard");
@@ -8552,8 +8673,17 @@ function commitRestockSpoken(text){
   rows.forEach(r=>{
     const qty = r.kg ? (kgStr(r.qty) + " " + unitLabel())
                      : (r.qty > 1 ? String(r.qty) : "");
-    const it = rkAddItem(r.name, tableFor(r.name), qty);
-    if(it){ n++; last = it; }
+    const m = rkResolve(r.name);
+    const table = tableFor(m.name, m.plu);
+    if(table === "none"){                       // taught that the store skips this
+      toastUndo("Not carried: " + m.name + " \u2014 skipped", ()=>{
+        const it = rkAddItem(m.name, "fridge", qty, m.plu);
+        if(it) rkUpgradeOnline(r.name, it.id);
+      });
+      return;
+    }
+    const it = rkAddItem(m.name, table, qty, m.plu);
+    if(it){ n++; last = it; rkUpgradeOnline(r.name, it.id); }
   });
   if(h) h.textContent = "";
   if(n === 1 && last) toast("Filed \u201C" + last.name + "\u201D \u2192 " + RK_BY_ID[last.table].name);
@@ -8617,6 +8747,7 @@ function rkRow(x, me){
   const other = x.claimId && !mine;
   const meta = [];
   if(x.qty) meta.push('<span class="rk-qty">'+esc(x.qty)+'</span>');
+  if(x.plu) meta.push('<span class="rk-plu">'+esc(x.plu)+'</span>');
   if(x.by)  meta.push('<span>'+esc(x.by)+'</span>');
   const claimCell = other
     ? '<div class="rk-owner" onclick="rkClaim(\''+x.id+'\')" title="Tap to take over"><b>'+esc(rkInitials(x.claimBy))+'</b><small>'+esc(x.claimBy)+'</small></div>'
@@ -8705,6 +8836,109 @@ function rkStartPoll(){
   rkPollTimer = setInterval(()=>{ if(!document.hidden) rkPull(); }, 30000);
 }
 function rkStopPoll(){ if(rkPollTimer){ clearInterval(rkPollTimer); rkPollTimer = null; } }
+
+/* ============================================================
+   ROUTING TRAINER — teach which table each product belongs on
+   ============================================================
+   The taught map (product -> table, keyed by PLU) is the top layer of
+   tableFor(). Here you walk your Sheet PLU DB one item at a time and tap its
+   home table, or "Not in store". Every choice saves locally and MERGES up to
+   the Sheet so all phones share one planogram brain. */
+let rkPendingRoutes = {};
+let rkRoutesTimer = null;
+function rkRoutesSet(key, table){
+  const m = rkRoutes();
+  m[key] = table;                         // a table id, or "none"
+  try{ localStorage.setItem(KEY_RK_ROUTES, JSON.stringify(m)); }catch(e){}
+  rkPendingRoutes[key] = table;
+  clearTimeout(rkRoutesTimer);
+  rkRoutesTimer = setTimeout(rkRoutesFlush, 1200);
+}
+async function rkRoutesFlush(){
+  if(!proxyUrl() || !navigator.onLine) return;
+  const set = rkPendingRoutes; rkPendingRoutes = {};
+  if(!Object.keys(set).length) return;
+  try{
+    const d = await callProxy({ action:"routesSync", set });
+    if(d && d.ok && d.routes){ localStorage.setItem(KEY_RK_ROUTES, JSON.stringify(d.routes)); }
+  }catch(e){ Object.assign(rkPendingRoutes, set); }   // keep for next flush
+}
+async function rkRoutesPull(){
+  if(!proxyUrl() || !navigator.onLine) return;
+  try{
+    const d = await callProxy({ action:"routesGet" });
+    if(d && d.ok && d.routes){
+      const merged = Object.assign({}, d.routes, rkRoutes());  // local intent wins
+      localStorage.setItem(KEY_RK_ROUTES, JSON.stringify(merged));
+    }
+  }catch(e){}
+}
+
+let rkTrItems = [];
+let rkTrIdx = 0;
+async function rkTrainOpen(){
+  const ov = document.getElementById("rkTrain"); if(!ov) return;
+  ov.classList.add("open"); ov.setAttribute("aria-hidden","false");
+  document.getElementById("rkTrBody").innerHTML = '<div class="rk-tr-load">Loading your PLU DB\u2026</div>';
+  await rkRoutesPull();
+  await rkTrainLoad();
+  rkTrIdx = 0;
+  rkTrainRender();
+}
+function rkTrainClose(){
+  const ov = document.getElementById("rkTrain"); if(!ov) return;
+  ov.classList.remove("open"); ov.setAttribute("aria-hidden","true");
+  rkRoutesFlush();
+  renderRestock();
+}
+async function rkTrainLoad(){
+  let map = dbPluMap();
+  if(!map || !Object.keys(map).length){ try{ await pullDb(); map = dbPluMap(); }catch(e){} }
+  const routes = rkRoutes();
+  rkTrItems = Object.keys(map||{})
+    .map(plu=>({ plu:plu, name:String(map[plu].name||""), origin:String(map[plu].origin||"") }))
+    .filter(x=>x.name)
+    .sort((a,b)=>{
+      const ta = routes[rkRouteKey(a.name,a.plu)] ? 1 : 0;
+      const tb = routes[rkRouteKey(b.name,b.plu)] ? 1 : 0;
+      return (ta-tb) || a.name.localeCompare(b.name);   // untrained first
+    });
+}
+function rkTrainDone(){ const r = rkRoutes(); return rkTrItems.filter(x=>r[rkRouteKey(x.name,x.plu)]).length; }
+function rkTrainRender(){
+  const body = document.getElementById("rkTrBody");
+  const prog = document.getElementById("rkTrProg");
+  if(!rkTrItems.length){ body.innerHTML = '<div class="rk-tr-load">No PLU items yet. Connect once so the app can pull your PLU DB, then reopen.</div>'; prog.textContent=""; return; }
+  if(rkTrIdx >= rkTrItems.length){
+    body.innerHTML = '<div class="rk-tr-done"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg><b>All caught up</b><span>Every item has a home. Reopen any time to adjust.</span></div>';
+    prog.textContent = rkTrainDone()+" trained"; return;
+  }
+  const it = rkTrItems[rkTrIdx];
+  const cur = rkRoutes()[rkRouteKey(it.name, it.plu)] || "";
+  const suggest = cur || tableFor(it.name, it.plu);
+  prog.textContent = rkTrainDone()+" trained \u00b7 "+(rkTrItems.length - rkTrIdx)+" left";
+  const tbls = RK_TABLES.map(t=>{
+    const on = cur ? cur===t.id : false;
+    const sug = !cur && suggest===t.id;
+    return '<button class="rk-tr-tbl'+(on?' on':'')+(sug?' sug':'')+'" style="--tc:'+t.tc+'" onclick="rkTrainPick(\''+t.id+'\')">'+
+      '<span class="rk-tr-dot"></span><b>'+esc(t.name)+'</b><small>'+esc(t.run)+'</small></button>';
+  }).join("");
+  const curLabel = cur==="none" ? "Not in store" : (RK_BY_ID[cur] ? RK_BY_ID[cur].name : "");
+  body.innerHTML =
+    '<div class="rk-tr-item"><div class="rk-tr-name">'+esc(it.name)+'</div>'+
+      '<div class="rk-tr-sub">PLU '+esc(it.plu)+(it.origin?' \u00b7 '+esc(it.origin):'')+(cur?' \u00b7 now: '+esc(curLabel):'')+'</div></div>'+
+    '<div class="rk-tr-tables">'+tbls+
+      '<button class="rk-tr-none'+(cur==="none"?' on':'')+'" onclick="rkTrainPick(\'none\')"><span class="rk-tr-dot"></span><b>Not in store</b><small>SKIP</small></button>'+
+    '</div>'+
+    (cur ? '' : '<div class="rk-tr-hint">Suggested: '+(RK_BY_ID[suggest]?esc(RK_BY_ID[suggest].name):'\u2014')+' \u2014 tap to confirm, or pick another</div>');
+}
+function rkTrainPick(table){
+  const it = rkTrItems[rkTrIdx]; if(!it) return;
+  rkRoutesSet(rkRouteKey(it.name, it.plu), table);
+  rkTrIdx++; rkTrainRender();
+}
+function rkTrainSkip(){ rkTrIdx++; rkTrainRender(); }
+function rkTrainBack(){ if(rkTrIdx>0){ rkTrIdx--; rkTrainRender(); } }
 
 /* Send the moment a signal returns, and re-check the board when the app comes
    back to the foreground on the Restock tab. */

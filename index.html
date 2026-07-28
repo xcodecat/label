@@ -1039,16 +1039,6 @@
   .rk-meta span{color:#666D75;font-size:8px}
   .rk-meta .rk-qty{color:#C8C2B7;font-family:var(--mono);border:1px solid #3A4148;border-radius:20px;
     padding:2px 6px;font-size:8px}
-  .rk-meta .rk-plu{color:var(--laser);font-family:var(--mono);border:1px solid #4a2e28;border-radius:20px;
-    padding:2px 6px;font-size:8px;letter-spacing:.03em}
-  .rk-copy .rk-bdg{display:inline-block;margin-left:5px;font-family:var(--mono);font-size:8px;font-weight:700;
-    letter-spacing:.04em;border-radius:5px;padding:1px 5px;vertical-align:middle;line-height:1.5}
-  .rk-copy .rk-bdg.brand{color:var(--laser);border:1px solid #4a2e28;background:#2a1a17}
-  .rk-copy .rk-bdg.pack{color:#C8C2B7;border:1px solid #3A4148;background:var(--surface-2)}
-  .nm-bdg{display:inline-block;margin:0;font-family:var(--mono);font-size:8px;font-weight:700;
-    letter-spacing:.04em;border-radius:5px;padding:1px 5px;vertical-align:middle;line-height:1.5;white-space:nowrap}
-  .nm-bdg.brand{color:var(--laser);border:1px solid #4a2e28;background:#2a1a17;margin-right:5px}
-  .nm-bdg.pack{color:#C8C2B7;border:1px solid #3A4148;background:var(--surface-2);margin-left:5px}
   .rk-claim{min-width:50px;height:28px;border:1px solid #444B52;border-radius:7px;background:none;
     color:#B1B7BD;font-size:9px;font-weight:720;cursor:pointer;display:inline-flex;
     align-items:center;justify-content:center;gap:3px;padding:0 8px;font-family:var(--sans)}
@@ -1089,40 +1079,6 @@
   .rk-stub .rk-tag{display:inline-block;margin-top:14px;font-family:var(--mono);font-size:10px;
     letter-spacing:.06em;background:var(--surface-2);border:1px solid var(--line);
     border-radius:20px;padding:4px 10px;color:var(--muted)}
-
-  /* ---------- routing trainer ---------- */
-  .rk-tr{position:fixed;inset:0;z-index:80;background:var(--ink);display:none;flex-direction:column;
-    padding:calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom))}
-  .rk-tr.open{display:flex}
-  .rk-tr-top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-  .rk-tr-x{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);
-    background:var(--surface);color:var(--paper);font-size:14px;cursor:pointer}
-  .rk-tr-ttl{font-weight:800;font-size:16px;flex:1}
-  .rk-tr-prog{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:right}
-  .rk-tr-body{flex:1;overflow:auto}
-  .rk-tr-item{text-align:center;padding:22px 8px 22px}
-  .rk-tr-name{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.12}
-  .rk-tr-sub{margin-top:9px;font-family:var(--mono);font-size:11px;color:var(--muted)}
-  .rk-tr-tables{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  .rk-tr-tbl,.rk-tr-none{display:flex;align-items:center;gap:9px;text-align:left;padding:13px 12px;
-    border-radius:11px;border:1px solid var(--line);background:var(--surface);color:var(--paper);
-    cursor:pointer;font-size:13px}
-  .rk-tr-tbl b,.rk-tr-none b{font-weight:700;flex:1}
-  .rk-tr-tbl small,.rk-tr-none small{font-family:var(--mono);font-size:8px;color:var(--muted)}
-  .rk-tr-dot{width:12px;height:12px;border-radius:50%;background:var(--tc,#8A939C);flex:none}
-  .rk-tr-tbl.sug{border-color:#4a5560}
-  .rk-tr-tbl.on{border-color:var(--tc);box-shadow:inset 0 0 0 1px var(--tc)}
-  .rk-tr-none{grid-column:1 / -1}
-  .rk-tr-none .rk-tr-dot{background:#5a6169}
-  .rk-tr-none.on{border-color:var(--laser);box-shadow:inset 0 0 0 1px var(--laser)}
-  .rk-tr-hint{margin-top:13px;text-align:center;font-size:11px;color:var(--muted)}
-  .rk-tr-foot{display:flex;gap:8px;margin-top:12px}
-  .rk-tr-back,.rk-tr-skip{flex:1;padding:12px;border-radius:10px;border:1px solid var(--line);
-    background:var(--surface);color:var(--paper);font-size:13px;font-weight:700;cursor:pointer}
-  .rk-tr-load,.rk-tr-done{text-align:center;color:var(--muted);padding:44px 18px;line-height:1.6;
-    display:flex;flex-direction:column;align-items:center;gap:10px}
-  .rk-tr-done svg{width:44px;height:44px;stroke:var(--ok);fill:none;stroke-width:2}
-  .rk-tr-done b{color:var(--paper);font-size:18px}
 
   /* ---------- handoff (shift pass-down) ---------- */
   #view-handoff{padding-bottom:138px}
@@ -1252,140 +1208,58 @@
   .ho-menu button .tick{margin-left:auto;color:var(--ok);display:grid;place-items:center}
   .ho-menu button .tick svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:3;
     stroke-linecap:round;stroke-linejoin:round}
+
+  /* ---------- handoff status icon (header, far right) ---------- */
+  .htop-right{display:flex;align-items:center;gap:12px;align-self:center}
+  .ho-nav{position:relative;width:38px;height:38px;flex:none;background:none;border:0;padding:0;
+    cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .ho-nav-pulse{position:absolute;inset:3px;border-radius:50%;background:var(--laser);opacity:0;z-index:0}
+  .ho-nav.attn .ho-nav-pulse{animation:hnpulse 1.9s ease-out infinite}
+  @keyframes hnpulse{0%{transform:scale(.7);opacity:.5}70%{transform:scale(1.3);opacity:0}100%{opacity:0}}
+  .ho-nav-disc{position:absolute;inset:4px;border-radius:50%;overflow:hidden;z-index:2;
+    border:1.5px solid var(--line);background:var(--surface-2)}
+  .ho-nav-disc img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .09s linear}
+  .hn-smile{opacity:0}
+  .ho-nav.smiling .hn-blink{opacity:0}
+  .ho-nav.smiling .hn-smile{opacity:1}
+  .ho-nav-ring{position:absolute;inset:0;z-index:3;pointer-events:none;transform:rotate(-90deg)}
+  .ho-nav-ring circle{fill:none;stroke-width:3;stroke-linecap:round;opacity:0;
+    transition:stroke-dashoffset .5s ease,stroke .35s ease,opacity .3s}
+  .ho-nav-badge{position:absolute;top:-3px;right:-3px;z-index:4;min-width:17px;height:17px;padding:0 4px;
+    border-radius:20px;background:var(--laser);color:#fff;font-family:var(--mono);font-size:10px;font-weight:700;
+    display:none;align-items:center;justify-content:center;border:2px solid var(--ink);line-height:1}
+  .ho-nav.hasbadge .ho-nav-badge{display:flex}
+  .ho-nav.seen.hasbadge .ho-nav-badge{background:var(--surface-2);color:var(--paper)}
+  .ho-nav.pop{animation:hnpop .22s cubic-bezier(.2,1.5,.4,1)}
+  @keyframes hnpop{0%{transform:scale(1)}45%{transform:scale(1.14)}100%{transform:scale(1)}}
+  .ho-nav.wiggle{animation:hnwiggle .6s ease}
+  @keyframes hnwiggle{0%,100%{transform:rotate(0)}15%{transform:rotate(-9deg)}30%{transform:rotate(8deg)}
+    45%{transform:rotate(-6deg)}60%{transform:rotate(4deg)}75%{transform:rotate(-2deg)}}
+
+  /* voice dictation mic inside the add-note sheet */
+  .ho-inwrap{position:relative}
+  .ho-inwrap input,.ho-inwrap textarea{padding-right:48px}
+  .ho-inwrap.no-mic input,.ho-inwrap.no-mic textarea{padding-right:12px}
+  .ho-mic{position:absolute;right:7px;bottom:7px;width:34px;height:34px;border-radius:9px;
+    border:1px solid var(--line);background:var(--ink);color:var(--paper);display:grid;place-items:center;
+    cursor:pointer;padding:0}
+  .ho-mic svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .ho-mic.rec{background:var(--laser);border-color:var(--laser);color:#fff;animation:homicrec 1.3s infinite}
+  @keyframes homicrec{0%,100%{box-shadow:0 0 0 0 rgba(232,68,46,.5)}70%{box-shadow:0 0 0 8px rgba(232,68,46,0)}}
+
+  @media (prefers-reduced-motion: reduce){
+    .ho-nav-pulse,.ho-nav.wiggle,.ho-nav.pop,.ho-mic.rec{animation:none !important}
+  }
 </style>
   <!-- The ?v is not decoration. A service worker caches manifest.json, and if an
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=51">
+  <link rel="manifest" href="./manifest.json?v=45">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CatCaddy">
-<style id="pg-style">
-  /* ===== Planogram ===== reuses app tokens (--surface/--line/--laser…) */
-  #view-planogram{ --r1:#3ecf8e; --r2:#c0417a; --r3:#e8a13a; --r4:#4a90d9; --r5:#b07d3a; }
-  .pg-find{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);
-    border-radius:12px;padding:0 14px;height:50px;margin-bottom:4px}
-  .pg-find svg{width:18px;height:18px;stroke:var(--muted);fill:none;stroke-width:2;flex:none}
-  .pg-find input{flex:1;background:none;border:0;outline:0;color:var(--paper);font-size:15px;font-family:var(--sans)}
-  .pg-find input::placeholder{color:var(--muted)}
-  .pg-findres{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
-  .pg-findrow{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;
-    display:flex;align-items:center;gap:10px;font-size:14px}
-  .pg-findrow .pg-loc{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-  .pg-pin{font-family:var(--mono);font-size:9px;font-weight:700;border-radius:20px;padding:3px 8px;border:1px solid;white-space:nowrap}
-
-  .pg-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--muted);
-    text-transform:uppercase;margin:20px 2px 9px;display:flex;align-items:center;gap:8px}
-  .pg-cam{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);
-    display:grid;place-items:center;cursor:pointer;flex:none}
-  .pg-cam svg{width:17px;height:17px;stroke:var(--paper-dim);fill:none;stroke-width:1.8}
-  .pg-cam:active{background:var(--surface)}
-  .pg-eyebrow .pg-cam,.pg-eyebrow .pg-toggle{margin-left:auto}
-  .pg-eyebrow .pg-cam + .pg-toggle{margin-left:8px}
-
-  .pg-grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-  .pg-cell{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px;
-    min-height:92px;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between}
-  .pg-cell:active{border-color:var(--muted)}
-  .pg-cell h3{margin:0;font-size:15px;font-weight:640;line-height:1.25}
-  .pg-cell h3.pg-blank{color:var(--muted);font-weight:500;font-style:italic}
-  .pg-banner{align-self:flex-start;margin-top:10px;font-family:var(--mono);font-size:10px;font-weight:800;
-    border-radius:20px;padding:5px 10px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;border:0}
-  .pg-banner.canada{background:var(--laser);color:#fff}
-  .pg-banner.noname{background:#FEDD00;color:#1a1a1a}
-  .pg-banner.sales{background:linear-gradient(90deg,var(--laser) 0 55%,#FEDD00 55% 100%);color:#fff}
-  .pg-banner.none{background:var(--surface-2);color:var(--muted)}
-  .pg-mango{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
-  .pg-mango .pg-cell{min-height:50px;border-style:dashed;border-color:#8a6d2a;align-items:center;
-    justify-content:center;color:#d0a544;font-weight:640}
-
-  .pg-toggle{border:1px solid var(--line);background:var(--surface-2);border-radius:9px;width:34px;height:34px;
-    display:grid;place-items:center;cursor:pointer;flex:none}
-  .pg-toggle svg{width:16px;height:16px;stroke:var(--paper-dim);fill:none;stroke-width:1.6}
-  .pg-podcount{display:none;gap:6px;margin:0 0 3px}
-  .pg-podcount.open{display:flex}
-  .pg-podcount button{flex:1;height:36px;border:1px solid var(--line);background:var(--surface-2);color:var(--paper-dim);
-    border-radius:9px;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer}
-  .pg-podcount button.on{border-color:var(--laser);color:var(--paper)}
-  .pg-podgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-  .pg-podgrid .pg-cell{min-height:74px}
-  .pg-podnum{font-family:var(--mono);font-size:11px;font-weight:800;color:var(--muted);border:1px solid var(--line);
-    background:var(--surface-2);border-radius:7px;width:26px;height:24px;display:grid;place-items:center;margin-bottom:8px}
-
-  .pg-run{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:11px}
-  .pg-run-h{display:flex;align-items:center;gap:9px;padding:11px 12px;border-bottom:1px solid var(--line)}
-  .pg-run-tag{font-family:var(--mono);font-size:11px;font-weight:800;background:var(--surface-2);
-    border:1px solid var(--line);border-radius:8px;padding:4px 9px}
-  .pg-run-tag b{color:var(--paper)}
-  .pg-run-name{border:1px solid var(--rc);color:var(--rc);border-radius:20px;padding:4px 11px;font-size:12px;font-weight:750}
-  .pg-run-h .pg-cam{margin-left:auto}
-  .pg-ends{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:11px}
-  .pg-endcol h5{margin:0;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--muted);font-weight:700;
-    background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:7px;text-align:center}
-  .pg-slot{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:9px;
-    min-height:44px;cursor:pointer;display:flex;align-items:center;font-size:14px;font-weight:560}
-  .pg-slot:active{border-color:var(--muted)}
-  .pg-slot.pg-blank{color:var(--muted);font-style:italic;font-weight:500}
-
-  .pg-lot{display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:center;background:var(--surface);
-    border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer}
-  .pg-lot .pg-lt{font-family:var(--mono);font-size:12px;font-weight:800;background:var(--surface-2);border:1px solid var(--line);
-    border-radius:8px;padding:5px 9px;white-space:nowrap}
-  .pg-lot .pg-lv{font-size:14px}
-  .pg-lot .pg-lv.pg-blank{color:var(--muted);font-style:italic}
-
-  /* editor sheet */
-  .pg-scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.18s;z-index:60}
-  .pg-scrim.show{opacity:1;pointer-events:auto}
-  .pg-sheet{position:fixed;left:0;right:0;bottom:0;max-width:var(--appw,480px);margin:0 auto;background:var(--surface);
-    border-radius:18px 18px 0 0;border:1px solid var(--line);border-bottom:0;transform:translateY(100%);
-    transition:.22s cubic-bezier(.2,.8,.2,1);z-index:61;padding:16px 16px calc(18px + env(safe-area-inset-bottom))}
-  .pg-sheet.show{transform:translateY(0)}
-  .pg-sheet .pg-bar{width:38px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 14px}
-  .pg-sheet .pg-lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
-  .pg-sheet h4{margin:3px 0 12px;font-size:16px}
-  .pg-editrow{display:flex;gap:9px;align-items:center}
-  .pg-editrow input{flex:1;height:50px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
-    padding:0 14px;color:var(--paper);font-size:15px;outline:0;font-family:var(--sans)}
-  .pg-editrow input:focus{border-color:var(--laser)}
-  .pg-mic{width:50px;height:50px;flex:none;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);
-    display:grid;place-items:center;cursor:pointer}
-  .pg-mic svg{width:20px;height:20px;stroke:var(--paper-dim);fill:none;stroke-width:1.8}
-  .pg-mic.live{background:var(--laser);border-color:var(--laser)}
-  .pg-mic.live svg{stroke:#fff}
-  .pg-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px}
-  .pg-chip{border:1px solid var(--line);background:var(--surface-2);color:var(--paper-dim);border-radius:20px;
-    padding:8px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px}
-  .pg-chip:active{border-color:var(--muted)}
-  .pg-chip .pg-learn{font-family:var(--mono);font-size:9px;color:var(--r1)}
-  .pg-chip .pg-plu{font-family:var(--mono);font-size:9px;color:var(--muted)}
-  .pg-matchhdr{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);margin:14px 0 6px;text-transform:uppercase}
-  .pg-sheet .pg-hint{font-size:12px;color:var(--muted);margin-top:12px}
-  .pg-sheet .pg-keep{margin-top:13px;width:100%;height:46px;border:1px dashed var(--line);background:none;color:var(--paper-dim);
-    border-radius:12px;font-size:13px;font-weight:650;cursor:pointer}
-
-  /* reading overlay */
-  .pg-reading{position:fixed;inset:0;background:rgba(10,12,14,.86);display:none;place-items:center;z-index:70}
-  .pg-reading.show{display:grid}
-  .pg-spin{width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--laser);border-radius:50%;
-    margin:0 auto 14px;animation:pg-sp 1s linear infinite}
-  @keyframes pg-sp{to{transform:rotate(360deg)}}
-  .pg-reading p{font-size:14px;color:var(--paper-dim);text-align:center}
-
-  .pg-dock{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);
-    border-radius:14px;padding:11px 14px;margin:14px 0 4px}
-  .pg-dock .pg-sd{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none}
-  .pg-dock.pg-dirty .pg-sd{background:var(--laser)}
-  .pg-dock strong{font-size:13px;display:block}
-  .pg-dock small{color:var(--muted);font-size:11px}
-  .pg-dock .pg-syncbtn{margin-left:auto;background:var(--laser);color:#fff;border:0;border-radius:10px;height:42px;
-    padding:0 18px;font-weight:800;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:7px}
-  .pg-dock .pg-syncbtn svg{width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2}
-  .pg-dock .pg-syncbtn.pg-spin svg{animation:pg-sp 1s linear infinite}
-</style>
-
 </head>
 <body>
 <div id="lockScreen" class="lock checking">
@@ -1414,15 +1288,25 @@
   <div class="htop">
     <h1 class="wordmark"><span class="stripes" aria-hidden="true"></span><span class="w1">Cat</span><span class="w2">Caddy</span></h1>
 
-    <button class="gear burger" id="btnGear" aria-label="Settings">
-      <span class="bl b1"></span><span class="bl b2"></span><span class="bl b3"></span>
-      <span class="tri" aria-hidden="true"></span>
-    </button>
+    <div class="htop-right">
+      <button class="ho-nav" id="hoNav" type="button" aria-label="Shift Handoff" title="Shift Handoff" onclick="setSection('handoff')">
+        <span class="ho-nav-pulse"></span>
+        <span class="ho-nav-disc">
+          <img class="hn-blink" alt="" src="data:image/webp;base64,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">
+          <img class="hn-smile" alt="" src="data:image/webp;base64,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">
+        </span>
+        <svg class="ho-nav-ring" viewBox="0 0 44 44" aria-hidden="true"><circle id="hoNavRing" cx="22" cy="22" r="20"></circle></svg>
+        <span class="ho-nav-badge" id="hoNavBadge">0</span>
+      </button>
+      <button class="gear burger" id="btnGear" aria-label="Settings">
+        <span class="bl b1"></span><span class="bl b2"></span><span class="bl b3"></span>
+        <span class="tri" aria-hidden="true"></span>
+      </button>
+    </div>
   </div>
   <div class="sections" id="sections">
     <button data-s="store" onclick="setSection('store')">Store</button>
     <button data-s="floor" onclick="setSection('floor')">Floor</button>
-    <button data-s="handoff" onclick="setSection('handoff')">Handoff</button>
     <button data-s="inv" onclick="setSection('inv')">Inventory</button>
   </div>
 </header>
@@ -1885,71 +1769,14 @@
     </div>
   </section>
 
-    <!-- ============ PLANOGRAM VIEW ============ -->
+  <!-- ============ PLANOGRAM VIEW (stub) ============ -->
   <section id="view-planogram" class="view">
-    <div class="rk-head">
-      <div><p class="rk-eyebrow">FLOOR · PLANOGRAM</p><h1>Planogram</h1></div>
-      <div class="rk-live"><span></span>SHARED</div>
-    </div>
-
-    <div class="pg-find">
-      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
-      <input id="pgFind" placeholder="Find any item → its spot on the floor" autocomplete="off" oninput="pgDoFind(this.value)">
-    </div>
-    <div class="pg-findres" id="pgFindRes"></div>
-
-    <div class="pg-eyebrow">POD 1 — AS IT SITS ON THE FLOOR
-      <button class="pg-cam" type="button" onclick="pgShoot('pod1',['Pod 1'])" aria-label="Photo of Pod 1"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
-    </div>
-    <div class="pg-grid2" id="pgPod1"></div>
-    <div class="pg-mango" id="pgMango"></div>
-
-    <div class="pg-eyebrow">POD 2 — NUMBERED PODS
-      <button class="pg-cam" type="button" onclick="pgShoot('pod2',['Pod 2'])" aria-label="Photo of Pod 2"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
-      <button class="pg-toggle" type="button" onclick="document.getElementById('pgPodCount').classList.toggle('open')" aria-label="Pod count"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button>
-    </div>
-    <div class="pg-podcount" id="pgPodCount">
-      <button data-n="4" type="button" onclick="pgSetPods(4)">4 pods</button>
-      <button data-n="6" type="button" onclick="pgSetPods(6)">6 pods</button>
-      <button data-n="8" type="button" onclick="pgSetPods(8)">8 pods</button>
-    </div>
-    <div class="pg-podgrid" id="pgPod2"></div>
-
-    <div class="pg-eyebrow">ENDCAPS</div>
-    <div id="pgRuns"></div>
-
-    <div class="pg-eyebrow">CASE LOTS
-      <button class="pg-cam" type="button" onclick="pgShoot('lots',['Case Lots'])" aria-label="Photo of Case Lots"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
-    </div>
-    <div id="pgLots"></div>
-
-    <div class="pg-dock" id="pgDock">
-      <span class="pg-sd"></span>
-      <div><strong id="pgDockTitle">All synced</strong><small id="pgDockSub">Nothing to send yet</small></div>
-      <button class="pg-syncbtn" id="pgSyncBtn" type="button" onclick="pgSync(true)">
-        <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><polyline points="21 3 21 9 15 9"/></svg>Sync
-      </button>
+    <div class="rk-head"><div><p class="rk-eyebrow">FLOOR · PLANOGRAM</p><h1>Planogram</h1></div></div>
+    <div class="rk-stub">
+      <b>Coming soon</b>
+      <span class="rk-tag">FLOOR · PLANOGRAM</span>
     </div>
   </section>
-
-  <!-- planogram editor sheet + camera + reading overlay -->
-  <div class="pg-scrim" id="pgScrim" onclick="pgCloseSheet()"></div>
-  <div class="pg-sheet" id="pgSheet">
-    <div class="pg-bar"></div>
-    <div class="pg-lbl" id="pgSheetLbl">POD</div>
-    <h4 id="pgSheetTitle">Assign item</h4>
-    <div class="pg-editrow">
-      <input id="pgSheetInput" placeholder="Type an item…" autocomplete="off" oninput="pgOnType(this.value)">
-      <button class="pg-mic" id="pgMic" type="button" onclick="pgToggleMic()" aria-label="Speak the item"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></svg></button>
-    </div>
-    <div id="pgMatches"></div>
-    <div class="pg-matchhdr" id="pgSugHdr">Suggested for this spot</div>
-    <div class="pg-chips" id="pgSug"></div>
-    <button class="pg-keep" id="pgKeepBtn" type="button" onclick="pgKeepTyped()">Keep what I typed</button>
-    <div class="pg-hint">Matches search the PLU + Barcode DB. Speak or type — no match keeps your text. Suggestions learn from what usually goes here.</div>
-  </div>
-  <div class="pg-reading" id="pgReading"><div><div class="pg-spin"></div><p id="pgReadingTxt">Reading photo…</p></div></div>
-  <input type="file" accept="image/*" capture="environment" id="pgCamInput" hidden>
 
   <!-- ============ HANDOFF VIEW ============ -->
   <section id="view-handoff" class="view">
@@ -2057,13 +1884,6 @@
       <p class="lookup-note" id="dbStatus"></p>
     </div>
     <div class="panel">
-      <h3>Restock routing <span class="hint">(developer)</span></h3>
-      <p>Teach which table each product belongs on, walking your PLU DB one item
-         at a time. Once it's trained you rarely need this — taught items always
-         file where you put them, on every phone.</p>
-      <button class="btn btn-ghost" onclick="rkTrainOpen()">Open routing trainer</button>
-    </div>
-    <div class="panel">
       <h3>This phone</h3>
       <div class="field">
         <label for="setSecret">Shared secret</label>
@@ -2139,20 +1959,6 @@
     </div>
   </section>
 </main>
-
-<!-- routing trainer (page-level overlay; opened from Settings) -->
-<div class="rk-tr" id="rkTrain" aria-hidden="true">
-  <div class="rk-tr-top">
-    <button class="rk-tr-x" type="button" onclick="rkTrainClose()" aria-label="Close">✕</button>
-    <div class="rk-tr-ttl">Train routing</div>
-    <div class="rk-tr-prog" id="rkTrProg"></div>
-  </div>
-  <div class="rk-tr-body" id="rkTrBody"></div>
-  <div class="rk-tr-foot">
-    <button class="rk-tr-back" type="button" onclick="rkTrainBack()">← Back</button>
-    <button class="rk-tr-skip" type="button" onclick="rkTrainSkip()">Skip →</button>
-  </div>
-</div>
 
 <nav id="nav"></nav>
 </div>
@@ -2743,19 +2549,16 @@ function stem(t){
   return t;
 }
 
-function pluSearch(q){ return pluSearchIn(q, PLU); }
-/* Same scorer, but over any candidate list — lets the restock resolver rank the
-   Sheet's online matches with the exact logic the Info tab uses. */
-function pluSearchIn(q, list){
+function pluSearch(q){
   const rawT = pluTokens(q);
-  if(!rawT.length || !list || !list.length) return [];
+  if(!rawT.length || !PLU.length) return [];
   const wantOrganic = rawT.includes("organic");
   const qt = rawT.filter(t => t !== "organic" && !GENERIC.has(t) && !GENERIC.has(stem(t)))
                  .map(stem).filter(t => t.length >= 2);
   if(!qt.length) return [];
 
   const scored = [];
-  for(const e of list){
+  for(const e of PLU){
     const isOrg = /^9\d{4}$/.test(e.plu);
     if(wantOrganic && !isOrg) continue;          // asked for organic, show organic
 
@@ -2898,7 +2701,6 @@ function showView(name){
   if(sec){ curSection = sec; syncSectionPill(); renderNav(); }
   if(name !== "restock") rkStopPoll();   // only poll while the board is on screen
   if(name !== "handoff") hoStopPoll();
-  if(name !== "planogram") pgStopPoll();
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
@@ -2911,8 +2713,7 @@ function showView(name){
   if(name==="sales"){ renderWeekTabs(); renderSales(); }
   if(name==="scrap") renderLists();
   if(name==="restock"){ renderRestock(); rkPull(); rkStartPoll(); }
-  if(name==="handoff"){ renderHandoff(); hoPull(); hoStartPoll(); hoMaybePrompt(); }
-  if(name==="planogram"){ renderPlanogram(); pgPull(); pgStartPoll(); }
+  if(name==="handoff"){ hoMarkSeen(); renderHandoff(); hoPull(); hoStartPoll(); hoMaybePrompt(); renderHoIcon(); }
   if(name==="product"){
     renderProduct();
     // Land in the search box — looking something up is what this tab is for,
@@ -4114,7 +3915,7 @@ function renderList(){
     <div class="item">
       ${i.img ? `<img src="${i.img}" alt="Barcode photo">` : `<div class="no-img">no photo</div>`}
       <div class="info" onclick="openItem('${i.id}')">
-        <div class="name">${nmNameHtml(i.name)}${i.flyer?'<span class="badge">In flyer</span>':''}</div>
+        <div class="name">${esc(i.name)}${i.flyer?'<span class="badge">In flyer</span>':''}</div>
         <div class="code">${[
             i.plu ? "PLU "+esc(i.plu) : "",
             (i.code && !/^PLU/.test(i.code)) ? esc(i.code) : ""
@@ -4941,7 +4742,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v51";
+const APP_VERSION = "v45";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -5575,7 +5376,7 @@ function addItem(o){
     id: "i"+Date.now()+Math.random().toString(36).slice(2,6),
     ts: Date.now(),
     code: o.code || "",
-    name: nmShort(o.name || "(unnamed)"),
+    name: o.name || "(unnamed)",
     plu: o.plu || "",
     nameFr: o.nameFr || "",
     origin: o.origin || "",
@@ -8696,43 +8497,22 @@ const RK_TABLES = [
 ];
 const RK_BY_ID = {}; RK_TABLES.forEach(t=>RK_BY_ID[t.id]=t);
 
-/* ---------- routing ----------
-   Three layers, best first:
-   1. What you've TAUGHT it — an explicit product->table map built in the trainer
-      (keyed by PLU when known, else by name). "none" means the store doesn't
-      carry it. A taught decision always wins.
-   2. Specific compound names that must beat a looser keyword (a "cherry tomato"
-      is a tomato, not a cherry; an "asian pear" sits on the stone table).
-   3. Keyword lists — the catch-all guess for anything untrained.
-   The fridge is the final default. */
-const KEY_RK_ROUTES = "label_rk_routes_v1";
-function rkRoutes(){ try{ return JSON.parse(localStorage.getItem(KEY_RK_ROUTES)||"{}"); }catch(e){ return {}; } }
-function rkRouteKey(name, plu){
-  const p = String(plu||"").replace(/\D/g,"");
-  if(p) return "plu:"+p;
-  return "n:"+String(name||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
-}
-const RK_EXACT = [
-  ["tomatillo",  "fridge"],  // its catalogue name carries "tomatoes" — guard first
-  ["tomato",     "ctp"],     // every tomato -> the tomato table (beats "cherry")
-  ["asian pear", "citrus"],  // Asian/Nashi pear -> stone table, not with the apples
-  ["nashi",      "citrus"]
-];
+/* Keyword -> table. First table with a matching keyword wins, so more specific
+   terms sit above looser ones (grapefruit above grape, sweet potato above
+   potato, carrots -> fridge above any run). Runs 1-5 and fridge only; Pods and
+   Case Lots are never auto-filed. The fridge is the catch-all default. Easy to
+   retune: move a word between lists. */
 const RK_ROUTE = [
   ["citrus", ["orange","lemon","lime","grapefruit","clementine","mandarin","tangerine","peach","nectarine","plum","apricot","cherry","cherries","mango","kiwi","pineapple","cantaloupe","honeydew","melon","watermelon"]],
   ["apple",  ["apple","gala","fuji","ambrosia","honeycrisp","mcintosh","macintosh","cortland","granny","spartan","pear","bosc","anjou"]],
   ["berry",  ["banana","strawberr","blueberr","raspberr","blackberr","cranberr","berry","berries","grape"]],
   ["root",   ["onion","garlic","ginger","squash","beet","turnip","sweet potato","yam","shallot","leek","fennel"]],
-  ["ctp",    ["cucumber","cuke","tomato","tomatoes","potato","potatoes"]],
+  ["ctp",    ["cucumber","cuke","tomato","tomatoes","potato","potatoes","roma"]],
   ["fridge", ["herb","cilantro","parsley","dill","basil","mint","thyme","rosemary","sage","mushroom","pepper","radish","carrot","parsnip","rutabaga","lettuce","spinach","kale","arugula","green","celery","broccoli","cauliflower","cabbage","sprout","asparagus","zucchini","eggplant","wet"]]
 ];
-/* Returns a table id, or "none" if the product is marked as not carried. */
-function tableFor(name, plu){
-  const taught = rkRoutes()[rkRouteKey(name, plu)];
-  if(taught) return taught;                       // trained decision wins (may be "none")
+function tableFor(name){
   const s = String(name||"").toLowerCase();
-  for(const [k,id] of RK_EXACT){ if(s.includes(k)) return id; }
-  for(const [id,keys] of RK_ROUTE){ if(keys.some(k=>s.includes(k))) return id; }
+  for(const [id, keys] of RK_ROUTE){ if(keys.some(k=>s.includes(k))) return id; }
   return "fridge";                 // everything unrecognised waits on the fridge
 }
 
@@ -8769,108 +8549,24 @@ function rkTouch(){
   rkDirty = true; rkSave(); renderRestock();
   rkAutoSync();                     // send it to the floor on its own, shortly
 }
-function rkAddItem(name, table, qty, plu, tags){
+function rkAddItem(name, table, qty){
   name = String(name||"").trim();
   if(!name) return null;
   const it = { id: rkNewId(), name: rkCap(name),
     table: RK_BY_ID[table] ? table : "fridge",
-    qty: String(qty||"").trim(), plu: String(plu||""),
-    tags: Array.isArray(tags) ? tags : [], by: rkMeName(),
+    qty: String(qty||"").trim(), by: rkMeName(),
     claimId:"", claimBy:"", ts: Date.now() };
   rkState.items.push(it);
   rkTouch();
   return it;
 }
-/* Strip catalogue qualifiers like "(Organic)"/"(Large)" for a tidy card name. */
-function rkTidy(n){ return String(n||"").replace(/\s*\([^)]*\)/g," ").replace(/\s{2,}/g," ").trim(); }
-/* Store shorthand: pull brand + pack out of a name into badges, so
-   "Farmers Market Cucumber 6 pack" and "FM Cucumber 6pk" both reduce to the
-   same core "Cucumber" (which matches + routes far better) plus [FM] [6pk].
-   Brands/packs are stored in short form and shown as chips. Reusable anywhere. */
-const NM_BRANDS = [
-  { tag:"FM",  re:/\b(farmer'?s?\s*market|farmers?\s*mkt)\b/ig },
-  { tag:"NNI", re:/\b(no\s*name\s*naturally\s*imperfect|naturally\s*imperfect|no\s*name|nn+i|n\s*n\s*n?\s*i)\b/ig },
-  { tag:"FM",  re:/\bfm\b/ig }        // bare abbreviation last, long form preferred
-];
-function nmNormalize(raw){
-  let s = " " + String(raw||"").replace(/\s+/g," ").trim() + " ";
-  const brands = [];
-  NM_BRANDS.forEach(b=>{
-    const before = s;
-    s = s.replace(b.re, " ");
-    if(s !== before && brands.indexOf(b.tag) < 0) brands.push(b.tag);
-  });
-  const packs = [];
-  s = s.replace(/\b(\d{1,2})[\s-]*(?:packs?|pk|p\s*k)\b/ig, (m,n)=>{
-    const t = n + "pk"; if(packs.indexOf(t) < 0) packs.push(t); return " ";
-  });
-  const core = s.replace(/\s{2,}/g," ").trim();
-  if(!core) return { core: String(raw||"").trim(), tags: [] };   // was all shorthand
-  return { core, tags: brands.concat(packs) };
-}
-function nmTagKind(t){ return /pk$/i.test(t) ? "pack" : "brand"; }
-/* Short-form string for saving anywhere: "Farmers Market Cucumber 6 pack"
-   -> "FM Cucumber 6pk" (brand in front, pack behind the core). */
-function nmShort(raw){
-  const nm = nmNormalize(raw);
-  const brand = nm.tags.filter(t=>nmTagKind(t)==="brand");
-  const pack  = nm.tags.filter(t=>nmTagKind(t)==="pack");
-  return [brand.join(" "), nm.core, pack.join(" ")].filter(Boolean).join(" ").trim() || String(raw||"").trim();
-}
-/* Render helpers — reused wherever a produce name is shown, so the FM/NNI/pack
-   chips look the same in Restock, Add and Planogram. */
-function nmBadgesHtml(tags){ return (tags&&tags.length) ? tags.map(t=>'<span class="nm-bdg '+nmTagKind(t)+'">'+esc(t)+'</span>').join("") : ""; }
-function nmNameHtml(name){
-  const n = nmNormalize(name);
-  const brand = n.tags.filter(t=>nmTagKind(t)==="brand");
-  const pack  = n.tags.filter(t=>nmTagKind(t)==="pack");
-  return nmBadgesHtml(brand) + esc(n.core) + nmBadgesHtml(pack);
-}
-
-/* Snap a heard name to the on-device catalogue (same matcher the Info tab uses),
-   after stripping brand/pack noise. Instant + offline-safe; the online pass
-   below refines it against the Sheet. */
-function rkResolve(heard){
-  const nm = nmNormalize(heard);
-  let name = rkCap(nm.core), plu = "";
-  try{ const r = pluSearch(nm.core); if(r.length && r[0]._score >= 90){ name = rkTidy(r[0].name); plu = r[0].plu; } }catch(e){}
-  return { name, plu, tags: nm.tags };
-}
-/* Check the Sheet's FULL PLU + Barcode DB — the device may not have it all
-   cached — and, if it comes back with a confident match, correct the item's
-   name / PLU / table in place. Silent and best-effort: no signal, no change. */
-async function rkUpgradeOnline(heard, id){
-  if(!proxyUrl() || !navigator.onLine) return;
-  try{
-    const q = nmNormalize(heard).core;
-    const d = await callProxy({ action:"pluLookup", q });
-    if(!d || !d.ok || !Array.isArray(d.matches) || !d.matches.length) return;
-    const cand = d.matches.map(m=>({ plu: m.plu || m.code || "", name: m.name, own: true }));
-    const best = pluSearchIn(q, cand)[0];
-    if(!best || best._score < 90) return;
-    const it = rkState.items.find(x=>x.id===id); if(!it) return;
-    const name = rkTidy(best.name);
-    const table = tableFor(name, best.plu);
-    if(table === "none"){                       // trained as not carried -> drop it
-      const i = rkState.items.findIndex(x=>x.id===id);
-      if(i>=0){ rkState.items.splice(i,1); rkTouch(); toast("Not carried: " + name); }
-      return;
-    }
-    let changed = false;
-    if(name && name !== it.name){ it.name = name; changed = true; }
-    if(best.plu && best.plu !== it.plu){ it.plu = best.plu; changed = true; }
-    if(table !== it.table){ it.table = table; changed = true; }
-    if(changed){ it.ts = Date.now(); rkTouch(); }
-  }catch(e){ /* offline or refused — the local guess stands */ }
-}
 function rkAddManual(){
   const nameEl = document.getElementById("rkTin");
   const qtyEl  = document.getElementById("rkQty");
   const selEl  = document.getElementById("rkSel");
-  const raw = nameEl.value.trim();
-  if(!raw){ nameEl.focus(); return; }
-  const nm = nmNormalize(raw);
-  const it = rkAddItem(nm.core || raw, selEl.value, qtyEl.value, "", nm.tags);
+  const name = nameEl.value.trim();
+  if(!name){ nameEl.focus(); return; }
+  const it = rkAddItem(name, selEl.value, qtyEl.value);
   if(it){
     nameEl.value = ""; qtyEl.value = "";
     document.getElementById("rkHeard").textContent = "";
@@ -8899,8 +8595,7 @@ function rkToggle(id){
   if(card) card.classList.toggle("rk-closed", rkClosed[id]);
 }
 
-/* ---- voice ---- each heard item is resolved against the catalogue, filed to
-   its table (taught map first, then keywords), then refined against the Sheet. */
+/* ---- voice ---- each heard item is auto-filed to a run or the fridge ---- */
 function commitRestockSpoken(text){
   const rows = parseSpoken(text, "loop");
   const h = document.getElementById("rkHeard");
@@ -8909,17 +8604,8 @@ function commitRestockSpoken(text){
   rows.forEach(r=>{
     const qty = r.kg ? (kgStr(r.qty) + " " + unitLabel())
                      : (r.qty > 1 ? String(r.qty) : "");
-    const m = rkResolve(r.name);
-    const table = tableFor(m.name, m.plu);
-    if(table === "none"){                       // taught that the store skips this
-      toastUndo("Not carried: " + m.name + " \u2014 skipped", ()=>{
-        const it = rkAddItem(m.name, "fridge", qty, m.plu, m.tags);
-        if(it) rkUpgradeOnline(r.name, it.id);
-      });
-      return;
-    }
-    const it = rkAddItem(m.name, table, qty, m.plu, m.tags);
-    if(it){ n++; last = it; rkUpgradeOnline(r.name, it.id); }
+    const it = rkAddItem(r.name, tableFor(r.name), qty);
+    if(it){ n++; last = it; }
   });
   if(h) h.textContent = "";
   if(n === 1 && last) toast("Filed \u201C" + last.name + "\u201D \u2192 " + RK_BY_ID[last.table].name);
@@ -8991,7 +8677,7 @@ function rkRow(x, me){
       '</button>';
   return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+'">'+
       '<span class="rk-st">'+(x.claimId?'<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>':'')+'</span>'+
-      '<div class="rk-copy">'+nmBadgesHtml((x.tags||[]).filter(t=>nmTagKind(t)==="brand"))+'<strong>'+esc(x.name)+'</strong>'+nmBadgesHtml((x.tags||[]).filter(t=>nmTagKind(t)==="pack"))+(meta.length?'<div class="rk-meta">'+meta.join("")+'</div>':'')+'</div>'+
+      '<div class="rk-copy"><strong>'+esc(x.name)+'</strong>'+(meta.length?'<div class="rk-meta">'+meta.join("")+'</div>':'')+'</div>'+
       claimCell+
       '<button class="rk-del" onclick="rkDel(\''+x.id+'\')" aria-label="Remove"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>'+
     '</div>';
@@ -9072,105 +8758,6 @@ function rkStartPoll(){
 }
 function rkStopPoll(){ if(rkPollTimer){ clearInterval(rkPollTimer); rkPollTimer = null; } }
 
-/* ============================================================
-   ROUTING TRAINER — teach which table each product belongs on
-   ============================================================ */
-let rkPendingRoutes = {};
-let rkRoutesTimer = null;
-function rkRoutesSet(key, table){
-  const m = rkRoutes();
-  m[key] = table;                         // a table id, or "none"
-  try{ localStorage.setItem(KEY_RK_ROUTES, JSON.stringify(m)); }catch(e){}
-  rkPendingRoutes[key] = table;
-  clearTimeout(rkRoutesTimer);
-  rkRoutesTimer = setTimeout(rkRoutesFlush, 1200);
-}
-async function rkRoutesFlush(){
-  if(!proxyUrl() || !navigator.onLine) return;
-  const set = rkPendingRoutes; rkPendingRoutes = {};
-  if(!Object.keys(set).length) return;
-  try{
-    const d = await callProxy({ action:"routesSync", set });
-    if(d && d.ok && d.routes){ localStorage.setItem(KEY_RK_ROUTES, JSON.stringify(d.routes)); }
-  }catch(e){ Object.assign(rkPendingRoutes, set); }
-}
-async function rkRoutesPull(){
-  if(!proxyUrl() || !navigator.onLine) return;
-  try{
-    const d = await callProxy({ action:"routesGet" });
-    if(d && d.ok && d.routes){
-      const merged = Object.assign({}, d.routes, rkRoutes());
-      localStorage.setItem(KEY_RK_ROUTES, JSON.stringify(merged));
-    }
-  }catch(e){}
-}
-
-let rkTrItems = [];
-let rkTrIdx = 0;
-async function rkTrainOpen(){
-  const ov = document.getElementById("rkTrain"); if(!ov) return;
-  ov.classList.add("open"); ov.setAttribute("aria-hidden","false");
-  document.getElementById("rkTrBody").innerHTML = '<div class="rk-tr-load">Loading your PLU DB\u2026</div>';
-  await rkRoutesPull();
-  await rkTrainLoad();
-  rkTrIdx = 0;
-  rkTrainRender();
-}
-function rkTrainClose(){
-  const ov = document.getElementById("rkTrain"); if(!ov) return;
-  ov.classList.remove("open"); ov.setAttribute("aria-hidden","true");
-  rkRoutesFlush();
-  renderRestock();
-}
-async function rkTrainLoad(){
-  let map = dbPluMap();
-  if(!map || !Object.keys(map).length){ try{ await pullDb(); map = dbPluMap(); }catch(e){} }
-  const routes = rkRoutes();
-  rkTrItems = Object.keys(map||{})
-    .map(plu=>({ plu:plu, name:String(map[plu].name||""), origin:String(map[plu].origin||"") }))
-    .filter(x=>x.name)
-    .sort((a,b)=>{
-      const ta = routes[rkRouteKey(a.name,a.plu)] ? 1 : 0;
-      const tb = routes[rkRouteKey(b.name,b.plu)] ? 1 : 0;
-      return (ta-tb) || a.name.localeCompare(b.name);
-    });
-}
-function rkTrainDone(){ const r = rkRoutes(); return rkTrItems.filter(x=>r[rkRouteKey(x.name,x.plu)]).length; }
-function rkTrainRender(){
-  const body = document.getElementById("rkTrBody");
-  const prog = document.getElementById("rkTrProg");
-  if(!rkTrItems.length){ body.innerHTML = '<div class="rk-tr-load">No PLU items yet. Connect once so the app can pull your PLU DB, then reopen.</div>'; prog.textContent=""; return; }
-  if(rkTrIdx >= rkTrItems.length){
-    body.innerHTML = '<div class="rk-tr-done"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg><b>All caught up</b><span>Every item has a home. Reopen any time to adjust.</span></div>';
-    prog.textContent = rkTrainDone()+" trained"; return;
-  }
-  const it = rkTrItems[rkTrIdx];
-  const cur = rkRoutes()[rkRouteKey(it.name, it.plu)] || "";
-  const suggest = cur || tableFor(it.name, it.plu);
-  prog.textContent = rkTrainDone()+" trained \u00b7 "+(rkTrItems.length - rkTrIdx)+" left";
-  const tbls = RK_TABLES.map(t=>{
-    const on = cur ? cur===t.id : false;
-    const sug = !cur && suggest===t.id;
-    return '<button class="rk-tr-tbl'+(on?' on':'')+(sug?' sug':'')+'" style="--tc:'+t.tc+'" onclick="rkTrainPick(\''+t.id+'\')">'+
-      '<span class="rk-tr-dot"></span><b>'+esc(t.name)+'</b><small>'+esc(t.run)+'</small></button>';
-  }).join("");
-  const curLabel = cur==="none" ? "Not in store" : (RK_BY_ID[cur] ? RK_BY_ID[cur].name : "");
-  body.innerHTML =
-    '<div class="rk-tr-item"><div class="rk-tr-name">'+esc(it.name)+'</div>'+
-      '<div class="rk-tr-sub">PLU '+esc(it.plu)+(it.origin?' \u00b7 '+esc(it.origin):'')+(cur?' \u00b7 now: '+esc(curLabel):'')+'</div></div>'+
-    '<div class="rk-tr-tables">'+tbls+
-      '<button class="rk-tr-none'+(cur==="none"?' on':'')+'" onclick="rkTrainPick(\'none\')"><span class="rk-tr-dot"></span><b>Not in store</b><small>SKIP</small></button>'+
-    '</div>'+
-    (cur ? '' : '<div class="rk-tr-hint">Suggested: '+(RK_BY_ID[suggest]?esc(RK_BY_ID[suggest].name):'\u2014')+' \u2014 tap to confirm, or pick another</div>');
-}
-function rkTrainPick(table){
-  const it = rkTrItems[rkTrIdx]; if(!it) return;
-  rkRoutesSet(rkRouteKey(it.name, it.plu), table);
-  rkTrIdx++; rkTrainRender();
-}
-function rkTrainSkip(){ rkTrIdx++; rkTrainRender(); }
-function rkTrainBack(){ if(rkTrIdx>0){ rkTrIdx--; rkTrainRender(); } }
-
 /* Send the moment a signal returns, and re-check the board when the app comes
    back to the foreground on the Restock tab. */
 window.addEventListener("online", ()=>{ if(rkDirty) rkSync(false); });
@@ -9225,11 +8812,71 @@ function hoNewest(){ return hoState.notes.reduce((m,n)=>Math.max(m, n.ts||0), 0)
 function hoOpenCount(){ return hoState.notes.filter(n=>!n.done).length; }
 function hoDoneCount(){ return hoState.notes.filter(n=> n.done).length; }
 
+/* ---- header status icon ----
+   Idle (0 open): blinking cat, nothing else.
+   New & unseen: smiling-blink + red pulse + periodic wiggle + red badge.
+   Seen with work left: calm blink + ring (red if nothing cleared, else green
+   and shrinking as items are checked). "Seen" = you opened Handoff; a note that
+   arrives afterwards re-alerts. */
+const KEY_HO_SEEN = "label_handoff_seen_v1";
+let hoLastSeenAt = localStorage.getItem(KEY_HO_SEEN) || "";
+let hoPrevAttn = false;
+
+function hoMarkSeen(){ hoLastSeenAt = new Date().toISOString(); try{ localStorage.setItem(KEY_HO_SEEN, hoLastSeenAt); }catch(e){} }
+function hoUnseen(){
+  const seenMs = hoLastSeenAt ? Date.parse(hoLastSeenAt) : 0;
+  return hoState.notes.some(n => !n.done && (n.ts||0) > seenMs);
+}
+function hoPop(){ const el=document.getElementById("hoNav"); if(!el) return; el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
+
+function renderHoIcon(){
+  const el = document.getElementById("hoNav"); if(!el) return;
+  const open = hoOpenCount(), done = hoDoneCount(), total = hoState.notes.length;
+  const attn = open>0 && hoUnseen();
+
+  el.classList.toggle("attn", attn);
+  el.classList.toggle("smiling", attn);
+  el.classList.toggle("seen", !attn && open>0);
+  el.classList.toggle("hasbadge", open>0);
+
+  const badge = document.getElementById("hoNavBadge");
+  if(badge) badge.textContent = open>99 ? "99+" : open;
+
+  const ring = document.getElementById("hoNavRing");
+  if(ring){
+    const C = 2*Math.PI*20;
+    if(!ring.style.strokeDasharray) ring.style.strokeDasharray = C.toFixed(1);
+    const showRing = !attn && open>0;
+    if(showRing){
+      const remaining = total ? open/total : 1;
+      ring.style.opacity = 1;
+      ring.style.stroke = (done===0) ? "var(--laser)" : "var(--ok)";
+      ring.style.strokeDashoffset = (C*(1-remaining)).toFixed(1);
+    } else {
+      ring.style.opacity = 0;
+      ring.style.strokeDashoffset = C.toFixed(1);
+    }
+  }
+
+  if(attn && !hoPrevAttn) hoPop();          // pop the moment it starts demanding attention
+  hoPrevAttn = attn;
+}
+
+function hoWiggleTick(){
+  if(document.hidden) return;
+  if(!(hoOpenCount()>0 && hoUnseen())) return;
+  const el=document.getElementById("hoNav"); if(!el) return;
+  el.classList.remove("wiggle"); void el.offsetWidth; el.classList.add("wiggle");
+}
+
 /* every change stamps the board, saves, redraws, and sends on its own shortly */
 function hoTouch(){
   hoState.updatedBy = hoMeName();
   hoState.updatedAt = new Date().toISOString();
-  hoDirty = true; hoSave(); renderHandoff(); hoAutoSync();
+  hoDirty = true; hoSave();
+  const v = document.getElementById("view-handoff");
+  if(v && v.classList.contains("active")) hoMarkSeen();   // your own edits don't self-alert
+  renderHandoff(); renderHoIcon(); hoAutoSync();
 }
 function hoToggleDone(id){
   const n = hoState.notes.find(x=>x.id===id); if(!n) return;
@@ -9369,9 +9016,14 @@ async function hoPull(){
     if(d && d.ok && d.state && Array.isArray(d.state.notes)){
       const theirs = d.state.updatedAt || "";
       const mine   = hoState.updatedAt || "";
-      if(theirs && theirs >= mine){ hoState = d.state; hoSave(); renderHandoff(); }
+      if(theirs && theirs >= mine){
+        hoState = d.state; hoSave(); renderHandoff();
+        const v = document.getElementById("view-handoff");
+        if(v && v.classList.contains("active")) hoMarkSeen();
+      }
     }
   }catch(e){ /* offline or not approved yet — local board keeps working */ }
+  renderHoIcon();
 }
 function hoStartPoll(){ hoStopPoll(); hoPollTimer = setInterval(()=>{ if(!document.hidden) hoPull(); }, 30000); }
 function hoStopPoll(){ if(hoPollTimer){ clearInterval(hoPollTimer); hoPollTimer = null; } }
@@ -9399,6 +9051,29 @@ function hoPromptLater(){  const s = document.getElementById("hoPromptScrim"); i
 
 function hoCloseScrim(s){ if(s){ s.classList.remove("show"); s.onclick = null; } }
 
+/* dictate speech into a field; tap to start, tap again to stop */
+function hoWireMic(field, mic, SR){
+  if(!field || !mic) return;
+  let rec; try{ rec = new SR(); }catch(e){ mic.style.display="none"; return; }
+  rec.interimResults = true; rec.continuous = true; rec.lang = "en-US";
+  let base = "", recording = false;
+  mic.onclick = ()=>{
+    if(recording){ rec.stop(); return; }
+    base = field.value ? field.value.replace(/\s*$/,"")+" " : "";
+    try{ rec.start(); }catch(e){}
+  };
+  rec.onstart = ()=>{ recording = true; mic.classList.add("rec"); };
+  rec.onend   = ()=>{ recording = false; mic.classList.remove("rec"); };
+  rec.onerror = (e)=>{ recording = false; mic.classList.remove("rec");
+    if(e && e.error === "not-allowed") toast("Allow microphone access to dictate"); };
+  rec.onresult = (e)=>{
+    let txt = "";
+    for(let i=0;i<e.results.length;i++) txt += e.results[i][0].transcript;
+    field.value = base + txt;
+    if(field.id === "hoFTitle"){ const addB = document.getElementById("hoFAdd"); if(addB) addB.disabled = !field.value.trim(); }
+  };
+}
+
 /* ---- add-note sheet ---- */
 function hoOpenAdd(){
   const scrim = document.getElementById("hoAddScrim"); if(!scrim) return;
@@ -9408,9 +9083,11 @@ function hoOpenAdd(){
       '<div class="ho-grip"></div>'+
       '<h2>Pass it forward</h2>'+
       '<div class="ho-field"><label>What needs doing</label>'+
-        '<input type="text" id="hoFTitle" placeholder="e.g. Fill wet wall gaps before opening" autocomplete="off"></div>'+
+        '<div class="ho-inwrap"><input type="text" id="hoFTitle" placeholder="e.g. Fill wet wall gaps before opening" autocomplete="off">'+
+        '<button type="button" class="ho-mic" id="hoMicTitle" aria-label="Dictate" title="Dictate"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button></div></div>'+
       '<div class="ho-field"><label>Details</label>'+
-        '<textarea id="hoFDetail" placeholder="Where the product is, what to watch for\u2026"></textarea></div>'+
+        '<div class="ho-inwrap"><textarea id="hoFDetail" placeholder="Where the product is, what to watch for\u2026"></textarea>'+
+        '<button type="button" class="ho-mic" id="hoMicDetail" aria-label="Dictate" title="Dictate"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button></div></div>'+
       '<div class="ho-field"><label>Priority</label><div class="ho-chips" id="hoFPrio">'+
         '<button type="button" data-p="high"><span class="cd"></span>High</button>'+
         '<button type="button" data-p="medium" class="sel"><span class="cd"></span>Medium</button>'+
@@ -9432,6 +9109,16 @@ function hoOpenAdd(){
   const title = sheet.querySelector("#hoFTitle");
   const addB  = sheet.querySelector("#hoFAdd");
   title.addEventListener("input", ()=>{ addB.disabled = !title.value.trim(); });
+
+  // voice dictation — wire the mics, or hide them where speech-to-text isn't available
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const micT = sheet.querySelector("#hoMicTitle"), micD = sheet.querySelector("#hoMicDetail");
+  if(!SR){
+    [micT, micD].forEach(m=>{ if(m){ m.style.display="none"; m.closest(".ho-inwrap").classList.add("no-mic"); } });
+  } else {
+    hoWireMic(sheet.querySelector("#hoFTitle"), micT, SR);
+    hoWireMic(sheet.querySelector("#hoFDetail"), micD, SR);
+  }
   sheet.querySelectorAll("#hoFPrio button").forEach(b=>b.onclick = ()=>{
     sheet.querySelectorAll("#hoFPrio button").forEach(x=>x.classList.remove("sel"));
     b.classList.add("sel"); prio = b.dataset.p;
@@ -9475,362 +9162,17 @@ function hoOpenAssign(id){
 
 /* Draw the dynamic nav + section pill for the opening view (Add). Without this
    the bottom nav renders empty until a section pill is tapped. */
-/* ============================================================
-   PLANOGRAM — a shared, synced picture of where things live
-   ============================================================
-   Same shape as the Restock/Handoff boards: the whole layout lives in
-   localStorage, syncs to the "Planogram" Sheet tab last-write-wins, and polls
-   back while the tab is open. Every spot is tap-to-edit (type or speak, matched
-   against the PLU + Barcode DB), each section has a camera, and the board learns
-   what usually goes in each spot to suggest it next time. Learning rides inside
-   the synced state, so suggestions reflect the whole store, not one phone.
-
-   OCR NOTE: the camera captures a real photo, but recognition (photo -> item
-   names) needs an OCR provider that isn't wired yet. pgReadPhoto is built
-   online-first / offline-fallback; until PG_OCR_ENABLED is true it captures the
-   shot and asks you to tap/type/speak each box. Wiring OCR later is one function.
-*/
-
-const KEY_PLANO = "label_planogram_v1";
-const PG_OCR_ENABLED = false;   // flip on once an OCR endpoint exists (see pgReadPhoto)
-
-const PG_RUN_DEF = [
-  { tag:1, name:"Apple",                       c:"--r1" },
-  { tag:2, name:"Berry & Banana",              c:"--r2" },
-  { tag:3, name:"Citrus & Stone",              c:"--r3" },
-  { tag:4, name:"Cucumber\u00b7Tomato\u00b7Potato", c:"--r4" },
-  { tag:5, name:"Root veg & Onions",           c:"--r5" }
-];
-/* Pod-2 priority items seed the suggestions before anything is learned. */
-const PG_POD2_PRIORITY = [
-  {n:"#12", name:"Plantain (opt)"},{n:"#2",name:"Roma Tomatoes"},{n:"#8",name:"Opo Squash"},
-  {n:"#3",name:"Eggplant / Long"},{n:"#4",name:"Garlic 1KG"},{n:"#5",name:"3lb Red Onion"},{n:"#6",name:"Ginger Root"}
-];
-
-function pgDefault(){
-  return {
-    pod1:[
-      {name:"Grapes \u2014 Red / Green Seedless", banner:"canada"},
-      {name:"Cherries", banner:"canada"},
-      {name:"Tomatoes on the Vine", banner:"noname"},
-      {name:"Local Strawberries", banner:"sales"}
-    ],
-    mango:["Mango Case","Mango Case"],
-    podN:6,
-    pod2:["","","","","","","",""],
-    runs:[
-      { wet:["NNNI Apples 6lb","FM Navel Oranges 3lb"], hmr:["FM Peaches 3L","FM Nectarines 2L"] },
-      { wet:["Cut Watermelon","Red+Green Grapes"],      hmr:["Blueberries 2lb","FM Mandarins 2lb"] },
-      { wet:["Cantaloupe / Pineapple","FM Kiwi 2lb"],   hmr:["Regular Bananas","Joyburst Pack"] },
-      { wet:["PC Grape/Cherry Tom","FM Mini Cukes 6ct"],hmr:["Beefsteak Tomatoes","Romaine Hearts"] },
-      { wet:["FM Potatoes 10lb","PC Russets 5lb"],      hmr:["FM 3lb Carrots","FM 3lb Onions"] }
-    ],
-    lots:[
-      "10lb Russet/White Potato \u00b7 10lb Red Onion",
-      "10lb Russet/White \u00b7 10lb Red Onion",
-      "10lb Yellow & 10lb Red Potato",
-      "NN Peanuts 907g","","","Burpee Seed Rack"
-    ],
-    learn:{}, updatedBy:"", updatedAt:""
-  };
-}
-
-let pgState = pgLoad();
-let pgDirty = false, pgSyncing = false, pgOffline = false;
-let pgSyncTimer = null, pgPollTimer = null;
-
-function pgLoad(){
-  try{
-    const s = JSON.parse(localStorage.getItem(KEY_PLANO) || "null");
-    if(s && Array.isArray(s.runs)){ if(!s.learn) s.learn = {}; return s; }
-  }catch(e){}
-  return pgDefault();
-}
-function pgSave(){ try{ localStorage.setItem(KEY_PLANO, JSON.stringify(pgState)); }catch(e){} }
-function pgMe(){ try{ return rkMeName(); }catch(e){ return (localStorage.getItem(KEY_ME_NAME)||"").trim() || "You"; } }
-function pgTouch(){
-  pgState.updatedBy = pgMe();
-  pgState.updatedAt = new Date().toISOString();
-  pgDirty = true; pgSave(); renderPlanogram(); pgAutoSync();
-}
-
-/* ---- learning (rides inside synced state) ---- */
-function pgRemember(spot, name){
-  if(!name) return;
-  pgState.learn = pgState.learn || {};
-  pgState.learn[spot] = pgState.learn[spot] || {};
-  pgState.learn[spot][name] = (pgState.learn[spot][name]||0) + 1;
-}
-function pgSuggest(spot){
-  const L = (pgState.learn && pgState.learn[spot]) || {};
-  return Object.keys(L).sort((a,b)=>L[b]-L[a]).map(name=>({name, count:L[name]}));
-}
-
-/* ---- render ---- */
-function pgBannerLabel(b){ return b==="canada" ? "\ud83c\udf41 CANADA" : b==="noname" ? "no name" : b==="sales" ? "SALES" : "+ banner"; }
-function pgRenderPod1(){
-  const el = document.getElementById("pgPod1"); if(!el) return;
-  el.innerHTML = pgState.pod1.map((p,i)=>`
-    <div class="pg-cell" onclick="pgEdit('pod1-${i}')">
-      <h3 class="${p.name?'':'pg-blank'}">${nmNameHtml(p.name)||'tap to add'}</h3>
-      <button class="pg-banner ${p.banner||'none'}" type="button" onclick="event.stopPropagation();pgCycleBanner(${i})">${pgBannerLabel(p.banner)} \u25be</button>
-    </div>`).join("");
-}
-function pgRenderMango(){
-  const el = document.getElementById("pgMango"); if(!el) return;
-  el.innerHTML = pgState.mango.map((v,i)=>`<div class="pg-cell" onclick="pgEdit('mango-${i}')">${nmNameHtml(v)||'Mango Case'}</div>`).join("");
-}
-function pgRenderPod2(){
-  const el = document.getElementById("pgPod2"); if(!el) return;
-  let h="";
-  for(let i=0;i<pgState.podN;i++){
-    const v = pgState.pod2[i]||"";
-    h += `<div class="pg-cell" onclick="pgEdit('pod2-${i}')"><div class="pg-podnum">${i+1}</div>
-          <h3 class="${v?'':'pg-blank'}">${nmNameHtml(v)||'Empty'}</h3></div>`;
-  }
-  el.innerHTML = h;
-  document.querySelectorAll('#pgPodCount button').forEach(b=>b.classList.toggle('on', +b.dataset.n===pgState.podN));
-}
-function pgRenderRuns(){
-  const el = document.getElementById("pgRuns"); if(!el) return;
-  el.innerHTML = PG_RUN_DEF.map((r,ri)=>{
-    const st = pgState.runs[ri] || {wet:["",""],hmr:["",""]};
-    return `<div class="pg-run" style="--rc:var(${r.c})">
-      <div class="pg-run-h">
-        <span class="pg-run-tag">RUN <b>${r.tag}</b></span>
-        <span class="pg-run-name">${esc(r.name)}</span>
-        <button class="pg-cam" type="button" onclick="pgShoot('run-${ri}',['Run ${r.tag} \u00b7 Wet Cases end','Run ${r.tag} \u00b7 HMR end'])" aria-label="Two photos of Run ${r.tag}"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
-      </div>
-      <div class="pg-ends">
-        <div class="pg-endcol"><h5>\u25b2 WET CASES</h5>
-          ${st.wet.map((v,i)=>`<div class="pg-slot ${v?'':'pg-blank'}" onclick="pgEdit('run-${ri}-wet-${i}')">${nmNameHtml(v)||'tap to add'}</div>`).join("")}
-        </div>
-        <div class="pg-endcol"><h5>\u25bc HMR</h5>
-          ${st.hmr.map((v,i)=>`<div class="pg-slot ${v?'':'pg-blank'}" onclick="pgEdit('run-${ri}-hmr-${i}')">${nmNameHtml(v)||'tap to add'}</div>`).join("")}
-        </div>
-      </div>
-    </div>`;
-  }).join("");
-}
-function pgRenderLots(){
-  const el = document.getElementById("pgLots"); if(!el) return;
-  el.innerHTML = pgState.lots.map((v,i)=>`
-    <div class="pg-lot" onclick="pgEdit('lot-${i}')">
-      <span class="pg-lt">Lot ${i+1}</span>
-      <span class="pg-lv ${v?'':'pg-blank'}">${nmNameHtml(v)||'empty'}</span>
-    </div>`).join("");
-}
-function renderPlanogram(){
-  pgRenderPod1(); pgRenderMango(); pgRenderPod2(); pgRenderRuns(); pgRenderLots(); pgDock();
-}
-
-/* ---- banner + pod count ---- */
-const PG_BANNERS = ["canada","sales","noname",""];
-function pgCycleBanner(i){
-  const cur = pgState.pod1[i].banner||"";
-  pgState.pod1[i].banner = PG_BANNERS[(PG_BANNERS.indexOf(cur)+1)%PG_BANNERS.length];
-  pgTouch();
-}
-function pgSetPods(n){ pgState.podN = n; document.getElementById("pgPodCount").classList.remove("open"); pgTouch(); }
-
-/* ---- editor ---- */
-let pgCur = null;
-const PG_SPOT_LABEL = { pod1:"POD 1", pod2:"POD 2", mango:"POD 1 \u00b7 MANGO", run:"ENDCAP", lot:"CASE LOT" };
-function pgSpotMeta(key){
-  if(key.indexOf("pod1-")===0){ const i=+key.split("-")[1]; return {type:"pod1", spot:"pod1-"+i, label:"Pod 1 spot", get:()=>pgState.pod1[i].name, set:v=>pgState.pod1[i].name=v}; }
-  if(key.indexOf("mango-")===0){ const i=+key.split("-")[1]; return {type:"mango", spot:"mango", label:"Mango case", get:()=>pgState.mango[i], set:v=>pgState.mango[i]=v}; }
-  if(key.indexOf("pod2-")===0){ const i=+key.split("-")[1]; return {type:"pod2", spot:"pod2-"+i, label:"Pod "+(i+1), get:()=>pgState.pod2[i], set:v=>pgState.pod2[i]=v}; }
-  if(key.indexOf("run-")===0){ const p=key.split("-"); const ri=+p[1], end=p[2], i=+p[3];
-    return {type:"run", spot:"run"+(ri+1)+"-"+end, label:"Run "+PG_RUN_DEF[ri].tag+" \u00b7 "+(end==="wet"?"Wet Cases":"HMR"), get:()=>pgState.runs[ri][end][i], set:v=>pgState.runs[ri][end][i]=v}; }
-  if(key.indexOf("lot-")===0){ const i=+key.split("-")[1]; return {type:"lot", spot:"lot", label:"Case Lot "+(i+1), get:()=>pgState.lots[i], set:v=>pgState.lots[i]=v}; }
-}
-function pgEdit(key){
-  const m = pgSpotMeta(key); if(!m) return;
-  pgCur = Object.assign({key}, m);
-  document.getElementById("pgSheetLbl").textContent = PG_SPOT_LABEL[m.type] || m.type.toUpperCase();
-  document.getElementById("pgSheetTitle").textContent = m.label;
-  const cur = m.get()||"";
-  const inp = document.getElementById("pgSheetInput");
-  inp.value = /^(tap to add|empty|mango case)$/i.test(cur) ? "" : cur;
-  document.getElementById("pgMatches").innerHTML = "";
-  pgRenderSug();
-  document.getElementById("pgScrim").classList.add("show");
-  document.getElementById("pgSheet").classList.add("show");
-}
-function pgRenderSug(){
-  let list = pgSuggest(pgCur.spot).slice(0,6);
-  if(pgCur.type==="pod2" && list.length<3){
-    PG_POD2_PRIORITY.forEach(p=>{ if(!list.find(x=>x.name===p.name)) list.push({name:p.name, count:0, pref:p.n}); });
-  }
-  const hdr = document.getElementById("pgSugHdr"), box = document.getElementById("pgSug");
-  if(!list.length){ hdr.style.display="none"; box.innerHTML=""; return; }
-  hdr.style.display="";
-  box.innerHTML = list.slice(0,8).map(x=>{
-    const meta = x.count ? `<span class="pg-learn">\u00d7${x.count}</span>` : (x.pref ? `<span class="pg-plu">${x.pref}</span>` : "");
-    return `<button class="pg-chip" type="button" onclick='pgAssign(${JSON.stringify(x.name)})'>${esc(x.name)} ${meta}</button>`;
-  }).join("");
-}
-function pgOnType(v){
-  const q = String(v||"").trim();
-  const box = document.getElementById("pgMatches");
-  if(!q){ box.innerHTML=""; return; }
-  const seen = new Set(); const hits = [];
-  pluSearch(q).forEach(e=>{ const nm = e.name.replace(/\s*\(Organic\)\s*$/i,""); if(seen.has(nm)) return; seen.add(nm); hits.push({name:nm, plu:e.plu}); });
-  const top = hits.slice(0,5);
-  box.innerHTML = top.length
-    ? `<div class="pg-matchhdr">PLU / Barcode DB</div>` + top.map(d=>`<button class="pg-chip" type="button" onclick='pgAssign(${JSON.stringify(d.name)})'>${esc(d.name)} ${d.plu?`<span class="pg-plu">${d.plu}</span>`:""}</button>`).join("")
-    : `<div class="pg-hint">No DB match \u2014 \u201cKeep what I typed\u201d files it as-is.</div>`;
-}
-function pgAssign(name){ name = nmShort(name); pgCur.set(name); pgRemember(pgCur.spot, name); pgCloseSheet(); pgTouch(); toast("Filed: "+name); }
-function pgKeepTyped(){ let v=document.getElementById("pgSheetInput").value.trim(); if(!v){ pgCloseSheet(); return; } v = nmShort(v); pgCur.set(v); pgRemember(pgCur.spot, v); pgCloseSheet(); pgTouch(); toast("Filed: "+v); }
-function pgCloseSheet(){ document.getElementById("pgScrim").classList.remove("show"); document.getElementById("pgSheet").classList.remove("show"); pgStopMic(); }
-
-/* ---- voice (same engine as Scrap/Restock) ---- */
-let pgRec = null, pgMicLive = false;
-function pgToggleMic(){ pgMicLive ? pgStopMic() : pgStartMic(); }
-function pgStartMic(){
-  if(!SR){ toast("No speech support here \u2014 use Chrome on Android or Safari on iOS"); return; }
-  try{ if(typeof stopMic==="function") stopMic(); }catch(e){}   // free the shared recogniser
-  pgRec = new SR();
-  pgRec.lang = "en-CA"; pgRec.interimResults = true; pgRec.continuous = true; pgRec.maxAlternatives = 1;
-  pgRec.onresult = ev=>{
-    const all = (typeof joinResults==="function") ? joinResults(ev.results, false)
-              : Array.from(ev.results).map(r=>r[0].transcript).join(" ");
-    const inp = document.getElementById("pgSheetInput");
-    inp.value = all; pgOnType(all);
-  };
-  pgRec.onend = ()=>{ if(pgMicLive) pgStopMic(); };
-  try{ pgRec.start(); pgMicLive = true; document.getElementById("pgMic").classList.add("live"); }catch(e){}
-}
-function pgStopMic(){ pgMicLive = false; const m=document.getElementById("pgMic"); if(m) m.classList.remove("live"); if(pgRec){ try{ pgRec.stop(); }catch(e){} pgRec = null; } }
-
-/* ---- camera + OCR (online-first, offline fallback) ---- */
-let pgShootJob = null;
-function pgShoot(section, prompts){
-  pgShootJob = { section, prompts, idx:0 };
-  toast("\ud83d\udcf7 " + prompts[0]);
-  const inp = document.getElementById("pgCamInput"); inp.value = ""; inp.click();
-}
-function pgReadPhoto(file){
-  const job = pgShootJob;
-  document.getElementById("pgReadingTxt").textContent = "Reading " + (job.prompts[job.idx]||"photo") + "\u2026";
-  document.getElementById("pgReading").classList.add("show");
-  const done = ()=>{
-    document.getElementById("pgReading").classList.remove("show");
-    job.idx++;
-    if(job.idx < job.prompts.length){
-      toast("\ud83d\udcf7 Now: " + job.prompts[job.idx]);
-      const inp = document.getElementById("pgCamInput"); inp.value=""; setTimeout(()=>inp.click(), 300);
-    } else {
-      toast("Photo saved \u2014 tap any box to type or speak the item");
-      pgShootJob = null;
-    }
-  };
-  // ONLINE-FIRST: hand the photo to the proxy's OCR, cross-check names against
-  // the PLU/Barcode DB, drop results into the section's boxes. OFFLINE FALLBACK:
-  // on-device OCR (to wire). Until PG_OCR_ENABLED, capture only.
-  if(!PG_OCR_ENABLED){ setTimeout(done, 700); return; }
-  const reader = new FileReader();
-  reader.onload = async ()=>{
-    try{
-      const d = await callProxy({ action:"planogramOcr", image:String(reader.result).split(",")[1], section:job.section, end:job.idx });
-      if(d && d.ok && Array.isArray(d.items)) pgApplyOcr(job.section, job.idx, d.items);
-    }catch(e){ /* offline: on-device OCR would run here once bundled */ }
-    finally{ done(); }
-  };
-  reader.readAsDataURL(file);
-}
-function pgApplyOcr(section, end, items){
-  // Map recognised, DB-resolved names onto the right boxes, then stamp/save.
-  const resolve = t => { const h = pluSearch(String(t||"")); return h.length ? h[0].name.replace(/\s*\(Organic\)\s*$/i,"") : String(t||"").trim(); };
-  if(section==="pod1"){ items.slice(0,4).forEach((t,i)=>{ if(t) pgState.pod1[i].name = resolve(t); }); }
-  else if(section==="pod2"){ items.slice(0,pgState.podN).forEach((t,i)=>{ if(t) pgState.pod2[i] = resolve(t); }); }
-  else if(section==="lots"){ items.slice(0,7).forEach((t,i)=>{ if(t) pgState.lots[i] = resolve(t); }); }
-  else if(section.indexOf("run-")===0){ const ri=+section.split("-")[1]; const col = end===0?"wet":"hmr"; items.slice(0,2).forEach((t,i)=>{ if(t){ pgState.runs[ri][col][i] = resolve(t); pgRemember("run"+(ri+1)+"-"+col, pgState.runs[ri][col][i]); } }); }
-  pgTouch();
-}
-
-/* ---- find item -> spot ---- */
-function pgSpotIndex(){
-  const idx = [];
-  pgState.pod1.forEach(p=>{ if(p.name) idx.push({name:p.name, loc:"Pod 1", c:"--laser"}); });
-  pgState.pod2.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Pod 2 #"+(i+1), c:"--r5"}); });
-  PG_RUN_DEF.forEach((r,ri)=>{ const st=pgState.runs[ri]; if(!st) return;
-    st.wet.forEach(v=>{ if(v) idx.push({name:v, loc:"Run "+r.tag+" Wet", c:r.c}); });
-    st.hmr.forEach(v=>{ if(v) idx.push({name:v, loc:"Run "+r.tag+" HMR", c:r.c}); }); });
-  pgState.lots.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Lot "+(i+1), c:"--muted"}); });
-  return idx;
-}
-function pgDoFind(q){
-  q = String(q||"").trim().toLowerCase();
-  const box = document.getElementById("pgFindRes");
-  if(!q){ box.innerHTML=""; return; }
-  const groups = {};
-  pgSpotIndex().filter(x=>x.name.toLowerCase().includes(q)).forEach(x=>{ (groups[x.name]=groups[x.name]||[]).push(x); });
-  const names = Object.keys(groups).slice(0,8);
-  box.innerHTML = names.length
-    ? names.map(name=>{
-        const pins = groups[name].map(x=>`<span class="pg-pin" style="color:var(${x.c});border-color:var(${x.c})">\ud83d\udccd ${esc(x.loc)}</span>`).join("");
-        return `<div class="pg-findrow">${esc(name)}<span class="pg-loc">${pins}</span></div>`;
-      }).join("")
-    : `<div class="pg-findrow" style="color:var(--muted)">No item matches \u201c${esc(q)}\u201d on the floor</div>`;
-}
-
-/* ---- dock + sync (whole board, last write wins) ---- */
-function pgDock(){
-  const dock = document.getElementById("pgDock"); if(!dock) return;
-  dock.classList.toggle("pg-dirty", pgDirty);
-  const title = document.getElementById("pgDockTitle"), sub = document.getElementById("pgDockSub"), btn = document.getElementById("pgSyncBtn");
-  if(pgSyncing){ title.textContent="Syncing\u2026"; sub.textContent="Sharing the layout"; if(btn) btn.classList.add("pg-spin"); return; }
-  if(btn) btn.classList.remove("pg-spin");
-  if(pgDirty && pgOffline){ title.textContent="Waiting for signal"; sub.textContent="Saved here \u2014 syncs when you're back online"; }
-  else if(pgDirty){ title.textContent="Saving\u2026"; sub.textContent="Sharing with the floor automatically"; }
-  else if(pgState.updatedAt){ title.textContent="All synced"; sub.textContent="Updated by " + (pgState.updatedBy||"\u2014") + " \u00b7 " + (typeof rkWhen==="function"?rkWhen(pgState.updatedAt):""); }
-  else { title.textContent="All synced"; sub.textContent="Nothing to send yet"; }
-}
-async function pgSync(manual){
-  if(pgSyncing) return;
-  if(!proxyUrl()){ if(manual) toast("Not set up yet \u2014 see Settings"); return; }
-  pgSyncing = true; pgDock();
-  try{
-    const d = await callProxy({ action:"planogramSync", state: pgState });
-    if(d && d.ok && d.state){ pgState = d.state; if(!pgState.learn) pgState.learn={}; pgSave(); }
-    pgDirty = false; pgOffline = false;
-    if(manual) toast("Planogram synced");
-  }catch(err){
-    if(err && err.auth){ pgOffline = false; if(manual) toast(authMessage(err)); }
-    else { pgOffline = true; }
-  }finally{ pgSyncing = false; renderPlanogram(); }
-}
-function pgAutoSync(){ clearTimeout(pgSyncTimer); pgSyncTimer = setTimeout(()=>pgSync(false), 1200); }
-async function pgPull(){
-  if(!proxyUrl() || !navigator.onLine) return;
-  if(pgDirty) return;
-  try{
-    const d = await callProxy({ action:"planogramGet" });
-    if(d && d.ok && d.state && Array.isArray(d.state.runs)){
-      const theirs = d.state.updatedAt||"", mine = pgState.updatedAt||"";
-      if(theirs && theirs >= mine){ pgState = d.state; if(!pgState.learn) pgState.learn={}; pgSave(); renderPlanogram(); }
-    }
-  }catch(e){}
-}
-function pgStartPoll(){ pgStopPoll(); pgPollTimer = setInterval(()=>{ if(!document.hidden) pgPull(); }, 30000); }
-function pgStopPoll(){ if(pgPollTimer){ clearInterval(pgPollTimer); pgPollTimer = null; } }
-
-window.addEventListener("online", ()=>{ if(pgDirty) pgSync(false); });
-document.addEventListener("visibilitychange", ()=>{
-  if(document.hidden) return;
-  const v = document.getElementById("view-planogram");
-  if(v && v.classList.contains("active")){ if(pgDirty) pgSync(false); else pgPull(); }
-});
-{
-  const _pgCam = document.getElementById("pgCamInput");
-  if(_pgCam) _pgCam.addEventListener("change", function(){ if(!this.files || !this.files.length){ pgShootJob=null; return; } if(pgShootJob) pgReadPhoto(this.files[0]); });
-  const _pgIn = document.getElementById("pgSheetInput");
-  if(_pgIn) _pgIn.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); pgKeepTyped(); } });
-}
-
 showView("list");
+
+/* Handoff status icon runs everywhere, not just on the Handoff tab: show it from
+   local state immediately, then keep it live with a light background poll so a
+   teammate's new note lights it up wherever you are in the app. */
+renderHoIcon();
+if(proxyUrl() && navigator.onLine) hoPull();
+setInterval(()=>{ if(!document.hidden){ renderHoIcon(); hoPull(); } }, 45000);
+setInterval(hoWiggleTick, 25000);
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden){ renderHoIcon(); hoPull(); } });
+window.addEventListener("online", ()=>{ hoPull(); });
 
 /* ================= boot ================= */
 // Last thing in the file: everything it might reveal is already wired.
@@ -9843,7 +9185,6 @@ document.getElementById("btnClear").addEventListener("click", ()=>{
     items = []; persist(); toast("All items deleted");
   }
 });
-
 </script>
 </body>
 </html>

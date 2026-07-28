@@ -1210,8 +1210,8 @@
     stroke-linecap:round;stroke-linejoin:round}
 
   /* ---------- handoff status icon (header, far right) ---------- */
-  .htop-right{display:flex;align-items:center;gap:12px;align-self:center}
-  .ho-nav{position:relative;width:38px;height:38px;flex:none;background:none;border:0;padding:0;
+  .htop-right{display:flex;align-items:center;gap:11px;align-self:center}
+  .ho-nav{position:relative;width:46px;height:46px;flex:none;background:none;border:0;padding:0;
     cursor:pointer;-webkit-tap-highlight-color:transparent}
   .ho-nav-pulse{position:absolute;inset:3px;border-radius:50%;background:var(--laser);opacity:0;z-index:0}
   .ho-nav.attn .ho-nav-pulse{animation:hnpulse 1.9s ease-out infinite}
@@ -1250,12 +1250,64 @@
   @media (prefers-reduced-motion: reduce){
     .ho-nav-pulse,.ho-nav.wiggle,.ho-nav.pop,.ho-mic.rec{animation:none !important}
   }
+
+  /* ---------- header: logo (settings gate) + kebab + overflow menu ---------- */
+  .htop-left{display:flex;align-items:center;gap:10px;min-width:0}
+  .logo{display:flex;align-items:center;background:none;border:0;padding:6px 8px;margin:-6px -8px;border-radius:12px;
+    cursor:pointer;position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent;transition:transform .12s ease,background .15s}
+  .logo:active,.logo.pressed{transform:scale(.97);background:color-mix(in srgb,var(--laser) 10%,transparent)}
+  .logo .wordmark{position:relative;z-index:1}
+  .logo .stripes{transition:filter .18s,transform .18s}
+  .logo.scanning .stripes{filter:drop-shadow(0 0 4px var(--laser));transform:scaleY(1.12)}
+  .scanline{position:absolute;top:3px;bottom:3px;left:-4px;width:3px;border-radius:2px;z-index:2;opacity:0;pointer-events:none;
+    background:var(--laser);box-shadow:0 0 10px 2px var(--laser),0 0 3px 1px #fff}
+  .logo.gold .scanline{background:#E7B24B;box-shadow:0 0 12px 3px #E7B24B,0 0 4px 1px #fff}
+  @keyframes scan{0%{left:-4px;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:100%;opacity:0}}
+
+  .dev-chip{display:none;align-items:center;gap:5px;font-family:var(--mono);font-size:9px;font-weight:700;
+    letter-spacing:.12em;color:#E7B24B;border:1px solid #E7B24B;border-radius:20px;padding:3px 8px;flex:none}
+  body.dev-on .dev-chip{display:inline-flex}
+
+  .kebab{width:34px;height:38px;background:none;border:0;cursor:pointer;color:var(--muted);display:flex;
+    flex-direction:column;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;
+    opacity:.7;transition:opacity .15s,color .15s,background .15s;border-radius:9px}
+  .kebab:active,.kebab.on{opacity:1;color:var(--paper);background:var(--surface-2)}
+  .kebab span{display:block;width:3.5px;height:3.5px;border-radius:50%;background:currentColor;margin:1.5px 0}
+
+  .ho-menu{position:absolute;top:54px;right:14px;z-index:45;background:var(--surface);border:1px solid var(--line);
+    border-radius:12px;padding:6px;min-width:194px;box-shadow:0 14px 34px rgba(0,0,0,.4);transform-origin:top right;
+    opacity:0;transform:scale(.94) translateY(-4px);pointer-events:none;transition:opacity .16s,transform .16s}
+  .ho-menu.show{opacity:1;transform:scale(1) translateY(0);pointer-events:auto}
+  .ho-menu button{width:100%;display:flex;align-items:center;gap:11px;background:none;border:0;color:var(--paper);
+    font-family:var(--sans);font-size:14px;font-weight:650;padding:11px 12px;border-radius:8px;cursor:pointer;text-align:left}
+  .ho-menu button:active{background:var(--surface-2)}
+  .ho-menu .ic{width:18px;height:18px;color:var(--muted);display:grid;place-items:center;flex:none}
+  .ho-menu .ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .ho-menu-sep{height:1px;background:var(--line);margin:5px 6px}
+  .ho-menu .dev-only{color:#E7B24B}
+  .ho-menu .dev-only .ic{color:#E7B24B}
+
+  /* dev-only visibility (flip on when developer options are unlocked) */
+  .dev-only{display:none}
+  body.dev-on .ho-menu button.dev-only{display:flex}
+  body.dev-on .ho-menu-sep.dev-only{display:block}
+  body.dev-on .devsec.dev-only{display:block}
+
+  /* settings header + Done */
+  .set-head{display:flex;align-items:flex-end;justify-content:space-between;margin:0 0 4px;padding:2px 2px 0}
+  .set-head .rk-eyebrow{margin:0 0 2px}
+  .set-head h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--paper)}
+  .set-done{background:var(--laser);color:#fff;border:0;font-family:var(--sans);font-size:13px;font-weight:800;
+    padding:9px 16px;border-radius:10px;cursor:pointer}
+  .devsec h3{color:#E7B24B}
+  .devinfo{font-family:var(--mono);font-size:12px;line-height:1.9;color:var(--paper-dim)}
+  .devinfo b{color:var(--paper)}
 </style>
   <!-- The ?v is not decoration. A service worker caches manifest.json, and if an
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=45">
+  <link rel="manifest" href="./manifest.json?v=46">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1286,7 +1338,13 @@
 <div id="appWrap" class="hidden-until-open">
 <header>
   <div class="htop">
-    <h1 class="wordmark"><span class="stripes" aria-hidden="true"></span><span class="w1">Cat</span><span class="w2">Caddy</span></h1>
+    <div class="htop-left">
+      <button class="logo" id="hoLogo" type="button" aria-label="CatCaddy">
+        <span class="scanline" aria-hidden="true"></span>
+        <h1 class="wordmark"><span class="stripes" aria-hidden="true"></span><span class="w1">Cat</span><span class="w2">Caddy</span></h1>
+      </button>
+      <span class="dev-chip" aria-hidden="true">&#9679; DEV</span>
+    </div>
 
     <div class="htop-right">
       <button class="ho-nav" id="hoNav" type="button" aria-label="Shift Handoff" title="Shift Handoff" onclick="setSection('handoff')">
@@ -1298,9 +1356,8 @@
         <svg class="ho-nav-ring" viewBox="0 0 44 44" aria-hidden="true"><circle id="hoNavRing" cx="22" cy="22" r="20"></circle></svg>
         <span class="ho-nav-badge" id="hoNavBadge">0</span>
       </button>
-      <button class="gear burger" id="btnGear" aria-label="Settings">
-        <span class="bl b1"></span><span class="bl b2"></span><span class="bl b3"></span>
-        <span class="tri" aria-hidden="true"></span>
+      <button class="kebab" id="hoKebab" type="button" aria-label="More options" aria-haspopup="true" onclick="hoToggleMenu(event)">
+        <span></span><span></span><span></span>
       </button>
     </div>
   </div>
@@ -1308,6 +1365,16 @@
     <button data-s="store" onclick="setSection('store')">Store</button>
     <button data-s="floor" onclick="setSection('floor')">Floor</button>
     <button data-s="inv" onclick="setSection('inv')">Inventory</button>
+  </div>
+
+  <div class="ho-menu" id="hoMenu" role="menu">
+    <button role="menuitem" type="button" onclick="hoMenuSettings()">
+      <span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>Settings
+    </button>
+    <div class="ho-menu-sep dev-only"></div>
+    <button role="menuitem" type="button" class="dev-only" onclick="hoMenuSettings()">
+      <span class="ic"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span>Developer tools
+    </button>
   </div>
 </header>
 
@@ -1837,6 +1904,15 @@
 
   <!-- ============ EXPORT VIEW ============ -->
   <section id="view-settings" class="view">
+    <div class="set-head">
+      <div><p class="rk-eyebrow">SETTINGS</p><h1>Settings</h1></div>
+      <button class="set-done" type="button" onclick="hoCloseSettings()">Done</button>
+    </div>
+    <div class="panel devsec dev-only">
+      <h3>&#9670; Developer</h3>
+      <p class="lookup-note">Unlocked from the logo. Diagnostics below; more tools will land here as they're built.</p>
+      <div class="devinfo" id="devInfo"></div>
+    </div>
     <div class="panel">
       <h3>Appearance</h3>
       <div class="setrow">
@@ -2708,7 +2784,8 @@ function showView(name){
   // a set-it-once screen, not a daily one.
   const nb = document.getElementById("nav-"+name);
   if(nb) nb.classList.add("active");
-  document.getElementById("btnGear").classList.toggle("on", name === "settings");
+  const kb = document.getElementById("hoKebab"); if(kb) kb.classList.toggle("on", name === "settings");
+  if(name === "settings") hoRenderDevInfo();
   if(name==="list") renderList();
   if(name==="sales"){ renderWeekTabs(); renderSales(); }
   if(name==="scrap") renderLists();
@@ -4742,7 +4819,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v45";
+const APP_VERSION = "v46";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6067,13 +6144,68 @@ document.getElementById("segUnit").addEventListener("click", e=>{
 /* the gear is a toggle: tap once for settings, again to go back where you were */
 
 let lastView = "list";
-document.getElementById("btnGear").addEventListener("click", ()=>{
+function hoOpenSettings(){
   const cur = document.querySelector(".view.active");
-  if(cur && cur.id === "view-settings"){ showView(lastView); return; }
   lastView = cur ? cur.id.replace("view-","") : "list";
   if(lastView === "settings") lastView = "list";
   showView("settings");
+}
+function hoCloseSettings(){ showView(lastView || "list"); }
+
+/* overflow (kebab) menu */
+function hoToggleMenu(e){ if(e) e.stopPropagation(); const m=document.getElementById("hoMenu"); if(m) m.classList.toggle("show"); }
+function hoCloseMenu(){ const m=document.getElementById("hoMenu"); if(m) m.classList.remove("show"); }
+function hoMenuSettings(){ hoCloseMenu(); hoOpenSettings(); }
+document.addEventListener("click", (e)=>{
+  const m=document.getElementById("hoMenu"); if(!m || !m.classList.contains("show")) return;
+  if(!m.contains(e.target) && !e.target.closest("#hoKebab")) hoCloseMenu();
 });
+
+/* developer options — five quick taps on the logo unlock, four hide.
+   Taps must be quick (resets after 1.5s idle) so casual taps never accumulate.
+   Anything tagged .dev-only rides this flag, in Settings or anywhere we add it. */
+const KEY_DEV = "label_dev_v1";
+let devTaps = 0, devLastTap = 0;
+function isDevMode(){ return localStorage.getItem(KEY_DEV) === "1"; }
+function hoApplyDevMode(){ document.body.classList.toggle("dev-on", isDevMode()); }
+function hoSetDevMode(on){
+  try{ localStorage.setItem(KEY_DEV, on ? "1" : "0"); }catch(e){}
+  hoApplyDevMode(); hoRenderDevInfo();
+  toast(on ? "Developer options unlocked" : "Developer options hidden");
+}
+function hoLogoBeam(gold){
+  const l = document.getElementById("hoLogo"); if(!l) return;
+  const line = l.querySelector(".scanline");
+  l.classList.add("scanning"); if(gold) l.classList.add("gold");
+  if(line){ line.style.animation="none"; void line.offsetWidth; line.style.animation="scan .5s ease-in-out"; }
+  setTimeout(()=>{ l.classList.remove("scanning"); if(gold) l.classList.remove("gold"); }, 500);
+}
+function hoLogoTap(){
+  const now = Date.now(); if(now - devLastTap > 1500) devTaps = 0; devLastTap = now; devTaps++;
+  if(!isDevMode()){
+    if(devTaps >= 5){ devTaps = 0; hoSetDevMode(true); hoLogoBeam(true); return; }
+    const r = 5 - devTaps; if(r <= 2) toast(r + " tap" + (r>1?"s":"") + " from developer options");
+  } else {
+    if(devTaps >= 4){ devTaps = 0; hoSetDevMode(false); hoLogoBeam(false); return; }
+    const h = 4 - devTaps; if(h <= 2) toast(h + " tap" + (h>1?"s":"") + " to hide developer options");
+  }
+  hoLogoBeam(false);
+}
+function hoRenderDevInfo(){
+  const el = document.getElementById("devInfo"); if(!el) return;
+  const dev = (typeof deviceInfo === "function") ? deviceInfo() : {};
+  const url = (typeof proxyUrl === "function") ? proxyUrl() : "";
+  el.innerHTML =
+    "App&nbsp;version <b>" + (typeof APP_VERSION!=="undefined"?APP_VERSION:"?") + "</b><br>" +
+    "Device <b>" + esc(dev && dev.name ? dev.name : "\u2014") + "</b><br>" +
+    "Device&nbsp;ID <b>" + esc(dev && dev.id ? String(dev.id).slice(0,8) : "\u2014") + "</b><br>" +
+    "Backend <b>" + (url ? "configured" : "not set") + "</b><br>" +
+    "Network <b>" + (navigator.onLine ? "online" : "offline") + "</b><br>" +
+    "Handoff&nbsp;notes <b>" + (typeof hoState!=="undefined" && hoState.notes ? hoState.notes.length : 0) + "</b>";
+}
+const _hoLogoEl = document.getElementById("hoLogo");
+if(_hoLogoEl) _hoLogoEl.addEventListener("click", hoLogoTap);
+hoApplyDevMode();
 
 setTheme(theme());
 

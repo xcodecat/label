@@ -1303,11 +1303,134 @@
   .devinfo{font-family:var(--mono);font-size:12px;line-height:1.9;color:var(--paper-dim)}
   .devinfo b{color:var(--paper)}
 </style>
+<style id="pg-style">
+  /* ===== Planogram ===== reuses app tokens (--surface/--line/--laser…) */
+  #view-planogram{ --r1:#3ecf8e; --r2:#c0417a; --r3:#e8a13a; --r4:#4a90d9; --r5:#b07d3a; }
+  .pg-find{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);
+    border-radius:12px;padding:0 14px;height:50px;margin-bottom:4px}
+  .pg-find svg{width:18px;height:18px;stroke:var(--muted);fill:none;stroke-width:2;flex:none}
+  .pg-find input{flex:1;background:none;border:0;outline:0;color:var(--paper);font-size:15px;font-family:var(--sans)}
+  .pg-find input::placeholder{color:var(--muted)}
+  .pg-findres{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
+  .pg-findrow{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;
+    display:flex;align-items:center;gap:10px;font-size:14px}
+  .pg-findrow .pg-loc{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .pg-pin{font-family:var(--mono);font-size:9px;font-weight:700;border-radius:20px;padding:3px 8px;border:1px solid;white-space:nowrap}
+
+  .pg-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--muted);
+    text-transform:uppercase;margin:20px 2px 9px;display:flex;align-items:center;gap:8px}
+  .pg-cam{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);
+    display:grid;place-items:center;cursor:pointer;flex:none}
+  .pg-cam svg{width:17px;height:17px;stroke:var(--paper-dim);fill:none;stroke-width:1.8}
+  .pg-cam:active{background:var(--surface)}
+  .pg-eyebrow .pg-cam,.pg-eyebrow .pg-toggle{margin-left:auto}
+  .pg-eyebrow .pg-cam + .pg-toggle{margin-left:8px}
+
+  .pg-grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .pg-cell{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px;
+    min-height:92px;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between}
+  .pg-cell:active{border-color:var(--muted)}
+  .pg-cell h3{margin:0;font-size:15px;font-weight:640;line-height:1.25}
+  .pg-cell h3.pg-blank{color:var(--muted);font-weight:500;font-style:italic}
+  .pg-banner{align-self:flex-start;margin-top:10px;font-family:var(--mono);font-size:10px;font-weight:800;
+    border-radius:20px;padding:5px 10px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;border:0}
+  .pg-banner.canada{background:var(--laser);color:#fff}
+  .pg-banner.noname{background:#FEDD00;color:#1a1a1a}
+  .pg-banner.sales{background:linear-gradient(90deg,var(--laser) 0 55%,#FEDD00 55% 100%);color:#fff}
+  .pg-banner.none{background:var(--surface-2);color:var(--muted)}
+  .pg-mango{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
+  .pg-mango .pg-cell{min-height:50px;border-style:dashed;border-color:#8a6d2a;align-items:center;
+    justify-content:center;color:#d0a544;font-weight:640}
+
+  .pg-toggle{border:1px solid var(--line);background:var(--surface-2);border-radius:9px;width:34px;height:34px;
+    display:grid;place-items:center;cursor:pointer;flex:none}
+  .pg-toggle svg{width:16px;height:16px;stroke:var(--paper-dim);fill:none;stroke-width:1.6}
+  .pg-podcount{display:none;gap:6px;margin:0 0 3px}
+  .pg-podcount.open{display:flex}
+  .pg-podcount button{flex:1;height:36px;border:1px solid var(--line);background:var(--surface-2);color:var(--paper-dim);
+    border-radius:9px;font-family:var(--mono);font-size:12px;font-weight:700;cursor:pointer}
+  .pg-podcount button.on{border-color:var(--laser);color:var(--paper)}
+  .pg-podgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .pg-podgrid .pg-cell{min-height:74px}
+  .pg-podnum{font-family:var(--mono);font-size:11px;font-weight:800;color:var(--muted);border:1px solid var(--line);
+    background:var(--surface-2);border-radius:7px;width:26px;height:24px;display:grid;place-items:center;margin-bottom:8px}
+
+  .pg-run{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:11px}
+  .pg-run-h{display:flex;align-items:center;gap:9px;padding:11px 12px;border-bottom:1px solid var(--line)}
+  .pg-run-tag{font-family:var(--mono);font-size:11px;font-weight:800;background:var(--surface-2);
+    border:1px solid var(--line);border-radius:8px;padding:4px 9px}
+  .pg-run-tag b{color:var(--paper)}
+  .pg-run-name{border:1px solid var(--rc);color:var(--rc);border-radius:20px;padding:4px 11px;font-size:12px;font-weight:750}
+  .pg-run-h .pg-cam{margin-left:auto}
+  .pg-ends{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:11px}
+  .pg-endcol h5{margin:0;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--muted);font-weight:700;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:7px;text-align:center}
+  .pg-slot{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:9px;
+    min-height:44px;cursor:pointer;display:flex;align-items:center;font-size:14px;font-weight:560}
+  .pg-slot:active{border-color:var(--muted)}
+  .pg-slot.pg-blank{color:var(--muted);font-style:italic;font-weight:500}
+
+  .pg-lot{display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:center;background:var(--surface);
+    border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer}
+  .pg-lot .pg-lt{font-family:var(--mono);font-size:12px;font-weight:800;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:8px;padding:5px 9px;white-space:nowrap}
+  .pg-lot .pg-lv{font-size:14px}
+  .pg-lot .pg-lv.pg-blank{color:var(--muted);font-style:italic}
+
+  /* editor sheet */
+  .pg-scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.18s;z-index:60}
+  .pg-scrim.show{opacity:1;pointer-events:auto}
+  .pg-sheet{position:fixed;left:0;right:0;bottom:0;max-width:var(--appw,480px);margin:0 auto;background:var(--surface);
+    border-radius:18px 18px 0 0;border:1px solid var(--line);border-bottom:0;transform:translateY(100%);
+    transition:.22s cubic-bezier(.2,.8,.2,1);z-index:61;padding:16px 16px calc(18px + env(safe-area-inset-bottom))}
+  .pg-sheet.show{transform:translateY(0)}
+  .pg-sheet .pg-bar{width:38px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 14px}
+  .pg-sheet .pg-lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+  .pg-sheet h4{margin:3px 0 12px;font-size:16px}
+  .pg-editrow{display:flex;gap:9px;align-items:center}
+  .pg-editrow input{flex:1;height:50px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
+    padding:0 14px;color:var(--paper);font-size:15px;outline:0;font-family:var(--sans)}
+  .pg-editrow input:focus{border-color:var(--laser)}
+  .pg-mic{width:50px;height:50px;flex:none;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);
+    display:grid;place-items:center;cursor:pointer}
+  .pg-mic svg{width:20px;height:20px;stroke:var(--paper-dim);fill:none;stroke-width:1.8}
+  .pg-mic.live{background:var(--laser);border-color:var(--laser)}
+  .pg-mic.live svg{stroke:#fff}
+  .pg-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px}
+  .pg-chip{border:1px solid var(--line);background:var(--surface-2);color:var(--paper-dim);border-radius:20px;
+    padding:8px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .pg-chip:active{border-color:var(--muted)}
+  .pg-chip .pg-learn{font-family:var(--mono);font-size:9px;color:var(--r1)}
+  .pg-chip .pg-plu{font-family:var(--mono);font-size:9px;color:var(--muted)}
+  .pg-matchhdr{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);margin:14px 0 6px;text-transform:uppercase}
+  .pg-sheet .pg-hint{font-size:12px;color:var(--muted);margin-top:12px}
+  .pg-sheet .pg-keep{margin-top:13px;width:100%;height:46px;border:1px dashed var(--line);background:none;color:var(--paper-dim);
+    border-radius:12px;font-size:13px;font-weight:650;cursor:pointer}
+
+  /* reading overlay */
+  .pg-reading{position:fixed;inset:0;background:rgba(10,12,14,.86);display:none;place-items:center;z-index:70}
+  .pg-reading.show{display:grid}
+  .pg-spin{width:38px;height:38px;border:3px solid var(--line);border-top-color:var(--laser);border-radius:50%;
+    margin:0 auto 14px;animation:pg-sp 1s linear infinite}
+  @keyframes pg-sp{to{transform:rotate(360deg)}}
+  .pg-reading p{font-size:14px;color:var(--paper-dim);text-align:center}
+
+  .pg-dock{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);
+    border-radius:14px;padding:11px 14px;margin:14px 0 4px}
+  .pg-dock .pg-sd{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none}
+  .pg-dock.pg-dirty .pg-sd{background:var(--laser)}
+  .pg-dock strong{font-size:13px;display:block}
+  .pg-dock small{color:var(--muted);font-size:11px}
+  .pg-dock .pg-syncbtn{margin-left:auto;background:var(--laser);color:#fff;border:0;border-radius:10px;height:42px;
+    padding:0 18px;font-weight:800;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:7px}
+  .pg-dock .pg-syncbtn svg{width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2}
+  .pg-dock .pg-syncbtn.pg-spin svg{animation:pg-sp 1s linear infinite}
+</style>
   <!-- The ?v is not decoration. A service worker caches manifest.json, and if an
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=46">
+  <link rel="manifest" href="./manifest.json?v=47">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1836,14 +1959,71 @@
     </div>
   </section>
 
-  <!-- ============ PLANOGRAM VIEW (stub) ============ -->
+    <!-- ============ PLANOGRAM VIEW ============ -->
   <section id="view-planogram" class="view">
-    <div class="rk-head"><div><p class="rk-eyebrow">FLOOR · PLANOGRAM</p><h1>Planogram</h1></div></div>
-    <div class="rk-stub">
-      <b>Coming soon</b>
-      <span class="rk-tag">FLOOR · PLANOGRAM</span>
+    <div class="rk-head">
+      <div><p class="rk-eyebrow">FLOOR · PLANOGRAM</p><h1>Planogram</h1></div>
+      <div class="rk-live"><span></span>SHARED</div>
+    </div>
+
+    <div class="pg-find">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+      <input id="pgFind" placeholder="Find any item → its spot on the floor" autocomplete="off" oninput="pgDoFind(this.value)">
+    </div>
+    <div class="pg-findres" id="pgFindRes"></div>
+
+    <div class="pg-eyebrow">POD 1 — AS IT SITS ON THE FLOOR
+      <button class="pg-cam" type="button" onclick="pgShoot('pod1',['Pod 1'])" aria-label="Photo of Pod 1"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
+    </div>
+    <div class="pg-grid2" id="pgPod1"></div>
+    <div class="pg-mango" id="pgMango"></div>
+
+    <div class="pg-eyebrow">POD 2 — NUMBERED PODS
+      <button class="pg-cam" type="button" onclick="pgShoot('pod2',['Pod 2'])" aria-label="Photo of Pod 2"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
+      <button class="pg-toggle" type="button" onclick="document.getElementById('pgPodCount').classList.toggle('open')" aria-label="Pod count"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button>
+    </div>
+    <div class="pg-podcount" id="pgPodCount">
+      <button data-n="4" type="button" onclick="pgSetPods(4)">4 pods</button>
+      <button data-n="6" type="button" onclick="pgSetPods(6)">6 pods</button>
+      <button data-n="8" type="button" onclick="pgSetPods(8)">8 pods</button>
+    </div>
+    <div class="pg-podgrid" id="pgPod2"></div>
+
+    <div class="pg-eyebrow">ENDCAPS</div>
+    <div id="pgRuns"></div>
+
+    <div class="pg-eyebrow">CASE LOTS
+      <button class="pg-cam" type="button" onclick="pgShoot('lots',['Case Lots'])" aria-label="Photo of Case Lots"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
+    </div>
+    <div id="pgLots"></div>
+
+    <div class="pg-dock" id="pgDock">
+      <span class="pg-sd"></span>
+      <div><strong id="pgDockTitle">All synced</strong><small id="pgDockSub">Nothing to send yet</small></div>
+      <button class="pg-syncbtn" id="pgSyncBtn" type="button" onclick="pgSync(true)">
+        <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><polyline points="21 3 21 9 15 9"/></svg>Sync
+      </button>
     </div>
   </section>
+
+  <!-- planogram editor sheet + camera + reading overlay -->
+  <div class="pg-scrim" id="pgScrim" onclick="pgCloseSheet()"></div>
+  <div class="pg-sheet" id="pgSheet">
+    <div class="pg-bar"></div>
+    <div class="pg-lbl" id="pgSheetLbl">POD</div>
+    <h4 id="pgSheetTitle">Assign item</h4>
+    <div class="pg-editrow">
+      <input id="pgSheetInput" placeholder="Type an item…" autocomplete="off" oninput="pgOnType(this.value)">
+      <button class="pg-mic" id="pgMic" type="button" onclick="pgToggleMic()" aria-label="Speak the item"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></svg></button>
+    </div>
+    <div id="pgMatches"></div>
+    <div class="pg-matchhdr" id="pgSugHdr">Suggested for this spot</div>
+    <div class="pg-chips" id="pgSug"></div>
+    <button class="pg-keep" id="pgKeepBtn" type="button" onclick="pgKeepTyped()">Keep what I typed</button>
+    <div class="pg-hint">Matches search the PLU + Barcode DB. Speak or type — no match keeps your text. Suggestions learn from what usually goes here.</div>
+  </div>
+  <div class="pg-reading" id="pgReading"><div><div class="pg-spin"></div><p id="pgReadingTxt">Reading photo…</p></div></div>
+  <input type="file" accept="image/*" capture="environment" id="pgCamInput" hidden>
 
   <!-- ============ HANDOFF VIEW ============ -->
   <section id="view-handoff" class="view">
@@ -2777,6 +2957,7 @@ function showView(name){
   if(sec){ curSection = sec; syncSectionPill(); renderNav(); }
   if(name !== "restock") rkStopPoll();   // only poll while the board is on screen
   if(name !== "handoff") hoStopPoll();
+  if(name !== "planogram") pgStopPoll();
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
@@ -2791,6 +2972,7 @@ function showView(name){
   if(name==="scrap") renderLists();
   if(name==="restock"){ renderRestock(); rkPull(); rkStartPoll(); }
   if(name==="handoff"){ hoMarkSeen(); renderHandoff(); hoPull(); hoStartPoll(); hoMaybePrompt(); renderHoIcon(); }
+  if(name==="planogram"){ renderPlanogram(); pgPull(); pgStartPoll(); }
   if(name==="product"){
     renderProduct();
     // Land in the search box — looking something up is what this tab is for,
@@ -4819,7 +5001,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v46";
+const APP_VERSION = "v47";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -9290,6 +9472,361 @@ function hoOpenAssign(id){
   scrim.classList.add("show");
   scrim.querySelectorAll(".ho-menu button").forEach(b=>b.onclick = ()=>{ hoSetAssignee(id, b.dataset.a); hoCloseScrim(scrim); });
   scrim.onclick = e=>{ if(e.target===scrim) hoCloseScrim(scrim); };
+}
+
+/* ============================================================
+   PLANOGRAM — a shared, synced picture of where things live
+   ============================================================
+   Same shape as the Restock/Handoff boards: the whole layout lives in
+   localStorage, syncs to the "Planogram" Sheet tab last-write-wins, and polls
+   back while the tab is open. Every spot is tap-to-edit (type or speak, matched
+   against the PLU + Barcode DB), each section has a camera, and the board learns
+   what usually goes in each spot to suggest it next time. Learning rides inside
+   the synced state, so suggestions reflect the whole store, not one phone.
+
+   OCR NOTE: the camera captures a real photo, but recognition (photo -> item
+   names) needs an OCR provider that isn't wired yet. pgReadPhoto is built
+   online-first / offline-fallback; until PG_OCR_ENABLED is true it captures the
+   shot and asks you to tap/type/speak each box. Wiring OCR later is one function.
+*/
+
+const KEY_PLANO = "label_planogram_v1";
+const PG_OCR_ENABLED = false;   // flip on once an OCR endpoint exists (see pgReadPhoto)
+
+const PG_RUN_DEF = [
+  { tag:1, name:"Apple",                       c:"--r1" },
+  { tag:2, name:"Berry & Banana",              c:"--r2" },
+  { tag:3, name:"Citrus & Stone",              c:"--r3" },
+  { tag:4, name:"Cucumber\u00b7Tomato\u00b7Potato", c:"--r4" },
+  { tag:5, name:"Root veg & Onions",           c:"--r5" }
+];
+/* Pod-2 priority items seed the suggestions before anything is learned. */
+const PG_POD2_PRIORITY = [
+  {n:"#12", name:"Plantain (opt)"},{n:"#2",name:"Roma Tomatoes"},{n:"#8",name:"Opo Squash"},
+  {n:"#3",name:"Eggplant / Long"},{n:"#4",name:"Garlic 1KG"},{n:"#5",name:"3lb Red Onion"},{n:"#6",name:"Ginger Root"}
+];
+
+function pgDefault(){
+  return {
+    pod1:[
+      {name:"Grapes \u2014 Red / Green Seedless", banner:"canada"},
+      {name:"Cherries", banner:"canada"},
+      {name:"Tomatoes on the Vine", banner:"noname"},
+      {name:"Local Strawberries", banner:"sales"}
+    ],
+    mango:["Mango Case","Mango Case"],
+    podN:6,
+    pod2:["","","","","","","",""],
+    runs:[
+      { wet:["NNNI Apples 6lb","FM Navel Oranges 3lb"], hmr:["FM Peaches 3L","FM Nectarines 2L"] },
+      { wet:["Cut Watermelon","Red+Green Grapes"],      hmr:["Blueberries 2lb","FM Mandarins 2lb"] },
+      { wet:["Cantaloupe / Pineapple","FM Kiwi 2lb"],   hmr:["Regular Bananas","Joyburst Pack"] },
+      { wet:["PC Grape/Cherry Tom","FM Mini Cukes 6ct"],hmr:["Beefsteak Tomatoes","Romaine Hearts"] },
+      { wet:["FM Potatoes 10lb","PC Russets 5lb"],      hmr:["FM 3lb Carrots","FM 3lb Onions"] }
+    ],
+    lots:[
+      "10lb Russet/White Potato \u00b7 10lb Red Onion",
+      "10lb Russet/White \u00b7 10lb Red Onion",
+      "10lb Yellow & 10lb Red Potato",
+      "NN Peanuts 907g","","","Burpee Seed Rack"
+    ],
+    learn:{}, updatedBy:"", updatedAt:""
+  };
+}
+
+let pgState = pgLoad();
+let pgDirty = false, pgSyncing = false, pgOffline = false;
+let pgSyncTimer = null, pgPollTimer = null;
+
+function pgLoad(){
+  try{
+    const s = JSON.parse(localStorage.getItem(KEY_PLANO) || "null");
+    if(s && Array.isArray(s.runs)){ if(!s.learn) s.learn = {}; return s; }
+  }catch(e){}
+  return pgDefault();
+}
+function pgSave(){ try{ localStorage.setItem(KEY_PLANO, JSON.stringify(pgState)); }catch(e){} }
+function pgMe(){ try{ return rkMeName(); }catch(e){ return (localStorage.getItem(KEY_ME_NAME)||"").trim() || "You"; } }
+function pgTouch(){
+  pgState.updatedBy = pgMe();
+  pgState.updatedAt = new Date().toISOString();
+  pgDirty = true; pgSave(); renderPlanogram(); pgAutoSync();
+}
+
+/* ---- learning (rides inside synced state) ---- */
+function pgRemember(spot, name){
+  if(!name) return;
+  pgState.learn = pgState.learn || {};
+  pgState.learn[spot] = pgState.learn[spot] || {};
+  pgState.learn[spot][name] = (pgState.learn[spot][name]||0) + 1;
+}
+function pgSuggest(spot){
+  const L = (pgState.learn && pgState.learn[spot]) || {};
+  return Object.keys(L).sort((a,b)=>L[b]-L[a]).map(name=>({name, count:L[name]}));
+}
+
+/* ---- render ---- */
+function pgBannerLabel(b){ return b==="canada" ? "\ud83c\udf41 CANADA" : b==="noname" ? "no name" : b==="sales" ? "SALES" : "+ banner"; }
+function pgRenderPod1(){
+  const el = document.getElementById("pgPod1"); if(!el) return;
+  el.innerHTML = pgState.pod1.map((p,i)=>`
+    <div class="pg-cell" onclick="pgEdit('pod1-${i}')">
+      <h3 class="${p.name?'':'pg-blank'}">${esc(p.name)||'tap to add'}</h3>
+      <button class="pg-banner ${p.banner||'none'}" type="button" onclick="event.stopPropagation();pgCycleBanner(${i})">${pgBannerLabel(p.banner)} \u25be</button>
+    </div>`).join("");
+}
+function pgRenderMango(){
+  const el = document.getElementById("pgMango"); if(!el) return;
+  el.innerHTML = pgState.mango.map((v,i)=>`<div class="pg-cell" onclick="pgEdit('mango-${i}')">${esc(v)||'Mango Case'}</div>`).join("");
+}
+function pgRenderPod2(){
+  const el = document.getElementById("pgPod2"); if(!el) return;
+  let h="";
+  for(let i=0;i<pgState.podN;i++){
+    const v = pgState.pod2[i]||"";
+    h += `<div class="pg-cell" onclick="pgEdit('pod2-${i}')"><div class="pg-podnum">${i+1}</div>
+          <h3 class="${v?'':'pg-blank'}">${esc(v)||'Empty'}</h3></div>`;
+  }
+  el.innerHTML = h;
+  document.querySelectorAll('#pgPodCount button').forEach(b=>b.classList.toggle('on', +b.dataset.n===pgState.podN));
+}
+function pgRenderRuns(){
+  const el = document.getElementById("pgRuns"); if(!el) return;
+  el.innerHTML = PG_RUN_DEF.map((r,ri)=>{
+    const st = pgState.runs[ri] || {wet:["",""],hmr:["",""]};
+    return `<div class="pg-run" style="--rc:var(${r.c})">
+      <div class="pg-run-h">
+        <span class="pg-run-tag">RUN <b>${r.tag}</b></span>
+        <span class="pg-run-name">${esc(r.name)}</span>
+        <button class="pg-cam" type="button" onclick="pgShoot('run-${ri}',['Run ${r.tag} \u00b7 Wet Cases end','Run ${r.tag} \u00b7 HMR end'])" aria-label="Two photos of Run ${r.tag}"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
+      </div>
+      <div class="pg-ends">
+        <div class="pg-endcol"><h5>\u25b2 WET CASES</h5>
+          ${st.wet.map((v,i)=>`<div class="pg-slot ${v?'':'pg-blank'}" onclick="pgEdit('run-${ri}-wet-${i}')">${esc(v)||'tap to add'}</div>`).join("")}
+        </div>
+        <div class="pg-endcol"><h5>\u25bc HMR</h5>
+          ${st.hmr.map((v,i)=>`<div class="pg-slot ${v?'':'pg-blank'}" onclick="pgEdit('run-${ri}-hmr-${i}')">${esc(v)||'tap to add'}</div>`).join("")}
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+function pgRenderLots(){
+  const el = document.getElementById("pgLots"); if(!el) return;
+  el.innerHTML = pgState.lots.map((v,i)=>`
+    <div class="pg-lot" onclick="pgEdit('lot-${i}')">
+      <span class="pg-lt">Lot ${i+1}</span>
+      <span class="pg-lv ${v?'':'pg-blank'}">${esc(v)||'empty'}</span>
+    </div>`).join("");
+}
+function renderPlanogram(){
+  pgRenderPod1(); pgRenderMango(); pgRenderPod2(); pgRenderRuns(); pgRenderLots(); pgDock();
+}
+
+/* ---- banner + pod count ---- */
+const PG_BANNERS = ["canada","sales","noname",""];
+function pgCycleBanner(i){
+  const cur = pgState.pod1[i].banner||"";
+  pgState.pod1[i].banner = PG_BANNERS[(PG_BANNERS.indexOf(cur)+1)%PG_BANNERS.length];
+  pgTouch();
+}
+function pgSetPods(n){ pgState.podN = n; document.getElementById("pgPodCount").classList.remove("open"); pgTouch(); }
+
+/* ---- editor ---- */
+let pgCur = null;
+const PG_SPOT_LABEL = { pod1:"POD 1", pod2:"POD 2", mango:"POD 1 \u00b7 MANGO", run:"ENDCAP", lot:"CASE LOT" };
+function pgSpotMeta(key){
+  if(key.indexOf("pod1-")===0){ const i=+key.split("-")[1]; return {type:"pod1", spot:"pod1-"+i, label:"Pod 1 spot", get:()=>pgState.pod1[i].name, set:v=>pgState.pod1[i].name=v}; }
+  if(key.indexOf("mango-")===0){ const i=+key.split("-")[1]; return {type:"mango", spot:"mango", label:"Mango case", get:()=>pgState.mango[i], set:v=>pgState.mango[i]=v}; }
+  if(key.indexOf("pod2-")===0){ const i=+key.split("-")[1]; return {type:"pod2", spot:"pod2-"+i, label:"Pod "+(i+1), get:()=>pgState.pod2[i], set:v=>pgState.pod2[i]=v}; }
+  if(key.indexOf("run-")===0){ const p=key.split("-"); const ri=+p[1], end=p[2], i=+p[3];
+    return {type:"run", spot:"run"+(ri+1)+"-"+end, label:"Run "+PG_RUN_DEF[ri].tag+" \u00b7 "+(end==="wet"?"Wet Cases":"HMR"), get:()=>pgState.runs[ri][end][i], set:v=>pgState.runs[ri][end][i]=v}; }
+  if(key.indexOf("lot-")===0){ const i=+key.split("-")[1]; return {type:"lot", spot:"lot", label:"Case Lot "+(i+1), get:()=>pgState.lots[i], set:v=>pgState.lots[i]=v}; }
+}
+function pgEdit(key){
+  const m = pgSpotMeta(key); if(!m) return;
+  pgCur = Object.assign({key}, m);
+  document.getElementById("pgSheetLbl").textContent = PG_SPOT_LABEL[m.type] || m.type.toUpperCase();
+  document.getElementById("pgSheetTitle").textContent = m.label;
+  const cur = m.get()||"";
+  const inp = document.getElementById("pgSheetInput");
+  inp.value = /^(tap to add|empty|mango case)$/i.test(cur) ? "" : cur;
+  document.getElementById("pgMatches").innerHTML = "";
+  pgRenderSug();
+  document.getElementById("pgScrim").classList.add("show");
+  document.getElementById("pgSheet").classList.add("show");
+}
+function pgRenderSug(){
+  let list = pgSuggest(pgCur.spot).slice(0,6);
+  if(pgCur.type==="pod2" && list.length<3){
+    PG_POD2_PRIORITY.forEach(p=>{ if(!list.find(x=>x.name===p.name)) list.push({name:p.name, count:0, pref:p.n}); });
+  }
+  const hdr = document.getElementById("pgSugHdr"), box = document.getElementById("pgSug");
+  if(!list.length){ hdr.style.display="none"; box.innerHTML=""; return; }
+  hdr.style.display="";
+  box.innerHTML = list.slice(0,8).map(x=>{
+    const meta = x.count ? `<span class="pg-learn">\u00d7${x.count}</span>` : (x.pref ? `<span class="pg-plu">${x.pref}</span>` : "");
+    return `<button class="pg-chip" type="button" onclick='pgAssign(${JSON.stringify(x.name)})'>${esc(x.name)} ${meta}</button>`;
+  }).join("");
+}
+function pgOnType(v){
+  const q = String(v||"").trim();
+  const box = document.getElementById("pgMatches");
+  if(!q){ box.innerHTML=""; return; }
+  const seen = new Set(); const hits = [];
+  pluSearch(q).forEach(e=>{ const nm = e.name.replace(/\s*\(Organic\)\s*$/i,""); if(seen.has(nm)) return; seen.add(nm); hits.push({name:nm, plu:e.plu}); });
+  const top = hits.slice(0,5);
+  box.innerHTML = top.length
+    ? `<div class="pg-matchhdr">PLU / Barcode DB</div>` + top.map(d=>`<button class="pg-chip" type="button" onclick='pgAssign(${JSON.stringify(d.name)})'>${esc(d.name)} ${d.plu?`<span class="pg-plu">${d.plu}</span>`:""}</button>`).join("")
+    : `<div class="pg-hint">No DB match \u2014 \u201cKeep what I typed\u201d files it as-is.</div>`;
+}
+function pgAssign(name){ pgCur.set(name); pgRemember(pgCur.spot, name); pgCloseSheet(); pgTouch(); toast("Filed: "+name); }
+function pgKeepTyped(){ const v=document.getElementById("pgSheetInput").value.trim(); if(!v){ pgCloseSheet(); return; } pgCur.set(v); pgRemember(pgCur.spot, v); pgCloseSheet(); pgTouch(); toast("Filed: "+v); }
+function pgCloseSheet(){ document.getElementById("pgScrim").classList.remove("show"); document.getElementById("pgSheet").classList.remove("show"); pgStopMic(); }
+
+/* ---- voice (same engine as Scrap/Restock) ---- */
+let pgRec = null, pgMicLive = false;
+function pgToggleMic(){ pgMicLive ? pgStopMic() : pgStartMic(); }
+function pgStartMic(){
+  if(!SR){ toast("No speech support here \u2014 use Chrome on Android or Safari on iOS"); return; }
+  try{ if(typeof stopMic==="function") stopMic(); }catch(e){}   // free the shared recogniser
+  pgRec = new SR();
+  pgRec.lang = "en-CA"; pgRec.interimResults = true; pgRec.continuous = true; pgRec.maxAlternatives = 1;
+  pgRec.onresult = ev=>{
+    const all = (typeof joinResults==="function") ? joinResults(ev.results, false)
+              : Array.from(ev.results).map(r=>r[0].transcript).join(" ");
+    const inp = document.getElementById("pgSheetInput");
+    inp.value = all; pgOnType(all);
+  };
+  pgRec.onend = ()=>{ if(pgMicLive) pgStopMic(); };
+  try{ pgRec.start(); pgMicLive = true; document.getElementById("pgMic").classList.add("live"); }catch(e){}
+}
+function pgStopMic(){ pgMicLive = false; const m=document.getElementById("pgMic"); if(m) m.classList.remove("live"); if(pgRec){ try{ pgRec.stop(); }catch(e){} pgRec = null; } }
+
+/* ---- camera + OCR (online-first, offline fallback) ---- */
+let pgShootJob = null;
+function pgShoot(section, prompts){
+  pgShootJob = { section, prompts, idx:0 };
+  toast("\ud83d\udcf7 " + prompts[0]);
+  const inp = document.getElementById("pgCamInput"); inp.value = ""; inp.click();
+}
+function pgReadPhoto(file){
+  const job = pgShootJob;
+  document.getElementById("pgReadingTxt").textContent = "Reading " + (job.prompts[job.idx]||"photo") + "\u2026";
+  document.getElementById("pgReading").classList.add("show");
+  const done = ()=>{
+    document.getElementById("pgReading").classList.remove("show");
+    job.idx++;
+    if(job.idx < job.prompts.length){
+      toast("\ud83d\udcf7 Now: " + job.prompts[job.idx]);
+      const inp = document.getElementById("pgCamInput"); inp.value=""; setTimeout(()=>inp.click(), 300);
+    } else {
+      toast("Photo saved \u2014 tap any box to type or speak the item");
+      pgShootJob = null;
+    }
+  };
+  // ONLINE-FIRST: hand the photo to the proxy's OCR, cross-check names against
+  // the PLU/Barcode DB, drop results into the section's boxes. OFFLINE FALLBACK:
+  // on-device OCR (to wire). Until PG_OCR_ENABLED, capture only.
+  if(!PG_OCR_ENABLED){ setTimeout(done, 700); return; }
+  const reader = new FileReader();
+  reader.onload = async ()=>{
+    try{
+      const d = await callProxy({ action:"planogramOcr", image:String(reader.result).split(",")[1], section:job.section, end:job.idx });
+      if(d && d.ok && Array.isArray(d.items)) pgApplyOcr(job.section, job.idx, d.items);
+    }catch(e){ /* offline: on-device OCR would run here once bundled */ }
+    finally{ done(); }
+  };
+  reader.readAsDataURL(file);
+}
+function pgApplyOcr(section, end, items){
+  // Map recognised, DB-resolved names onto the right boxes, then stamp/save.
+  const resolve = t => { const h = pluSearch(String(t||"")); return h.length ? h[0].name.replace(/\s*\(Organic\)\s*$/i,"") : String(t||"").trim(); };
+  if(section==="pod1"){ items.slice(0,4).forEach((t,i)=>{ if(t) pgState.pod1[i].name = resolve(t); }); }
+  else if(section==="pod2"){ items.slice(0,pgState.podN).forEach((t,i)=>{ if(t) pgState.pod2[i] = resolve(t); }); }
+  else if(section==="lots"){ items.slice(0,7).forEach((t,i)=>{ if(t) pgState.lots[i] = resolve(t); }); }
+  else if(section.indexOf("run-")===0){ const ri=+section.split("-")[1]; const col = end===0?"wet":"hmr"; items.slice(0,2).forEach((t,i)=>{ if(t){ pgState.runs[ri][col][i] = resolve(t); pgRemember("run"+(ri+1)+"-"+col, pgState.runs[ri][col][i]); } }); }
+  pgTouch();
+}
+
+/* ---- find item -> spot ---- */
+function pgSpotIndex(){
+  const idx = [];
+  pgState.pod1.forEach(p=>{ if(p.name) idx.push({name:p.name, loc:"Pod 1", c:"--laser"}); });
+  pgState.pod2.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Pod 2 #"+(i+1), c:"--r5"}); });
+  PG_RUN_DEF.forEach((r,ri)=>{ const st=pgState.runs[ri]; if(!st) return;
+    st.wet.forEach(v=>{ if(v) idx.push({name:v, loc:"Run "+r.tag+" Wet", c:r.c}); });
+    st.hmr.forEach(v=>{ if(v) idx.push({name:v, loc:"Run "+r.tag+" HMR", c:r.c}); }); });
+  pgState.lots.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Lot "+(i+1), c:"--muted"}); });
+  return idx;
+}
+function pgDoFind(q){
+  q = String(q||"").trim().toLowerCase();
+  const box = document.getElementById("pgFindRes");
+  if(!q){ box.innerHTML=""; return; }
+  const groups = {};
+  pgSpotIndex().filter(x=>x.name.toLowerCase().includes(q)).forEach(x=>{ (groups[x.name]=groups[x.name]||[]).push(x); });
+  const names = Object.keys(groups).slice(0,8);
+  box.innerHTML = names.length
+    ? names.map(name=>{
+        const pins = groups[name].map(x=>`<span class="pg-pin" style="color:var(${x.c});border-color:var(${x.c})">\ud83d\udccd ${esc(x.loc)}</span>`).join("");
+        return `<div class="pg-findrow">${esc(name)}<span class="pg-loc">${pins}</span></div>`;
+      }).join("")
+    : `<div class="pg-findrow" style="color:var(--muted)">No item matches \u201c${esc(q)}\u201d on the floor</div>`;
+}
+
+/* ---- dock + sync (whole board, last write wins) ---- */
+function pgDock(){
+  const dock = document.getElementById("pgDock"); if(!dock) return;
+  dock.classList.toggle("pg-dirty", pgDirty);
+  const title = document.getElementById("pgDockTitle"), sub = document.getElementById("pgDockSub"), btn = document.getElementById("pgSyncBtn");
+  if(pgSyncing){ title.textContent="Syncing\u2026"; sub.textContent="Sharing the layout"; if(btn) btn.classList.add("pg-spin"); return; }
+  if(btn) btn.classList.remove("pg-spin");
+  if(pgDirty && pgOffline){ title.textContent="Waiting for signal"; sub.textContent="Saved here \u2014 syncs when you're back online"; }
+  else if(pgDirty){ title.textContent="Saving\u2026"; sub.textContent="Sharing with the floor automatically"; }
+  else if(pgState.updatedAt){ title.textContent="All synced"; sub.textContent="Updated by " + (pgState.updatedBy||"\u2014") + " \u00b7 " + (typeof rkWhen==="function"?rkWhen(pgState.updatedAt):""); }
+  else { title.textContent="All synced"; sub.textContent="Nothing to send yet"; }
+}
+async function pgSync(manual){
+  if(pgSyncing) return;
+  if(!proxyUrl()){ if(manual) toast("Not set up yet \u2014 see Settings"); return; }
+  pgSyncing = true; pgDock();
+  try{
+    const d = await callProxy({ action:"planogramSync", state: pgState });
+    if(d && d.ok && d.state){ pgState = d.state; if(!pgState.learn) pgState.learn={}; pgSave(); }
+    pgDirty = false; pgOffline = false;
+    if(manual) toast("Planogram synced");
+  }catch(err){
+    if(err && err.auth){ pgOffline = false; if(manual) toast(authMessage(err)); }
+    else { pgOffline = true; }
+  }finally{ pgSyncing = false; renderPlanogram(); }
+}
+function pgAutoSync(){ clearTimeout(pgSyncTimer); pgSyncTimer = setTimeout(()=>pgSync(false), 1200); }
+async function pgPull(){
+  if(!proxyUrl() || !navigator.onLine) return;
+  if(pgDirty) return;
+  try{
+    const d = await callProxy({ action:"planogramGet" });
+    if(d && d.ok && d.state && Array.isArray(d.state.runs)){
+      const theirs = d.state.updatedAt||"", mine = pgState.updatedAt||"";
+      if(theirs && theirs >= mine){ pgState = d.state; if(!pgState.learn) pgState.learn={}; pgSave(); renderPlanogram(); }
+    }
+  }catch(e){}
+}
+function pgStartPoll(){ pgStopPoll(); pgPollTimer = setInterval(()=>{ if(!document.hidden) pgPull(); }, 30000); }
+function pgStopPoll(){ if(pgPollTimer){ clearInterval(pgPollTimer); pgPollTimer = null; } }
+
+window.addEventListener("online", ()=>{ if(pgDirty) pgSync(false); });
+document.addEventListener("visibilitychange", ()=>{
+  if(document.hidden) return;
+  const v = document.getElementById("view-planogram");
+  if(v && v.classList.contains("active")){ if(pgDirty) pgSync(false); else pgPull(); }
+});
+{
+  const _pgCam = document.getElementById("pgCamInput");
+  if(_pgCam) _pgCam.addEventListener("change", function(){ if(!this.files || !this.files.length){ pgShootJob=null; return; } if(pgShootJob) pgReadPhoto(this.files[0]); });
+  const _pgIn = document.getElementById("pgSheetInput");
+  if(_pgIn) _pgIn.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); pgKeepTyped(); } });
 }
 
 /* Draw the dynamic nav + section pill for the opening view (Add). Without this

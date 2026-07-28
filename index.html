@@ -1252,65 +1252,6 @@
   .ho-menu button .tick{margin-left:auto;color:var(--ok);display:grid;place-items:center}
   .ho-menu button .tick svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:3;
     stroke-linecap:round;stroke-linejoin:round}
-  /* ---------- produce camera (Info tab) ----------
-     A lens button beside the search box (never inside it, so the search field,
-     its mic and its clear button are untouched) and a full-screen camera
-     overlay that names what you point it at. */
-  .prodcam-btn{flex:0 0 auto;width:46px;align-self:stretch;display:flex;align-items:center;
-    justify-content:center;background:var(--surface);color:var(--paper);border:1px solid var(--line);
-    border-radius:12px;cursor:pointer}
-  .prodcam-btn:active{border-color:var(--laser);color:var(--laser)}
-  .prodcam-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;
-    stroke-linecap:round;stroke-linejoin:round}
-
-  #pvOverlay{position:fixed;inset:0;z-index:60;background:#000;display:none}
-  #pvOverlay.show{display:block}
-  .pv-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
-  .pv-scrim{position:absolute;inset:0;pointer-events:none;
-    background:radial-gradient(ellipse 62% 42% at 50% 44%,transparent 0,transparent 60%,rgba(0,0,0,.45) 100%)}
-  .pv-reticle{position:absolute;left:50%;top:44%;width:150px;height:150px;transform:translate(-50%,-50%);pointer-events:none}
-  .pv-reticle i{position:absolute;width:26px;height:26px}
-  .pv-reticle i.tl{left:0;top:0;border-left:3px solid rgba(245,242,233,.9);border-top:3px solid rgba(245,242,233,.9);border-radius:4px}
-  .pv-reticle i.tr{right:0;top:0;border-right:3px solid rgba(245,242,233,.9);border-top:3px solid rgba(245,242,233,.9);border-radius:4px}
-  .pv-reticle i.bl{left:0;bottom:0;border-left:3px solid rgba(245,242,233,.9);border-bottom:3px solid rgba(245,242,233,.9);border-radius:4px}
-  .pv-reticle i.br{right:0;bottom:0;border-right:3px solid rgba(245,242,233,.9);border-bottom:3px solid rgba(245,242,233,.9);border-radius:4px}
-  .pv-close{position:absolute;top:calc(10px + env(safe-area-inset-top));right:12px;z-index:3;
-    width:44px;height:44px;border-radius:50%;background:rgba(20,23,26,.66);border:0;color:#F5F2E9;
-    font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
-  .pv-close:active{background:var(--laser)}
-  .pv-hint{position:absolute;top:calc(14px + env(safe-area-inset-top));left:0;right:64px;z-index:2;
-    text-align:center;color:rgba(245,242,233,.82);font-family:var(--mono);font-size:12px;padding:0 12px;pointer-events:none}
-  .pv-chip{position:absolute;left:50%;top:calc(44% + 92px);transform:translateX(-50%);z-index:3;
-    min-width:210px;max-width:calc(100% - 32px);background:rgba(20,23,26,.86);
-    border:1px solid rgba(245,242,233,.16);border-radius:14px;padding:12px 14px;color:#F5F2E9;
-    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 10px 30px rgba(0,0,0,.5);
-    opacity:0;transition:opacity .18s;pointer-events:none}
-  .pv-chip.on{opacity:1;pointer-events:auto}
-  .pv-chip .pvn{font-family:var(--sans);font-weight:800;font-size:17px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
-  .pv-chip .pvn .pvown{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-    color:#14171A;background:var(--paper-dim);padding:2px 6px;border-radius:10px}
-  .pv-chip .pvplu{font-family:var(--mono);font-size:13px;color:var(--paper-dim);margin-top:3px}
-  .pv-chip .pvplu b{color:#F5F2E9;font-size:16px}
-  .pv-chip .pvconf{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:.04em}
-  .pv-chip .pvinfo{margin-top:11px;width:100%;border:0;border-radius:10px;background:var(--laser);color:#fff;
-    font-family:var(--sans);font-weight:700;font-size:14px;padding:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
-  .pv-chip .pvinfo:active{filter:brightness(.9)}
-  .pv-chip .pvinfo svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .pv-chip.nomatch .pvinfo{background:var(--surface-2);color:var(--paper)}
-  .pv-load{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:14px;color:#F5F2E9;background:rgba(10,12,14,.82);text-align:center;padding:24px}
-  .pv-load.hidden{display:none}
-  .pv-spin{width:34px;height:34px;border:3px solid rgba(245,242,233,.25);border-top-color:var(--laser);border-radius:50%;animation:pvspin .8s linear infinite}
-  @keyframes pvspin{to{transform:rotate(360deg)}}
-  .pv-load p{font-family:var(--mono);font-size:13px;line-height:1.5;max-width:280px}
-  .pv-load .pv-retry{margin-top:6px;background:var(--surface);color:var(--paper);border:1px solid var(--line);
-    border-radius:10px;padding:10px 16px;font-family:var(--sans);font-weight:600;font-size:14px;cursor:pointer}
-  @media (prefers-reduced-motion:reduce){.pv-spin{animation:none}}
-  .cd-camback{display:none;align-items:center;gap:7px;background:var(--surface-2);color:var(--paper);border:1px solid var(--line);
-    border-radius:9px;padding:7px 12px;font-family:var(--sans);font-weight:650;font-size:13px;cursor:pointer;margin-right:8px}
-  .cd-camback.show{display:inline-flex}
-  .cd-camback:active{border-color:var(--laser);color:var(--laser)}
-  .cd-camback svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 </style>
   <!-- The ?v is not decoration. A service worker caches manifest.json, and if an
        older one is still alive it hands Chrome the OLD manifest — no id, still
@@ -1822,9 +1763,6 @@
               <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
           </button>
         </div>
-        <button class="prodcam-btn" id="btnProdCam" aria-label="Identify produce with the camera">
-          <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        </button>
       </div>
       <div class="prod-tags" id="prodTags"></div>
     </div>
@@ -1839,12 +1777,7 @@
       <div class="perf"></div>
       <div class="modal-head">
         <h2 id="cdName">—</h2>
-        <div style="display:flex;align-items:center">
-          <button class="cd-camback" id="cdCamBack" type="button">
-            <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-            Camera</button>
-          <button class="modal-close" id="cdClose" aria-label="Close">✕</button>
-        </div>
+        <button class="modal-close" id="cdClose" aria-label="Close">✕</button>
       </div>
       <div class="cd-meta" id="cdMeta"></div>
 
@@ -1888,28 +1821,6 @@
         <div class="chips" id="cdTags"></div>
         <input id="cdTagAdd" placeholder="add a tag, then Enter" autocomplete="off">
       </div>
-    </div>
-  </div>
-
-  <!-- ============ PRODUCE CAMERA (overlay) ============ -->
-  <div id="pvOverlay">
-    <video class="pv-video" id="pvVideo" playsinline muted autoplay></video>
-    <div class="pv-scrim"></div>
-    <div class="pv-hint" id="pvHint">Point the box at one item</div>
-    <div class="pv-reticle"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></div>
-    <button class="pv-close" id="pvClose" aria-label="Close camera">✕</button>
-    <div class="pv-chip" id="pvChip">
-      <div class="pvn" id="pvName">—</div>
-      <div class="pvplu" id="pvPlu"></div>
-      <div class="pvconf" id="pvConf"></div>
-      <button class="pvinfo" id="pvInfo" type="button">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        Info card</button>
-    </div>
-    <div class="pv-load" id="pvLoad">
-      <div class="pv-spin" id="pvSpin"></div>
-      <p id="pvLoadMsg">Starting camera…</p>
-      <button class="pv-retry hidden" id="pvRetry" type="button">Try again</button>
     </div>
   </div>
 
@@ -2144,26 +2055,6 @@
       <button class="btn btn-ghost" id="btnDbPublish">Publish built-in lists to Sheet</button>
       <button class="btn btn-primary" id="btnDbPull">Pull database from Sheet</button>
       <p class="lookup-note" id="dbStatus"></p>
-    </div>
-    <div class="panel">
-      <h3>Produce camera <span class="hint">(recognizer)</span></h3>
-      <p>The Info tab's camera names produce you point it at. It uses an on-device
-         recognizer (downloaded once). Save it for offline so it works in a walk-in
-         with no signal, or point it at your own trained model.</p>
-      <button class="btn btn-ghost" id="btnPvOffline">Save recognizer for offline</button>
-      <p class="lookup-note" id="pvOfflineNote"></p>
-      <div class="field" style="margin-top:10px">
-        <label for="pvModelUrl">Custom model URL <span class="hint">(model.json — leave blank for the built-in)</span></label>
-        <input id="pvModelUrl" placeholder="https://…/model.json" autocomplete="off">
-      </div>
-      <div class="field">
-        <label for="pvLabelsUrl">Labels URL <span class="hint">(JSON array of class names, same order as the model)</span></label>
-        <input id="pvLabelsUrl" placeholder="https://…/labels.json" autocomplete="off">
-      </div>
-      <button class="btn btn-primary" id="btnPvSaveModel">Save model settings</button>
-      <p class="lookup-note">Train a model later on your own PLU/barcode produce, host
-         <b>model.json</b> + weights + <b>labels.json</b> anywhere, and paste the URLs here —
-         the camera will use it instead of the built-in recognizer. See the training kit for how.</p>
     </div>
     <div class="panel">
       <h3>Restock routing <span class="hint">(developer)</span></h3>
@@ -2729,7 +2620,7 @@ function setCatFix(art, patch){
   saveCatFixes(all);
   // Rebuild the code index so a corrected barcode is findable by scan too.
   rebuildCatCode();
-  VOCAB = null; SEED_KEYS = null; IDLE_HITS = null;   // corrected name enters the vocab
+  VOCAB = null; SEED_KEYS = null;               // corrected name enters the vocab
 }
 function rebuildCatCode(){
   CAT_BY_CODE.clear();
@@ -2810,7 +2701,7 @@ function parsePluText(txt){
 function savePlu(list){
   if(!Array.isArray(list) || !list.length){ toast("Refused to save an empty PLU list"); return; }
   PLU = list;
-  VOCAB = null; SEED_KEYS = null; IDLE_HITS = null;   // vocabulary changed — rebuild lazily
+  VOCAB = null; SEED_KEYS = null;         // vocabulary changed — rebuild lazily
   try{ localStorage.setItem(KEY_PLU, JSON.stringify(PLU)); }
   catch(e){ toast("Storage full — the list is live but wasn't saved"); }
 }
@@ -3023,10 +2914,9 @@ function showView(name){
   if(name==="handoff"){ renderHandoff(); hoPull(); hoStartPoll(); hoMaybePrompt(); }
   if(name==="planogram"){ renderPlanogram(); pgPull(); pgStartPoll(); }
   if(name==="product"){
-    // Land in the search box — looking something up is what this tab is for.
-    // Focus is cheap so it stays synchronous; the list render is deferred a
-    // frame below so the tab paints immediately instead of hanging while the
-    // cards build.
+    renderProduct();
+    // Land in the search box — looking something up is what this tab is for,
+    // and the magnifier that used to do this is gone.
     const b = document.getElementById("prodSearch");
     if(b){
       b.focus({ preventScroll:true });
@@ -3037,7 +2927,6 @@ function showView(name){
       b.classList.add("armed");
       setTimeout(()=>b.classList.remove("armed"), 1400);
     }
-    requestAnimationFrame(renderProduct);
   }
   if(name==="order") renderOrder();
   if(name==="claims") renderClaims();
@@ -4699,11 +4588,6 @@ function lev(a,b){
   return prev[n];
 }
 let VOCAB = null, PHON = null, OWNVOCAB = null;
-/* Cache for the Info tab's idle (empty search box) card list. It depends only
-   on CARD_SEED + PLU, which don't change between visits, so it is built once
-   and reused instead of re-running ~92 full PLU scans on every landing.
-   Invalidated wherever the PLU vocabulary changes. */
-let IDLE_HITS = null;
 function buildVocab(){
   VOCAB = new Set(); PHON = new Map(); OWNVOCAB = new Set();
   PLU.forEach(e=>pluTokens(e.name).forEach(t=>{
@@ -8287,18 +8171,12 @@ function renderProduct(){
       hits.push({ name: nm, plu: e.plu, own: e.own });
     });
   } else {
-    // idle: show what's actually written up, so the tab isn't a blank wall.
-    // Cached in IDLE_HITS — this list is identical every visit until PLU
-    // changes, so it is not worth rebuilding (one full PLU scan per seed card,
-    // ~92 of them) on every single landing.
-    if(!IDLE_HITS){
-      IDLE_HITS = Object.keys(CARD_SEED).map(k=>{
-        const f = pluSearch(k)[0];
-        return f ? { name: f.name.replace(/\s*\(Organic\)\s*$/i,""), plu: f.plu, own: f.own }
-                 : { name: k, plu: "", own: false };
-      });
-    }
-    hits = IDLE_HITS;
+    // idle: show what's actually written up, so the tab isn't a blank wall
+    hits = Object.keys(CARD_SEED).map(k=>{
+      const f = pluSearch(k)[0];
+      return f ? { name: f.name.replace(/\s*\(Organic\)\s*$/i,""), plu: f.plu, own: f.own }
+               : { name: k, plu: "", own: false };
+    });
   }
 
   hits = hits.slice(0, 80);
@@ -8374,18 +8252,12 @@ function openCard(name){
 
   renderMonths();
   renderNut();
-  // The "Camera" shortcut only shows when this card was opened from the lens.
-  const _cb = document.getElementById("cdCamBack");
-  if(_cb) _cb.classList.toggle("show", pvReturn);
   cardOverlay.classList.remove("hidden");
   document.body.style.overflow = "hidden";
 }
 function closeCard(){
   cardOverlay.classList.add("hidden");
   document.body.style.overflow = "";
-  pvReturn = false;
-  const _cb = document.getElementById("cdCamBack");
-  if(_cb) _cb.classList.remove("show");
   renderProduct();
 }
 document.getElementById("cdClose").addEventListener("click", closeCard);
@@ -9959,220 +9831,6 @@ document.addEventListener("visibilitychange", ()=>{
 }
 
 showView("list");
-
-
-/* ================= produce camera (Info tab) =================
-   Point the phone at one item; an on-device image classifier names it, and we
-   map that name onto THIS store's PLU list + info cards via the same pluSearch
-   the search box uses. The recognizer (TensorFlow.js) loads lazily on first
-   open, so it never weighs on startup, and the service worker caches it for
-   offline once loaded. A custom trained model can replace the built-in one via
-   Settings. Recognition is whole-frame classification aimed through the reticle,
-   not per-item box detection, so aim the box at a single item. */
-const KEY_PV_MODELURL  = "cc_pv_model_url";
-const KEY_PV_LABELSURL = "cc_pv_labels_url";
-const PV_TF  = "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js";
-const PV_NET = "https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js";
-
-let pvStream=null, pvModel=null, pvMode="", pvLabels=null, pvLoop=null, pvBusy=false;
-let pvReturn=false, pvLastKey="", pvSameCount=0, pvCurrent=null, pvCanvas=null;
-
-/* ImageNet wording -> words this store's list uses. Only labels whose phrasing
-   would miss pluSearch need an entry; most (banana, broccoli, cucumber, lemon,
-   orange, cauliflower, pineapple, strawberry, mushroom, fig, corn, zucchini...)
-   already match by name. "" means ignore this label. Ignored when a custom
-   model is in use, since its labels are already your own vocabulary. */
-const PV_ALIAS = {
-  "granny smith":"granny smith apple", "head cabbage":"cabbage",
-  "spaghetti squash":"squash", "courgette":"zucchini", "cardoon":"celery",
-  "custard apple":"apple", "ear":"corn", "hip":"", "buckeye":"",
-  "hen-of-the-woods":"mushroom"
-};
-
-function pvLoadScript(src){
-  return new Promise((res,rej)=>{
-    if([...document.scripts].some(x=>x.src===src)) return res();
-    const el=document.createElement("script"); el.src=src; el.async=true;
-    el.onload=()=>res(); el.onerror=()=>rej(new Error("load")); document.head.appendChild(el);
-  });
-}
-async function pvLoadLabels(){
-  const u=(localStorage.getItem(KEY_PV_LABELSURL)||"").trim();
-  if(!u) return null;
-  try{ const r=await fetch(u); const j=await r.json(); return Array.isArray(j)?j:(j.labels||null); }
-  catch(e){ return null; }
-}
-async function pvEnsureModel(){
-  if(pvModel) return pvModel;
-  await pvLoadScript(PV_TF);
-  const customUrl=(localStorage.getItem(KEY_PV_MODELURL)||"").trim();
-  if(customUrl){
-    pvLabels = await pvLoadLabels();
-    try{ pvModel = await tf.loadGraphModel(customUrl); }
-    catch(e){ pvModel = await tf.loadLayersModel(customUrl); }
-    pvMode = "custom";
-  } else {
-    await pvLoadScript(PV_NET);
-    pvModel = await mobilenet.load({ version:2, alpha:1.0 });
-    pvMode = "mobilenet";
-  }
-  return pvModel;
-}
-
-function pvSetLoad(msg, spin, retry){
-  document.getElementById("pvLoadMsg").textContent = msg;
-  document.getElementById("pvSpin").classList.toggle("hidden", !spin);
-  document.getElementById("pvRetry").classList.toggle("hidden", !retry);
-  document.getElementById("pvLoad").classList.toggle("hidden", msg==="");
-}
-
-async function pvOpen(){
-  document.getElementById("pvOverlay").classList.add("show");
-  document.body.style.overflow="hidden";
-  pvShowChip(null); pvLastKey=""; pvSameCount=0;
-  pvSetLoad("Starting camera\u2026", true, false);
-  try{
-    pvStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:{ ideal:"environment" } }, audio:false });
-  }catch(e){ pvSetLoad("Couldn't open the camera \u2014 check the permission and try again.", false, true); return; }
-  const v=document.getElementById("pvVideo"); v.srcObject=pvStream;
-  try{ await v.play(); }catch(e){}
-  pvTune();
-  pvSetLoad("Loading recognizer\u2026 (first time only)", true, false);
-  try{ await pvEnsureModel(); }
-  catch(e){
-    pvSetLoad(navigator.onLine
-      ? "Couldn't load the recognizer. Check the model settings and try again."
-      : "The recognizer needs a connection the first time. Reconnect, load it once, then it works offline.",
-      false, true);
-    return;
-  }
-  pvSetLoad("", false, false);
-  pvStartLoop();
-}
-function pvTune(){
-  try{
-    const t=pvStream&&pvStream.getVideoTracks()[0];
-    const caps=t&&t.getCapabilities?t.getCapabilities():{};
-    if(caps.focusMode&&caps.focusMode.includes("continuous")){ try{ t.applyConstraints({advanced:[{focusMode:"continuous"}]}); }catch(e){} }
-  }catch(e){}
-}
-function pvGrab(){
-  const v=document.getElementById("pvVideo");
-  if(!v.videoWidth) return null;
-  if(!pvCanvas){ pvCanvas=document.createElement("canvas"); pvCanvas.width=224; pvCanvas.height=224; }
-  const sz=Math.min(v.videoWidth,v.videoHeight);
-  pvCanvas.getContext("2d").drawImage(v,(v.videoWidth-sz)/2,(v.videoHeight-sz)/2,sz,sz,0,0,224,224);
-  return pvCanvas;
-}
-async function pvClassifyFrame(frame){
-  if(pvMode==="mobilenet"){
-    const preds=await pvModel.classify(frame,3);
-    return (preds||[]).map(p=>({label:p.className, p:p.probability}));
-  }
-  // custom model: fromPixels -> [0,1] -> NHWC 224. (Retrain-time preprocessing
-  // must match; this is the common MobileNet-style input.)
-  const logits=tf.tidy(()=>{
-    let img=tf.browser.fromPixels(frame).toFloat().div(255).expandDims(0);
-    return pvModel.predict(img);
-  });
-  const data=await logits.data(); logits.dispose();
-  const idx=Array.from(data.keys()).sort((a,b)=>data[b]-data[a]).slice(0,3);
-  return idx.map(i=>({label:(pvLabels&&pvLabels[i])||("class "+i), p:data[i]}));
-}
-function pvResolve(rawLabel){
-  const first=String(rawLabel||"").split(",")[0].trim().toLowerCase();
-  const query = pvMode==="custom" ? first : (PV_ALIAS[first]!==undefined ? PV_ALIAS[first] : first);
-  if(!query) return null;
-  const hit=pluSearch(query)[0];
-  if(hit) return { name: hit.name.replace(/\s*\(Organic\)\s*$/i,""), plu: hit.plu, own: !!hit.own, matched:true };
-  return { name: query.replace(/\b\w/g,c=>c.toUpperCase()), plu:"", own:false, matched:false };
-}
-async function pvTick(){
-  if(pvBusy||!pvModel) return;
-  const frame=pvGrab(); if(!frame) return;
-  pvBusy=true;
-  try{
-    const preds=await pvClassifyFrame(frame);
-    if(preds.length && preds[0].p>=0.10){
-      let resolved=null;
-      for(const pr of preds){
-        const r=pvResolve(pr.label); if(!r) continue;
-        if(!resolved){ resolved=r; resolved._p=pr.p; }
-        if(r.matched){ r._p=pr.p; resolved=r; break; }
-      }
-      if(resolved){
-        const key=resolved.name.toLowerCase();
-        if(key===pvLastKey) pvSameCount++; else { pvLastKey=key; pvSameCount=1; }
-        if(pvSameCount>=2) pvShowChip(resolved);
-      }
-    } else { pvSameCount=0; pvLastKey=""; pvShowChip(null); }
-  }catch(e){ /* transient */ }
-  pvBusy=false;
-}
-function pvStartLoop(){ pvStopLoop(); pvLoop=setInterval(pvTick,700); }
-function pvStopLoop(){ if(pvLoop){ clearInterval(pvLoop); pvLoop=null; } pvBusy=false; }
-
-const PV_INFO_SVG='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
-function pvShowChip(r){
-  const chip=document.getElementById("pvChip");
-  if(!r){ chip.classList.remove("on"); pvCurrent=null; return; }
-  pvCurrent=r;
-  document.getElementById("pvName").innerHTML=esc(r.name)+(r.own?' <span class="pvown">store</span>':'');
-  document.getElementById("pvPlu").innerHTML=r.plu?'PLU <b>'+esc(r.plu)+'</b>':'Not in your PLU list';
-  document.getElementById("pvConf").textContent=r._p?Math.round(r._p*100)+"% match":"";
-  chip.classList.toggle("nomatch", !r.matched);
-  document.getElementById("pvInfo").innerHTML=PV_INFO_SVG+(r.matched?" Info card":" Open a card");
-  chip.classList.add("on");
-}
-function pvClose(keepLock){
-  pvStopLoop();
-  const v=document.getElementById("pvVideo");
-  try{ v.pause(); v.srcObject=null; }catch(e){}
-  if(pvStream){ pvStream.getTracks().forEach(t=>{ try{ t.stop(); }catch(e){} }); pvStream=null; }
-  pvShowChip(null);
-  document.getElementById("pvOverlay").classList.remove("show");
-  if(!keepLock) document.body.style.overflow="";
-}
-function pvOpenInfoCard(){
-  if(!pvCurrent) return;
-  const name=pvCurrent.name;
-  pvReturn=true; pvClose(true); openCard(name);
-}
-
-document.getElementById("btnProdCam").addEventListener("click", pvOpen);
-document.getElementById("pvClose").addEventListener("click", ()=>pvClose(false));
-document.getElementById("pvInfo").addEventListener("click", pvOpenInfoCard);
-document.getElementById("pvRetry").addEventListener("click", ()=>{ pvClose(true); pvOpen(); });
-document.getElementById("cdCamBack").addEventListener("click", ()=>{
-  cardOverlay.classList.add("hidden"); pvReturn=false;
-  document.getElementById("cdCamBack").classList.remove("show"); pvOpen();
-});
-document.addEventListener("visibilitychange", ()=>{ if(document.hidden && pvStream) pvClose(false); });
-
-/* ---- Settings: offline + custom model ---- */
-(function pvSettingsInit(){
-  const mu=document.getElementById("pvModelUrl"), lu=document.getElementById("pvLabelsUrl");
-  if(mu) mu.value=localStorage.getItem(KEY_PV_MODELURL)||"";
-  if(lu) lu.value=localStorage.getItem(KEY_PV_LABELSURL)||"";
-  const off=document.getElementById("btnPvOffline");
-  if(off) off.addEventListener("click", async ()=>{
-    const note=document.getElementById("pvOfflineNote");
-    if(!navigator.onLine){ if(note) note.textContent="You're offline — connect first, then save."; return; }
-    off.disabled=true; if(note) note.textContent="Downloading recognizer\u2026";
-    try{ pvModel=null; await pvEnsureModel();
-      if(note) note.textContent="Saved. The camera now works offline on this phone ("+pvMode+" model).";
-    }catch(e){ if(note) note.textContent="Couldn't download it. Check the model settings and your connection."; }
-    off.disabled=false;
-  });
-  const sv=document.getElementById("btnPvSaveModel");
-  if(sv) sv.addEventListener("click", ()=>{
-    const m=(mu&&mu.value||"").trim(), l=(lu&&lu.value||"").trim();
-    if(m) localStorage.setItem(KEY_PV_MODELURL,m); else localStorage.removeItem(KEY_PV_MODELURL);
-    if(l) localStorage.setItem(KEY_PV_LABELSURL,l); else localStorage.removeItem(KEY_PV_LABELSURL);
-    pvModel=null; pvMode=""; pvLabels=null;   // reload on next open
-    toast(m?"Custom model saved — reopen the camera to use it":"Back to the built-in recognizer");
-  });
-})();
 
 /* ================= boot ================= */
 // Last thing in the file: everything it might reveal is already wired.

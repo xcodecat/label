@@ -1099,7 +1099,8 @@
   .cat-plu{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--laser);margin-top:6px;display:inline-block}
   #mBcPreviewWrap .cat-bcimg{margin:0 auto}
   #mUnitSeg{width:100%;flex:1}
-  #mUnitSeg button{flex:1;min-width:0}
+  #mUnitSeg button{flex:1;min-width:0;padding:12px 0;font-size:14px}
+  .cat-nm .own{display:inline-block;font-size:9px;background:var(--laser);color:#fff;padding:2px 5px;border-radius:4px;margin-left:6px;vertical-align:middle;font-weight:700;letter-spacing:.02em}
   .cat-hint{font-family:var(--mono);font-size:9px;color:var(--ok);letter-spacing:0;margin-left:6px}
   .rk-tr{position:fixed;inset:0;z-index:80;background:var(--ink);display:none;flex-direction:column;
     padding:calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom))}
@@ -1502,7 +1503,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=68">
+  <link rel="manifest" href="./manifest.json?v=69">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2209,6 +2210,7 @@
       <p>Keeps a <b>PLU DB</b> and <b>Barcode DB</b> tab in your Sheet. Edit names, country of origin and unit (ea/kg/lb/gm) there, then Pull to bring the changes into the app. Adding items on the Add tab also grows the Barcode DB.</p>
       <button class="btn btn-ghost" id="btnDbPublish">Publish built-in lists to Sheet</button>
       <button class="btn btn-primary" id="btnDbPull">Pull database from Sheet</button>
+      <button class="btn btn-ghost" id="btnStripWt">Move weights out of names</button>
       <p class="lookup-note" id="dbStatus"></p>
     </div>
     <div class="panel">
@@ -2425,8 +2427,15 @@
         <input id="mName" autocomplete="off">
         <button type="button" class="qty-btn mic-sm" id="mSay" aria-label="Say the product name"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
       </div>
-      <div class="plu-row" style="margin-top:6px;">
-        <input id="mBrand" list="brandList" placeholder="Brand — PC, PCO, FM, NNI…" autocomplete="off" style="flex:0 0 48%;max-width:48%">
+      <div class="two-up" style="margin-top:8px;">
+        <div>
+          <label for="mBrand">Brand</label>
+          <input id="mBrand" list="brandList" placeholder="PC, PCO, FM, NNI…" autocomplete="off">
+        </div>
+        <div>
+          <label for="mPackWt">Pack weight</label>
+          <input id="mPackWt" type="text" inputmode="text" placeholder="e.g. 227g" autocomplete="off">
+        </div>
       </div>
       <datalist id="brandList"><option value="PC"></option><option value="PCO"></option><option value="FM"></option><option value="NNI"></option><option value="PCBM"></option></datalist>
     </div>
@@ -2460,10 +2469,6 @@
           <button type="button" id="mUKG" data-u="kg" aria-label="By weight" title="By weight" style="flex:1;">kg</button>
         </div>
       </div>
-    </div>
-    <div class="field" id="mPackWtField">
-      <label for="mPackWt">Pack weight <span class="hint">(each only — e.g. 227g, 680g)</span></label>
-      <input id="mPackWt" type="text" inputmode="text" placeholder="e.g. 227g, 680g" autocomplete="off">
     </div>
     <div class="field">
       <label for="mArticle">Article # <span class="hint">(optional — warehouse code)</span></label>
@@ -3513,7 +3518,6 @@ function setManualUnit(kg){
     if(minus) minus.style.display = "";
     if(plus)  plus.style.display  = "";
   }
-  const pwf=document.getElementById("mPackWtField"); if(pwf) pwf.style.display = mKg ? "none" : "";
 }
 function fillFromCatalog(hit, {overwrite=false}={}){
   if(!hit) return;
@@ -4435,26 +4439,26 @@ function searchEntries(q){
   if(typeof CATALOG !== "undefined") CATALOG.forEach(c=>{
     if(c && c.name && hit(c.name, c.brand, c.code, c.plu))
       push({ name:c.name, code:String(c.code||""), plu:c.plu||"", brand:c.brand||"",
-             packWt:wtFrom(c), pack:c.pack||"", size:c.size||"",
+             packWt:wtFrom(c), pack:c.pack||"", size:c.size||"", unit:c.unit||"",
              store:dbStoreCodes.has(String(c.code||"")) });
   });
   // Sheet Barcode DB
   const bm = dbBcMap();
   for(const code in bm){ const c = bm[code];
     if(hit(c.name, c.brand, code, "")) push({ name:c.name||"", code:String(code), plu:"",
-      brand:c.brand||"", packWt:c.packWt||"", pack:c.pack||"", size:c.size||"",
+      brand:c.brand||"", packWt:c.packWt||"", pack:c.pack||"", size:c.size||"", unit:c.unit||"",
       store:storeVal(c.store)===true }); }
   // built-in PLU list (produce)
   if(Array.isArray(PLU)) PLU.forEach(e=>{
     if(e && e.name && hit(e.name, "", "", e.plu))
       push({ name:e.name, code:"", plu:String(e.plu||""), brand:"", packWt:"",
-             pack:"", size:"", store:!!e.own });
+             pack:"", size:"", unit:(e.e?"ea":"kg"), store:!!e.own });
   });
   // Sheet PLU DB
   const pm = dbPluMap();
   for(const plu in pm){ const c = pm[plu];
     if(hit(c.name, c.brand, "", plu)) push({ name:c.name||"", code:"", plu:String(plu),
-      brand:c.brand||"", packWt:c.packWt||"", pack:"", size:"",
+      brand:c.brand||"", packWt:c.packWt||"", pack:"", size:"", unit:c.unit||"",
       store:storeVal(c.store)===true }); }
   // barcodes first (so you can scan straight off the list), then PLUs
   out.sort((a,b)=> (a.code?0:1) - (b.code?0:1));
@@ -4479,7 +4483,7 @@ function catFindHtml(q){
 function openEntry(i){
   const o = _searchEnts[i]; if(!o) return;
   openManualPrefilled({ name:o.name, code:o.code, plu:o.plu, brand:o.brand,
-                        packWt:o.packWt, pack:o.pack, size:o.size, art:"" });
+                        packWt:o.packWt, pack:o.pack, size:o.size, unit:o.unit, art:"" });
 }
 /* Tap a catalogue result to open the SAME add form, pre-filled. (Manual +,
    scan, and tapping a result all land on one identical form now.) */
@@ -4515,6 +4519,9 @@ function openManualPrefilled(c){
     const br = parts.tags.filter(t=>nmTagKind(t)==="brand");
     if(br.length){ set("mBrand", br.join(" ")); document.getElementById("mName").value = parts.core; }
     else if(c.brand) set("mBrand", c.brand);
+    const u = String(c.unit||"").toLowerCase();
+    if(u==="ea" || u==="each") setManualUnit(false);
+    else if(u) setManualUnit(true);
   }
   manOverlay.classList.remove("hidden");
   document.body.style.overflow = "hidden";
@@ -5369,7 +5376,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v68";
+const APP_VERSION = "v69";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6657,6 +6664,16 @@ document.getElementById("btnDbPull").addEventListener("click", async ()=>{
     if(d && d.ok) s.textContent = "Pulled " + d.pluCount + " PLUs and " + d.bcCount + " barcodes. These now fill origin + unit by default.";
     else s.textContent = "Couldn't pull: " + ((d && d.error) || "unknown");
   }catch(e){ s.textContent = "Couldn't pull: " + (authMessage(e) || e.message); }
+});
+document.getElementById("btnStripWt").addEventListener("click", async ()=>{
+  const s = document.getElementById("dbStatus");
+  if(!proxyUrl()) return toast("Set up the Sheet link first");
+  s.textContent = "Moving weights…";
+  try{
+    const d = await callProxy({ action:"stripWeights" });
+    if(d && d.ok){ s.textContent = "Moved " + d.moved + " weight(s) into the Pack Weight column."; await pullDb(); renderList(); }
+    else s.textContent = "Couldn't do it: " + ((d && d.error) || "unknown");
+  }catch(e){ s.textContent = "Couldn't do it: " + (authMessage(e) || e.message); }
 });
 document.getElementById("btnHello").addEventListener("click", checkAccess);
 

@@ -1079,6 +1079,37 @@
   .rk-stub .rk-tag{display:inline-block;margin-top:14px;font-family:var(--mono);font-size:10px;
     letter-spacing:.06em;background:var(--surface-2);border:1px solid var(--line);
     border-radius:20px;padding:4px 10px;color:var(--muted)}
+  .nm-bdg{display:inline-block;margin:0;font-family:var(--mono);font-size:8px;font-weight:700;
+    letter-spacing:.04em;border-radius:5px;padding:1px 5px;vertical-align:middle;line-height:1.5;white-space:nowrap}
+  .nm-bdg.brand{color:var(--laser);border:1px solid #4a2e28;background:#2a1a17;margin-right:5px}
+  .nm-bdg.pack{color:#C8C2B7;border:1px solid #3A4148;background:var(--surface-2);margin-left:5px}
+  .rk-tr{position:fixed;inset:0;z-index:80;background:var(--ink);display:none;flex-direction:column;
+    padding:calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom))}
+  .rk-tr.open{display:flex}
+  .rk-tr-top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .rk-tr-x{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--paper);font-size:14px;cursor:pointer}
+  .rk-tr-ttl{font-weight:800;font-size:16px;flex:1}
+  .rk-tr-prog{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:right}
+  .rk-tr-body{flex:1;overflow:auto}
+  .rk-tr-item{text-align:center;padding:22px 8px}
+  .rk-tr-name{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.12}
+  .rk-tr-sub{margin-top:9px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .rk-tr-tables{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .rk-tr-tbl,.rk-tr-none{display:flex;align-items:center;gap:9px;text-align:left;padding:13px 12px;border-radius:11px;border:1px solid var(--line);background:var(--surface);color:var(--paper);cursor:pointer;font-size:13px}
+  .rk-tr-tbl b,.rk-tr-none b{font-weight:700;flex:1}
+  .rk-tr-tbl small,.rk-tr-none small{font-family:var(--mono);font-size:8px;color:var(--muted)}
+  .rk-tr-dot{width:12px;height:12px;border-radius:50%;background:var(--tc,#8A939C);flex:none}
+  .rk-tr-tbl.sug{border-color:#4a5560}
+  .rk-tr-tbl.on{border-color:var(--tc);box-shadow:inset 0 0 0 1px var(--tc)}
+  .rk-tr-none{grid-column:1 / -1}
+  .rk-tr-none .rk-tr-dot{background:#5a6169}
+  .rk-tr-none.on{border-color:var(--laser);box-shadow:inset 0 0 0 1px var(--laser)}
+  .rk-tr-hint{margin-top:13px;text-align:center;font-size:11px;color:var(--muted)}
+  .rk-tr-foot{display:flex;gap:8px;margin-top:12px}
+  .rk-tr-back,.rk-tr-skip{flex:1;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--paper);font-size:13px;font-weight:700;cursor:pointer}
+  .rk-tr-load,.rk-tr-done{text-align:center;color:var(--muted);padding:44px 18px;line-height:1.6;display:flex;flex-direction:column;align-items:center;gap:10px}
+  .rk-tr-done svg{width:44px;height:44px;stroke:var(--ok);fill:none;stroke-width:2}
+  .rk-tr-done b{color:var(--paper);font-size:18px}
 
   /* ---------- handoff (shift pass-down) ---------- */
   #view-handoff{padding-bottom:138px}
@@ -1430,7 +1461,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=47">
+  <link rel="manifest" href="./manifest.json?v=52">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2140,6 +2171,12 @@
       <p class="lookup-note" id="dbStatus"></p>
     </div>
     <div class="panel">
+      <h3>Restock routing <span class="hint">(developer)</span></h3>
+      <p>Teach which table each product belongs on, walking your PLU DB one item
+         at a time. Taught items always file where you put them, on every phone.</p>
+      <button class="btn btn-ghost" onclick="rkTrainOpen()">Open routing trainer</button>
+    </div>
+    <div class="panel">
       <h3>This phone</h3>
       <div class="field">
         <label for="setSecret">Shared secret</label>
@@ -2215,6 +2252,20 @@
     </div>
   </section>
 </main>
+
+<!-- routing trainer (page-level overlay; opened from Settings) -->
+<div class="rk-tr" id="rkTrain" aria-hidden="true">
+  <div class="rk-tr-top">
+    <button class="rk-tr-x" type="button" onclick="rkTrainClose()" aria-label="Close">✕</button>
+    <div class="rk-tr-ttl">Train routing</div>
+    <div class="rk-tr-prog" id="rkTrProg"></div>
+  </div>
+  <div class="rk-tr-body" id="rkTrBody"></div>
+  <div class="rk-tr-foot">
+    <button class="rk-tr-back" type="button" onclick="rkTrainBack()">← Back</button>
+    <button class="rk-tr-skip" type="button" onclick="rkTrainSkip()">Skip →</button>
+  </div>
+</div>
 
 <nav id="nav"></nav>
 </div>
@@ -2805,16 +2856,18 @@ function stem(t){
   return t;
 }
 
-function pluSearch(q){
+function pluSearch(q){ return pluSearchIn(q, PLU); }
+/* Same scorer over any candidate list (used to rank the Sheet's online hits). */
+function pluSearchIn(q, list){
   const rawT = pluTokens(q);
-  if(!rawT.length || !PLU.length) return [];
+  if(!rawT.length || !list || !list.length) return [];
   const wantOrganic = rawT.includes("organic");
   const qt = rawT.filter(t => t !== "organic" && !GENERIC.has(t) && !GENERIC.has(stem(t)))
                  .map(stem).filter(t => t.length >= 2);
   if(!qt.length) return [];
 
   const scored = [];
-  for(const e of PLU){
+  for(const e of list){
     const isOrg = /^9\d{4}$/.test(e.plu);
     if(wantOrganic && !isOrg) continue;          // asked for organic, show organic
 
@@ -4174,7 +4227,7 @@ function renderList(){
     <div class="item">
       ${i.img ? `<img src="${i.img}" alt="Barcode photo">` : `<div class="no-img">no photo</div>`}
       <div class="info" onclick="openItem('${i.id}')">
-        <div class="name">${esc(i.name)}${i.flyer?'<span class="badge">In flyer</span>':''}</div>
+        <div class="name">${nmNameHtml(i.name)}${i.flyer?'<span class="badge">In flyer</span>':''}</div>
         <div class="code">${[
             i.plu ? "PLU "+esc(i.plu) : "",
             (i.code && !/^PLU/.test(i.code)) ? esc(i.code) : ""
@@ -5001,7 +5054,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v47";
+const APP_VERSION = "v52";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -5635,7 +5688,7 @@ function addItem(o){
     id: "i"+Date.now()+Math.random().toString(36).slice(2,6),
     ts: Date.now(),
     code: o.code || "",
-    name: o.name || "(unnamed)",
+    name: nmShort(o.name || "(unnamed)"),
     plu: o.plu || "",
     nameFr: o.nameFr || "",
     origin: o.origin || "",
@@ -8811,23 +8864,37 @@ const RK_TABLES = [
 ];
 const RK_BY_ID = {}; RK_TABLES.forEach(t=>RK_BY_ID[t.id]=t);
 
-/* Keyword -> table. First table with a matching keyword wins, so more specific
-   terms sit above looser ones (grapefruit above grape, sweet potato above
-   potato, carrots -> fridge above any run). Runs 1-5 and fridge only; Pods and
-   Case Lots are never auto-filed. The fridge is the catch-all default. Easy to
-   retune: move a word between lists. */
+/* ---------- routing ----------
+   1. Taught map (trainer) wins — keyed by PLU, else name. "none" = not carried.
+   2. RK_EXACT compound overrides. 3. Keyword lists. Fridge is the default. */
+const KEY_RK_ROUTES = "label_rk_routes_v1";
+function rkRoutes(){ try{ return JSON.parse(localStorage.getItem(KEY_RK_ROUTES)||"{}"); }catch(e){ return {}; } }
+function rkRouteKey(name, plu){
+  const p = String(plu||"").replace(/\D/g,"");
+  if(p) return "plu:"+p;
+  return "n:"+String(name||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+}
+const RK_EXACT = [
+  ["tomatillo",  "fridge"],
+  ["tomato",     "ctp"],
+  ["asian pear", "citrus"],
+  ["nashi",      "citrus"]
+];
 const RK_ROUTE = [
   ["citrus", ["orange","lemon","lime","grapefruit","clementine","mandarin","tangerine","peach","nectarine","plum","apricot","cherry","cherries","mango","kiwi","pineapple","cantaloupe","honeydew","melon","watermelon"]],
   ["apple",  ["apple","gala","fuji","ambrosia","honeycrisp","mcintosh","macintosh","cortland","granny","spartan","pear","bosc","anjou"]],
   ["berry",  ["banana","strawberr","blueberr","raspberr","blackberr","cranberr","berry","berries","grape"]],
   ["root",   ["onion","garlic","ginger","squash","beet","turnip","sweet potato","yam","shallot","leek","fennel"]],
-  ["ctp",    ["cucumber","cuke","tomato","tomatoes","potato","potatoes","roma"]],
+  ["ctp",    ["cucumber","cuke","tomato","tomatoes","potato","potatoes"]],
   ["fridge", ["herb","cilantro","parsley","dill","basil","mint","thyme","rosemary","sage","mushroom","pepper","radish","carrot","parsnip","rutabaga","lettuce","spinach","kale","arugula","green","celery","broccoli","cauliflower","cabbage","sprout","asparagus","zucchini","eggplant","wet"]]
 ];
-function tableFor(name){
+function tableFor(name, plu){
+  const taught = rkRoutes()[rkRouteKey(name, plu)];
+  if(taught) return taught;
   const s = String(name||"").toLowerCase();
-  for(const [id, keys] of RK_ROUTE){ if(keys.some(k=>s.includes(k))) return id; }
-  return "fridge";                 // everything unrecognised waits on the fridge
+  for(const [k,id] of RK_EXACT){ if(s.includes(k)) return id; }
+  for(const [id,keys] of RK_ROUTE){ if(keys.some(k=>s.includes(k))) return id; }
+  return "fridge";
 }
 
 /* ---- state ---- */
@@ -8863,16 +8930,78 @@ function rkTouch(){
   rkDirty = true; rkSave(); renderRestock();
   rkAutoSync();                     // send it to the floor on its own, shortly
 }
-function rkAddItem(name, table, qty){
+function rkAddItem(name, table, qty, plu, tags){
   name = String(name||"").trim();
   if(!name) return null;
   const it = { id: rkNewId(), name: rkCap(name),
     table: RK_BY_ID[table] ? table : "fridge",
-    qty: String(qty||"").trim(), by: rkMeName(),
+    qty: String(qty||"").trim(), plu: String(plu||""),
+    tags: Array.isArray(tags) ? tags : [], by: rkMeName(),
     claimId:"", claimBy:"", ts: Date.now() };
   rkState.items.push(it);
   rkTouch();
   return it;
+}
+function rkTidy(n){ return String(n||"").replace(/\s*\([^)]*\)/g," ").replace(/\s{2,}/g," ").trim(); }
+
+/* Store shorthand: brand + pack pulled into badges; matching runs on the core. */
+const NM_BRANDS = [
+  { tag:"FM",  re:/\b(farmer'?s?\s*market|farmers?\s*mkt)\b/ig },
+  { tag:"NNI", re:/\b(no\s*name\s*naturally\s*imperfect|naturally\s*imperfect|no\s*name|nn+i|n\s*n\s*n?\s*i)\b/ig },
+  { tag:"FM",  re:/\bfm\b/ig }
+];
+function nmNormalize(raw){
+  let s = " " + String(raw||"").replace(/\s+/g," ").trim() + " ";
+  const brands = [];
+  NM_BRANDS.forEach(b=>{ const before=s; s=s.replace(b.re," "); if(s!==before && brands.indexOf(b.tag)<0) brands.push(b.tag); });
+  const packs = [];
+  s = s.replace(/\b(\d{1,2})[\s-]*(?:packs?|pk|p\s*k)\b/ig,(m,n)=>{ const t=n+"pk"; if(packs.indexOf(t)<0)packs.push(t); return " "; });
+  const core = s.replace(/\s{2,}/g," ").trim();
+  if(!core) return { core: String(raw||"").trim(), tags: [] };
+  return { core, tags: brands.concat(packs) };
+}
+function nmTagKind(t){ return /pk$/i.test(t) ? "pack" : "brand"; }
+function nmShort(raw){
+  const nm = nmNormalize(raw);
+  const brand = nm.tags.filter(t=>nmTagKind(t)==="brand");
+  const pack  = nm.tags.filter(t=>nmTagKind(t)==="pack");
+  return [brand.join(" "), nm.core, pack.join(" ")].filter(Boolean).join(" ").trim() || String(raw||"").trim();
+}
+function nmBadgesHtml(tags){ return (tags&&tags.length) ? tags.map(t=>'<span class="nm-bdg '+nmTagKind(t)+'">'+esc(t)+'</span>').join("") : ""; }
+function nmNameHtml(name){
+  const n = nmNormalize(name);
+  const brand = n.tags.filter(t=>nmTagKind(t)==="brand");
+  const pack  = n.tags.filter(t=>nmTagKind(t)==="pack");
+  return nmBadgesHtml(brand) + esc(n.core) + nmBadgesHtml(pack);
+}
+
+/* Snap a heard name to the catalogue after stripping brand/pack noise. */
+function rkResolve(heard){
+  const nm = nmNormalize(heard);
+  let name = rkCap(nm.core), plu = "";
+  try{ const r = pluSearch(nm.core); if(r.length && r[0]._score >= 90){ name = rkTidy(r[0].name); plu = r[0].plu; } }catch(e){}
+  return { name, plu, tags: nm.tags };
+}
+/* Refine against the Sheet's full PLU + Barcode DB; silent + best-effort. */
+async function rkUpgradeOnline(heard, id){
+  if(!proxyUrl() || !navigator.onLine) return;
+  try{
+    const q = nmNormalize(heard).core;
+    const d = await callProxy({ action:"pluLookup", q });
+    if(!d || !d.ok || !Array.isArray(d.matches) || !d.matches.length) return;
+    const cand = d.matches.map(m=>({ plu: m.plu || m.code || "", name: m.name, own: true }));
+    const best = pluSearchIn(q, cand)[0];
+    if(!best || best._score < 90) return;
+    const it = rkState.items.find(x=>x.id===id); if(!it) return;
+    const name = rkTidy(best.name);
+    const table = tableFor(name, best.plu);
+    if(table === "none"){ const i = rkState.items.findIndex(x=>x.id===id); if(i>=0){ rkState.items.splice(i,1); rkTouch(); toast("Not carried: " + name); } return; }
+    let changed = false;
+    if(name && name !== it.name){ it.name = name; changed = true; }
+    if(best.plu && best.plu !== it.plu){ it.plu = best.plu; changed = true; }
+    if(table !== it.table){ it.table = table; changed = true; }
+    if(changed){ it.ts = Date.now(); rkTouch(); }
+  }catch(e){}
 }
 function rkAddManual(){
   const nameEl = document.getElementById("rkTin");
@@ -8909,7 +9038,7 @@ function rkToggle(id){
   if(card) card.classList.toggle("rk-closed", rkClosed[id]);
 }
 
-/* ---- voice ---- each heard item is auto-filed to a run or the fridge ---- */
+/* ---- voice ---- resolve, file (taught map first), then refine online. */
 function commitRestockSpoken(text){
   const rows = parseSpoken(text, "loop");
   const h = document.getElementById("rkHeard");
@@ -8918,8 +9047,17 @@ function commitRestockSpoken(text){
   rows.forEach(r=>{
     const qty = r.kg ? (kgStr(r.qty) + " " + unitLabel())
                      : (r.qty > 1 ? String(r.qty) : "");
-    const it = rkAddItem(r.name, tableFor(r.name), qty);
-    if(it){ n++; last = it; }
+    const m = rkResolve(r.name);
+    const table = tableFor(m.name, m.plu);
+    if(table === "none"){
+      toastUndo("Not carried: " + m.name + " \u2014 skipped", ()=>{
+        const it = rkAddItem(m.name, "fridge", qty, m.plu, m.tags);
+        if(it) rkUpgradeOnline(r.name, it.id);
+      });
+      return;
+    }
+    const it = rkAddItem(m.name, table, qty, m.plu, m.tags);
+    if(it){ n++; last = it; rkUpgradeOnline(r.name, it.id); }
   });
   if(h) h.textContent = "";
   if(n === 1 && last) toast("Filed \u201C" + last.name + "\u201D \u2192 " + RK_BY_ID[last.table].name);
@@ -8991,7 +9129,7 @@ function rkRow(x, me){
       '</button>';
   return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+'">'+
       '<span class="rk-st">'+(x.claimId?'<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>':'')+'</span>'+
-      '<div class="rk-copy"><strong>'+esc(x.name)+'</strong>'+(meta.length?'<div class="rk-meta">'+meta.join("")+'</div>':'')+'</div>'+
+      '<div class="rk-copy">'+nmBadgesHtml((x.tags||[]).filter(t=>nmTagKind(t)==="brand"))+'<strong>'+esc(x.name)+'</strong>'+nmBadgesHtml((x.tags||[]).filter(t=>nmTagKind(t)==="pack"))+(meta.length?'<div class="rk-meta">'+meta.join("")+'</div>':'')+'</div>'+
       claimCell+
       '<button class="rk-del" onclick="rkDel(\''+x.id+'\')" aria-label="Remove"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>'+
     '</div>';
@@ -9071,6 +9209,68 @@ function rkStartPoll(){
   rkPollTimer = setInterval(()=>{ if(!document.hidden) rkPull(); }, 30000);
 }
 function rkStopPoll(){ if(rkPollTimer){ clearInterval(rkPollTimer); rkPollTimer = null; } }
+
+/* ===== ROUTING TRAINER ===== */
+let rkPendingRoutes = {};
+let rkRoutesTimer = null;
+function rkRoutesSet(key, table){
+  const m = rkRoutes(); m[key] = table;
+  try{ localStorage.setItem(KEY_RK_ROUTES, JSON.stringify(m)); }catch(e){}
+  rkPendingRoutes[key] = table;
+  clearTimeout(rkRoutesTimer); rkRoutesTimer = setTimeout(rkRoutesFlush, 1200);
+}
+async function rkRoutesFlush(){
+  if(!proxyUrl() || !navigator.onLine) return;
+  const set = rkPendingRoutes; rkPendingRoutes = {};
+  if(!Object.keys(set).length) return;
+  try{ const d = await callProxy({ action:"routesSync", set }); if(d && d.ok && d.routes){ localStorage.setItem(KEY_RK_ROUTES, JSON.stringify(d.routes)); } }
+  catch(e){ Object.assign(rkPendingRoutes, set); }
+}
+async function rkRoutesPull(){
+  if(!proxyUrl() || !navigator.onLine) return;
+  try{ const d = await callProxy({ action:"routesGet" }); if(d && d.ok && d.routes){ localStorage.setItem(KEY_RK_ROUTES, JSON.stringify(Object.assign({}, d.routes, rkRoutes()))); } }catch(e){}
+}
+let rkTrItems = [];
+let rkTrIdx = 0;
+async function rkTrainOpen(){
+  const ov = document.getElementById("rkTrain"); if(!ov) return;
+  ov.classList.add("open"); ov.setAttribute("aria-hidden","false");
+  document.getElementById("rkTrBody").innerHTML = '<div class="rk-tr-load">Loading your PLU DB\u2026</div>';
+  await rkRoutesPull(); await rkTrainLoad(); rkTrIdx = 0; rkTrainRender();
+}
+function rkTrainClose(){
+  const ov = document.getElementById("rkTrain"); if(!ov) return;
+  ov.classList.remove("open"); ov.setAttribute("aria-hidden","true");
+  rkRoutesFlush(); renderRestock();
+}
+async function rkTrainLoad(){
+  let map = dbPluMap();
+  if(!map || !Object.keys(map).length){ try{ await pullDb(); map = dbPluMap(); }catch(e){} }
+  const routes = rkRoutes();
+  rkTrItems = Object.keys(map||{}).map(plu=>({ plu:plu, name:String(map[plu].name||""), origin:String(map[plu].origin||"") }))
+    .filter(x=>x.name)
+    .sort((a,b)=>{ const ta=routes[rkRouteKey(a.name,a.plu)]?1:0, tb=routes[rkRouteKey(b.name,b.plu)]?1:0; return (ta-tb)||a.name.localeCompare(b.name); });
+}
+function rkTrainDone(){ const r = rkRoutes(); return rkTrItems.filter(x=>r[rkRouteKey(x.name,x.plu)]).length; }
+function rkTrainRender(){
+  const body = document.getElementById("rkTrBody"), prog = document.getElementById("rkTrProg");
+  if(!rkTrItems.length){ body.innerHTML = '<div class="rk-tr-load">No PLU items yet. Connect once to pull your PLU DB, then reopen.</div>'; prog.textContent=""; return; }
+  if(rkTrIdx >= rkTrItems.length){ body.innerHTML = '<div class="rk-tr-done"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg><b>All caught up</b><span>Every item has a home. Reopen any time to adjust.</span></div>'; prog.textContent = rkTrainDone()+" trained"; return; }
+  const it = rkTrItems[rkTrIdx];
+  const cur = rkRoutes()[rkRouteKey(it.name, it.plu)] || "";
+  const suggest = cur || tableFor(it.name, it.plu);
+  prog.textContent = rkTrainDone()+" trained \u00b7 "+(rkTrItems.length - rkTrIdx)+" left";
+  const tbls = RK_TABLES.map(t=>{ const on=cur?cur===t.id:false, sug=!cur&&suggest===t.id;
+    return '<button class="rk-tr-tbl'+(on?' on':'')+(sug?' sug':'')+'" style="--tc:'+t.tc+'" onclick="rkTrainPick(\''+t.id+'\')"><span class="rk-tr-dot"></span><b>'+esc(t.name)+'</b><small>'+esc(t.run)+'</small></button>'; }).join("");
+  const curLabel = cur==="none" ? "Not in store" : (RK_BY_ID[cur] ? RK_BY_ID[cur].name : "");
+  body.innerHTML =
+    '<div class="rk-tr-item"><div class="rk-tr-name">'+esc(it.name)+'</div><div class="rk-tr-sub">PLU '+esc(it.plu)+(it.origin?' \u00b7 '+esc(it.origin):'')+(cur?' \u00b7 now: '+esc(curLabel):'')+'</div></div>'+
+    '<div class="rk-tr-tables">'+tbls+'<button class="rk-tr-none'+(cur==="none"?' on':'')+'" onclick="rkTrainPick(\'none\')"><span class="rk-tr-dot"></span><b>Not in store</b><small>SKIP</small></button></div>'+
+    (cur ? '' : '<div class="rk-tr-hint">Suggested: '+(RK_BY_ID[suggest]?esc(RK_BY_ID[suggest].name):'\u2014')+' \u2014 tap to confirm, or pick another</div>');
+}
+function rkTrainPick(table){ const it = rkTrItems[rkTrIdx]; if(!it) return; rkRoutesSet(rkRouteKey(it.name, it.plu), table); rkTrIdx++; rkTrainRender(); }
+function rkTrainSkip(){ rkTrIdx++; rkTrainRender(); }
+function rkTrainBack(){ if(rkTrIdx>0){ rkTrIdx--; rkTrainRender(); } }
 
 /* Send the moment a signal returns, and re-check the board when the app comes
    back to the foreground on the Restock tab. */
@@ -9571,13 +9771,13 @@ function pgRenderPod1(){
   const el = document.getElementById("pgPod1"); if(!el) return;
   el.innerHTML = pgState.pod1.map((p,i)=>`
     <div class="pg-cell" onclick="pgEdit('pod1-${i}')">
-      <h3 class="${p.name?'':'pg-blank'}">${esc(p.name)||'tap to add'}</h3>
+      <h3 class="${p.name?'':'pg-blank'}">${nmNameHtml(p.name)||'tap to add'}</h3>
       <button class="pg-banner ${p.banner||'none'}" type="button" onclick="event.stopPropagation();pgCycleBanner(${i})">${pgBannerLabel(p.banner)} \u25be</button>
     </div>`).join("");
 }
 function pgRenderMango(){
   const el = document.getElementById("pgMango"); if(!el) return;
-  el.innerHTML = pgState.mango.map((v,i)=>`<div class="pg-cell" onclick="pgEdit('mango-${i}')">${esc(v)||'Mango Case'}</div>`).join("");
+  el.innerHTML = pgState.mango.map((v,i)=>`<div class="pg-cell" onclick="pgEdit('mango-${i}')">${nmNameHtml(v)||'Mango Case'}</div>`).join("");
 }
 function pgRenderPod2(){
   const el = document.getElementById("pgPod2"); if(!el) return;
@@ -9585,7 +9785,7 @@ function pgRenderPod2(){
   for(let i=0;i<pgState.podN;i++){
     const v = pgState.pod2[i]||"";
     h += `<div class="pg-cell" onclick="pgEdit('pod2-${i}')"><div class="pg-podnum">${i+1}</div>
-          <h3 class="${v?'':'pg-blank'}">${esc(v)||'Empty'}</h3></div>`;
+          <h3 class="${v?'':'pg-blank'}">${nmNameHtml(v)||'Empty'}</h3></div>`;
   }
   el.innerHTML = h;
   document.querySelectorAll('#pgPodCount button').forEach(b=>b.classList.toggle('on', +b.dataset.n===pgState.podN));
@@ -9602,10 +9802,10 @@ function pgRenderRuns(){
       </div>
       <div class="pg-ends">
         <div class="pg-endcol"><h5>\u25b2 WET CASES</h5>
-          ${st.wet.map((v,i)=>`<div class="pg-slot ${v?'':'pg-blank'}" onclick="pgEdit('run-${ri}-wet-${i}')">${esc(v)||'tap to add'}</div>`).join("")}
+          ${st.wet.map((v,i)=>`<div class="pg-slot ${v?'':'pg-blank'}" onclick="pgEdit('run-${ri}-wet-${i}')">${nmNameHtml(v)||'tap to add'}</div>`).join("")}
         </div>
         <div class="pg-endcol"><h5>\u25bc HMR</h5>
-          ${st.hmr.map((v,i)=>`<div class="pg-slot ${v?'':'pg-blank'}" onclick="pgEdit('run-${ri}-hmr-${i}')">${esc(v)||'tap to add'}</div>`).join("")}
+          ${st.hmr.map((v,i)=>`<div class="pg-slot ${v?'':'pg-blank'}" onclick="pgEdit('run-${ri}-hmr-${i}')">${nmNameHtml(v)||'tap to add'}</div>`).join("")}
         </div>
       </div>
     </div>`;
@@ -9616,7 +9816,7 @@ function pgRenderLots(){
   el.innerHTML = pgState.lots.map((v,i)=>`
     <div class="pg-lot" onclick="pgEdit('lot-${i}')">
       <span class="pg-lt">Lot ${i+1}</span>
-      <span class="pg-lv ${v?'':'pg-blank'}">${esc(v)||'empty'}</span>
+      <span class="pg-lv ${v?'':'pg-blank'}">${nmNameHtml(v)||'empty'}</span>
     </div>`).join("");
 }
 function renderPlanogram(){
@@ -9680,8 +9880,8 @@ function pgOnType(v){
     ? `<div class="pg-matchhdr">PLU / Barcode DB</div>` + top.map(d=>`<button class="pg-chip" type="button" onclick='pgAssign(${JSON.stringify(d.name)})'>${esc(d.name)} ${d.plu?`<span class="pg-plu">${d.plu}</span>`:""}</button>`).join("")
     : `<div class="pg-hint">No DB match \u2014 \u201cKeep what I typed\u201d files it as-is.</div>`;
 }
-function pgAssign(name){ pgCur.set(name); pgRemember(pgCur.spot, name); pgCloseSheet(); pgTouch(); toast("Filed: "+name); }
-function pgKeepTyped(){ const v=document.getElementById("pgSheetInput").value.trim(); if(!v){ pgCloseSheet(); return; } pgCur.set(v); pgRemember(pgCur.spot, v); pgCloseSheet(); pgTouch(); toast("Filed: "+v); }
+function pgAssign(name){ name = nmShort(name); pgCur.set(name); pgRemember(pgCur.spot, name); pgCloseSheet(); pgTouch(); toast("Filed: "+name); }
+function pgKeepTyped(){ let v=document.getElementById("pgSheetInput").value.trim(); if(!v){ pgCloseSheet(); return; } v = nmShort(v); pgCur.set(v); pgRemember(pgCur.spot, v); pgCloseSheet(); pgTouch(); toast("Filed: "+v); }
 function pgCloseSheet(){ document.getElementById("pgScrim").classList.remove("show"); document.getElementById("pgSheet").classList.remove("show"); pgStopMic(); }
 
 /* ---- voice (same engine as Scrap/Restock) ---- */

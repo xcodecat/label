@@ -1083,6 +1083,7 @@
     letter-spacing:.04em;border-radius:5px;padding:1px 5px;vertical-align:middle;line-height:1.5;white-space:nowrap}
   .nm-bdg.brand{color:var(--laser);border:1px solid #4a2e28;background:#2a1a17;margin-right:5px}
   .nm-bdg.pack{color:#C8C2B7;border:1px solid #3A4148;background:var(--surface-2);margin-left:5px}
+  .nm-bdg.org{color:#3ecf8e;border:1px solid #1f5c3f;background:#14261d;margin-right:5px}
   .rk-tr{position:fixed;inset:0;z-index:80;background:var(--ink);display:none;flex-direction:column;
     padding:calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom))}
   .rk-tr.open{display:flex}
@@ -1110,6 +1111,17 @@
   .rk-tr-load,.rk-tr-done{text-align:center;color:var(--muted);padding:44px 18px;line-height:1.6;display:flex;flex-direction:column;align-items:center;gap:10px}
   .rk-tr-done svg{width:44px;height:44px;stroke:var(--ok);fill:none;stroke-width:2}
   .rk-tr-done b{color:var(--paper);font-size:18px}
+  .rk-as-search{margin-bottom:10px}
+  .rk-as-search input{width:100%;box-sizing:border-box;padding:11px 13px;border-radius:10px;
+    border:1px solid var(--line);background:var(--surface-2);color:var(--paper);font-size:14px}
+  .rk-as-row{display:grid;grid-template-columns:1fr auto auto;gap:7px;align-items:center;
+    padding:8px 0;border-bottom:1px solid var(--line)}
+  .rk-as-nm{font-size:13px;font-weight:600;color:var(--paper);min-width:0}
+  .rk-as-nm small{display:block;font-family:var(--mono);font-size:9px;color:var(--muted);font-weight:400}
+  .rk-as-b{padding:7px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);
+    color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+  .rk-as-b.yes.on{border-color:var(--ok);color:var(--ok);background:#14261d}
+  .rk-as-b.no.on{border-color:var(--laser);color:var(--laser);background:#2a1a17}
   .rk-loc{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);display:none;align-items:flex-end}
   .rk-loc.open{display:flex}
   .rk-loc-card{background:var(--surface);border-top:1px solid var(--line);width:100%;
@@ -1473,7 +1485,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=54">
+  <link rel="manifest" href="./manifest.json?v=57">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2189,6 +2201,13 @@
       <button class="btn btn-ghost" onclick="rkTrainOpen()">Open routing trainer</button>
     </div>
     <div class="panel">
+      <h3>Store assortment <span class="hint">(developer)</span></h3>
+      <p>Mark what your store actually carries. Not-carried items are skipped on
+         restock, and the trainer only walks what's in store — faster and more
+         accurate. Search to add an item if you start carrying it later.</p>
+      <button class="btn btn-ghost" onclick="rkAsOpen()">Open assortment editor</button>
+    </div>
+    <div class="panel">
       <h3>Restock location prompt</h3>
       <p>When the planogram shows an item on a pod or endcap, ask which location
          to file it under. Off just files it to its usual table.</p>
@@ -2283,6 +2302,17 @@
     <button class="rk-tr-back" type="button" onclick="rkTrainBack()">← Back</button>
     <button class="rk-tr-skip" type="button" onclick="rkTrainSkip()">Skip →</button>
   </div>
+</div>
+
+<!-- store assortment editor -->
+<div class="rk-tr" id="rkAssort" aria-hidden="true">
+  <div class="rk-tr-top">
+    <button class="rk-tr-x" type="button" onclick="rkAsClose()" aria-label="Close">✕</button>
+    <div class="rk-tr-ttl">Store assortment</div>
+    <div class="rk-tr-prog" id="rkAsHead"></div>
+  </div>
+  <div class="rk-as-search"><input id="rkAsSearch" type="text" placeholder="Search a product to mark…" oninput="rkAsInput()" autocomplete="off"></div>
+  <div class="rk-tr-body" id="rkAsList"></div>
 </div>
 
 <!-- restock location prompt (pod / endcap) -->
@@ -5082,7 +5112,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v54";
+const APP_VERSION = "v57";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -8920,7 +8950,9 @@ const RK_ROUTE = [
 ];
 function tableFor(name, plu){
   const taught = rkRoutes()[rkRouteKey(name, plu)];
-  if(taught) return taught;
+  if(taught === "none") return "none";                 // store doesn't carry it
+  if(taught && taught !== "carry") return taught;      // trained to a table
+  // "carry" (in store, table TBD) or unmarked -> fall through to keywords
   const s = String(name||"").toLowerCase();
   for(const [k,id] of RK_EXACT){ if(s.includes(k)) return id; }
   for(const [id,keys] of RK_ROUTE){ if(keys.some(k=>s.includes(k))) return id; }
@@ -8990,7 +9022,7 @@ function nmNormalize(raw){
   if(!core) return { core: String(raw||"").trim(), tags: [] };
   return { core, tags: brands.concat(packs) };
 }
-function nmTagKind(t){ return /pk$/i.test(t) ? "pack" : "brand"; }
+function nmTagKind(t){ return /pk$/i.test(t) ? "pack" : (/^org$/i.test(t) ? "org" : "brand"); }
 function nmShort(raw){
   const nm = nmNormalize(raw);
   const brand = nm.tags.filter(t=>nmTagKind(t)==="brand");
@@ -9000,7 +9032,7 @@ function nmShort(raw){
 function nmBadgesHtml(tags){ return (tags&&tags.length) ? tags.map(t=>'<span class="nm-bdg '+nmTagKind(t)+'">'+esc(t)+'</span>').join("") : ""; }
 function nmNameHtml(name){
   const n = nmNormalize(name);
-  const brand = n.tags.filter(t=>nmTagKind(t)==="brand");
+  const brand = n.tags.filter(t=>nmTagKind(t)!=="pack");
   const pack  = n.tags.filter(t=>nmTagKind(t)==="pack");
   return nmBadgesHtml(brand) + esc(n.core) + nmBadgesHtml(pack);
 }
@@ -9089,8 +9121,12 @@ function commitRestockSpoken(text){
   const fixed = applyWordFix(nm.core.toLowerCase()) || nm.core;   // Info-tab word repair; keep the phrase when there's no fix
   let name = rkCap(fixed), plu = "";
   try{ const r = pluSearch(fixed); if(r.length){ name = rkTidy(r[0].name); plu = r[0].plu; } }catch(e){}
+  // Organic is a PLU distinction (9xxxx), rarely in the name — carry it as a badge.
+  const isOrg = /\borganic\b/i.test(nm.core) || /^9\d{4}$/.test(String(plu));
+  name = rkCap(name.replace(/\borganic\b/ig," ").replace(/\s{2,}/g," ").trim()) || name;
+  const tags = isOrg ? ["ORG"].concat(nm.tags) : nm.tags;
   if(h) h.textContent = "";
-  rkPlace(name, plu, nm.tags, nm.core, forced);
+  rkPlace(name, plu, tags, nm.core, forced);
 }
 
 /* Route the recognized product, prompting for a pod/endcap when the planogram
@@ -9219,7 +9255,7 @@ function rkRow(x, me){
       '</button>';
   return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+'">'+
       '<span class="rk-st">'+(x.claimId?'<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>':'')+'</span>'+
-      '<div class="rk-copy">'+nmBadgesHtml((x.tags||[]).filter(t=>nmTagKind(t)==="brand"))+'<strong>'+esc(x.name)+'</strong>'+nmBadgesHtml((x.tags||[]).filter(t=>nmTagKind(t)==="pack"))+(meta.length?'<div class="rk-meta">'+meta.join("")+'</div>':'')+'</div>'+
+      '<div class="rk-copy">'+nmBadgesHtml((x.tags||[]).filter(t=>nmTagKind(t)!=="pack"))+'<strong>'+esc(x.name)+'</strong>'+nmBadgesHtml((x.tags||[]).filter(t=>nmTagKind(t)==="pack"))+(meta.length?'<div class="rk-meta">'+meta.join("")+'</div>':'')+'</div>'+
       claimCell+
       '<button class="rk-del" onclick="rkDel(\''+x.id+'\')" aria-label="Remove"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>'+
     '</div>';
@@ -9338,13 +9374,13 @@ async function rkTrainLoad(){
   if(!map || !Object.keys(map).length){ try{ await pullDb(); map = dbPluMap(); }catch(e){} }
   const routes = rkRoutes();
   rkTrItems = Object.keys(map||{}).map(plu=>({ plu:plu, name:String(map[plu].name||""), origin:String(map[plu].origin||"") }))
-    .filter(x=>x.name)
-    .sort((a,b)=>{ const ta=routes[rkRouteKey(a.name,a.plu)]?1:0, tb=routes[rkRouteKey(b.name,b.plu)]?1:0; return (ta-tb)||a.name.localeCompare(b.name); });
+    .filter(x=> x.name && routes[rkRouteKey(x.name,x.plu)] === "carry")   // only in-store items awaiting a table
+    .sort((a,b)=>a.name.localeCompare(b.name));
 }
-function rkTrainDone(){ const r = rkRoutes(); return rkTrItems.filter(x=>r[rkRouteKey(x.name,x.plu)]).length; }
+function rkTrainDone(){ const r = rkRoutes(); return rkTrItems.filter(x=>{ const v=r[rkRouteKey(x.name,x.plu)]; return v && v!=="carry" && v!=="none"; }).length; }
 function rkTrainRender(){
   const body = document.getElementById("rkTrBody"), prog = document.getElementById("rkTrProg");
-  if(!rkTrItems.length){ body.innerHTML = '<div class="rk-tr-load">No PLU items yet. Connect once to pull your PLU DB, then reopen.</div>'; prog.textContent=""; return; }
+  if(!rkTrItems.length){ body.innerHTML = '<div class="rk-tr-load">Nothing to train right now. Mark what your store carries in the Assortment editor first (Settings \u2192 Store assortment), then reopen.</div>'; prog.textContent=""; return; }
   if(rkTrIdx >= rkTrItems.length){ body.innerHTML = '<div class="rk-tr-done"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg><b>All caught up</b><span>Every item has a home. Reopen any time to adjust.</span></div>'; prog.textContent = rkTrainDone()+" trained"; return; }
   const it = rkTrItems[rkTrIdx];
   const cur = rkRoutes()[rkRouteKey(it.name, it.plu)] || "";
@@ -9361,6 +9397,55 @@ function rkTrainRender(){
 function rkTrainPick(table){ const it = rkTrItems[rkTrIdx]; if(!it) return; rkRoutesSet(rkRouteKey(it.name, it.plu), table); rkTrIdx++; rkTrainRender(); }
 function rkTrainSkip(){ rkTrIdx++; rkTrainRender(); }
 function rkTrainBack(){ if(rkTrIdx>0){ rkTrIdx--; rkTrainRender(); } }
+
+/* ===== ASSORTMENT — what the store carries =====
+   Reuses the taught map: "none" = not carried, "carry" = carried (table TBD),
+   a table id = carried + trained. Marking here syncs to the Sheet like training,
+   and the trainer above only walks the "carry" items. */
+let rkAsT = null;
+function rkCarrySet(plu, name, state){
+  const key = rkRouteKey(name, plu), cur = rkRoutes()[key];
+  if(state==="yes"){ if(!cur || cur==="none" || cur===""){ rkRoutesSet(key, "carry"); } }  // keep a table if already trained
+  else if(state==="no"){ rkRoutesSet(key, "none"); }
+  else { rkRoutesSet(key, ""); }                                                            // unmark
+}
+function rkCarryCounts(){ const r=rkRoutes(); let yes=0,no=0; for(const k in r){ const v=r[k]; if(v==="none") no++; else if(v) yes++; } return {yes,no}; }
+async function rkAsOpen(){
+  const ov = document.getElementById("rkAssort"); if(!ov) return;
+  ov.classList.add("open"); ov.setAttribute("aria-hidden","false");
+  document.getElementById("rkAsList").innerHTML = '<div class="rk-tr-load">Loading your PLU DB\u2026</div>';
+  await rkRoutesPull();
+  let map = dbPluMap();
+  if(!map || !Object.keys(map).length){ try{ await pullDb(); }catch(e){} }
+  rkAsRender();
+}
+function rkAsClose(){ const ov=document.getElementById("rkAssort"); if(!ov) return; ov.classList.remove("open"); ov.setAttribute("aria-hidden","true"); rkRoutesFlush(); }
+function rkAsInput(){ clearTimeout(rkAsT); rkAsT = setTimeout(rkAsRender, 150); }
+function rkAsRender(){
+  const map = dbPluMap()||{}, routes = rkRoutes();
+  const ql = ((document.getElementById("rkAsSearch")||{}).value || "").toLowerCase().trim();
+  const c = rkCarryCounts();
+  const head = document.getElementById("rkAsHead"); if(head) head.textContent = c.yes+" in store \u00b7 "+c.no+" excluded";
+  let items = Object.keys(map).map(plu=>({plu, name:String(map[plu].name||"")})).filter(x=>x.name);
+  if(ql){ items = items.filter(x=>x.name.toLowerCase().includes(ql)).sort((a,b)=>a.name.localeCompare(b.name)).slice(0,80); }
+  else { items = items.filter(x=>{ const v=routes[rkRouteKey(x.name,x.plu)]; return v && v!=="none"; }).sort((a,b)=>a.name.localeCompare(b.name)).slice(0,300); }
+  const list = document.getElementById("rkAsList");
+  if(!items.length){ list.innerHTML = '<div class="rk-tr-load">'+(ql?'No matches.':'Nothing marked in store yet \u2014 search a product and tap \u201CIn store\u201D.')+'</div>'; return; }
+  list.innerHTML = items.map(x=>{
+    const v = routes[rkRouteKey(x.name,x.plu)], yes = v && v!=="none", no = v==="none";
+    return '<div class="rk-as-row"><div class="rk-as-nm">'+esc(x.name)+'<small>PLU '+esc(x.plu)+'</small></div>'+
+      '<button class="rk-as-b yes'+(yes?' on':'')+'" onclick="rkAsMark(\''+x.plu+'\',\'yes\')">In store</button>'+
+      '<button class="rk-as-b no'+(no?' on':'')+'" onclick="rkAsMark(\''+x.plu+'\',\'no\')">Not carried</button></div>';
+  }).join("");
+}
+function rkAsMark(plu, state){
+  const map = dbPluMap()||{}, name = (map[plu]&&map[plu].name)||"";
+  const cur = rkRoutes()[rkRouteKey(name, plu)], isYes = cur && cur!=="none", isNo = cur==="none";
+  if(state==="yes" && isYes) rkCarrySet(plu, name, "unset");
+  else if(state==="no" && isNo) rkCarrySet(plu, name, "unset");
+  else rkCarrySet(plu, name, state);
+  rkAsRender();
+}
 
 /* Send the moment a signal returns, and re-check the board when the app comes
    back to the foreground on the Restock tab. */
@@ -9450,7 +9535,7 @@ function renderHoIcon(){
   if(ring){
     const C = 2*Math.PI*20;
     if(!ring.style.strokeDasharray) ring.style.strokeDasharray = C.toFixed(1);
-    const showRing = !attn && open>0;
+    const showRing = open>0;   // ring shows on every device with open notes, author or not
     if(showRing){
       const remaining = total ? open/total : 1;
       ring.style.opacity = 1;

@@ -1494,7 +1494,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=65">
+  <link rel="manifest" href="./manifest.json?v=66">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2524,6 +2524,8 @@
    guessed. Import your own list under Export -> PLU database.
    Format accepted, one per line:  4011 Banana   |   4011, Banana   |  4011=Banana  */
 const KEY_PLU = "label_plu_v3";
+const KEY_PLU_VER = "label_plu_builtin_ver";
+const PLU_BUILTIN_VER = "v66";   // bump when the built-in PLU list changes
 /* Built-in list, exactly as supplied — nothing invented, nothing "corrected".
    Format: [plu, name] or [plu, name, 1] where 1 = sold each / bulk.
    Import under Export replaces this; "Restore built-in list" brings it back. */
@@ -2895,7 +2897,23 @@ try{
   // some point (a failed import, a quota error mid-save). Silently running with
   // no vocabulary is the worst outcome: every name stops matching, "organic
   // banana" collapses to "organic", and nothing says why. Fall back instead.
-  PLU = (Array.isArray(parsed) && parsed.length >= 50) ? parsed : DEFAULT_PLU.slice();
+  let base = (Array.isArray(parsed) && parsed.length >= 50) ? parsed : DEFAULT_PLU.slice();
+  // Built-in list changed since this saved copy? Adopt the new built-in entries
+  // and store badges, keeping any PLUs you added by hand. Runs once per version.
+  if(Array.isArray(parsed) && parsed.length >= 50){
+    if(localStorage.getItem(KEY_PLU_VER) !== PLU_BUILTIN_VER){
+      const builtinKeys = new Set(DEFAULT_PLU.map(e=>e.plu+"|"+String(e.name||"").toLowerCase()));
+      const extras = parsed.filter(e=> e && e.plu &&
+        !builtinKeys.has(e.plu+"|"+String(e.name||"").toLowerCase()));
+      base = DEFAULT_PLU.concat(extras);
+      try{ localStorage.setItem(KEY_PLU, JSON.stringify(base)); }catch(e){}
+      localStorage.setItem(KEY_PLU_VER, PLU_BUILTIN_VER);
+      if(extras.length) setTimeout(()=>toast("PLU list updated — kept " + extras.length + " of your own"), 900);
+    }
+  } else {
+    localStorage.setItem(KEY_PLU_VER, PLU_BUILTIN_VER);
+  }
+  PLU = base;
   if(parsed && (!Array.isArray(parsed) || parsed.length < 50)){
     localStorage.removeItem(KEY_PLU);
     setTimeout(()=>toast("PLU list was empty — restored the built-in " + PLU.length), 800);
@@ -5264,7 +5282,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v65";
+const APP_VERSION = "v66";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -8829,7 +8847,8 @@ async function doSync(quiet){
   const unsent = items.filter(i=>!i.synced);
   if(!unsent.length){
     status.className = "status ok"; status.textContent = "Everything already synced.";
-    return toast("Everything already synced");
+    if(!quiet) toast("Everything already synced");
+    return;
   }
   status.className = "status"; status.textContent = "Sending " + unsent.length + " item(s)…";
   const btn = document.getElementById("btnSync");
@@ -8863,7 +8882,7 @@ async function doSync(quiet){
       if(d.updated) bits.push(d.updated + " updated");
       status.className = "status ok";
       status.textContent = "Synced ✓ " + bits.join(", ");
-      toast("Synced ✓ " + bits.join(", "));
+      if(!quiet) toast("Synced ✓ " + bits.join(", "));
     } else throw new Error(d && d.error || "Unexpected reply");
   }catch(err){
     // Not approved yet leaves everything unsent, so it goes through on its own
@@ -8872,7 +8891,7 @@ async function doSync(quiet){
     status.className = "status err";
     status.textContent = a || ("Sync failed: " + err.message +
       " — check the URL and that the script is deployed for “Anyone”.");
-    toast(a ? "Not approved yet" : "Sync failed");
+    if(!quiet) toast(a ? "Not approved yet" : "Sync failed");
     if(a) errBanner(a);
   }
   btn.disabled = false; fab.disabled = false;
@@ -10387,6 +10406,25 @@ setInterval(()=>{ if(!document.hidden){ renderHoIcon(); hoPull(); } }, 45000);
 setInterval(hoWiggleTick, 25000);
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden){ renderHoIcon(); hoPull(); } });
 window.addEventListener("online", ()=>{ hoPull(); });
+
+/* Keep the PLU + Barcode databases fresh and push any unsent items whenever the
+   phone has a connection — on launch, when it comes back online, and when the
+   app returns to the foreground. Throttled so foregrounding doesn't hammer the
+   Sheet; forced on launch / reconnect. Silent: pulls in the background and only
+   the fab count moves. */
+let _dbAutoAt = 0;
+async function dbAutoRefresh(force){
+  if(!proxyUrl() || !navigator.onLine) return;
+  const now = Date.now();
+  if(!force && now - _dbAutoAt < 120000) return;
+  _dbAutoAt = now;
+  try{ const d = await pullDb(); if(d && d.ok) renderList(); }catch(e){}
+  try{ if(items.some(i=>!i.synced)) await doSync(true); }catch(e){}
+}
+if(proxyUrl() && navigator.onLine) dbAutoRefresh(true);
+window.addEventListener("online", ()=>dbAutoRefresh(true));
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) dbAutoRefresh(false); });
+setInterval(()=>{ if(!document.hidden) dbAutoRefresh(false); }, 180000);
 
 /* ================= boot ================= */
 // Last thing in the file: everything it might reveal is already wired.

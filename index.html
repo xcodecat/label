@@ -1110,6 +1110,18 @@
   .rk-tr-load,.rk-tr-done{text-align:center;color:var(--muted);padding:44px 18px;line-height:1.6;display:flex;flex-direction:column;align-items:center;gap:10px}
   .rk-tr-done svg{width:44px;height:44px;stroke:var(--ok);fill:none;stroke-width:2}
   .rk-tr-done b{color:var(--paper);font-size:18px}
+  .rk-loc{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);display:none;align-items:flex-end}
+  .rk-loc.open{display:flex}
+  .rk-loc-card{background:var(--surface);border-top:1px solid var(--line);width:100%;
+    padding:18px 16px calc(18px + env(safe-area-inset-bottom));border-radius:16px 16px 0 0}
+  .rk-loc-h{font-size:15px;font-weight:700;margin-bottom:12px;text-align:center}
+  .rk-loc-h b{color:var(--laser)}
+  .rk-loc-opts{display:flex;flex-direction:column;gap:8px}
+  .rk-loc-btn{padding:14px;border-radius:11px;border:1px solid var(--line);background:var(--surface-2);
+    color:var(--paper);font-size:14px;font-weight:700;cursor:pointer}
+  .rk-loc-x{margin-top:10px;width:100%;padding:11px;border:0;background:none;color:var(--muted);font-size:13px;cursor:pointer}
+  .rk-lct{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--paper);cursor:pointer}
+  .rk-lct input{width:18px;height:18px}
 
   /* ---------- handoff (shift pass-down) ---------- */
   #view-handoff{padding-bottom:138px}
@@ -1461,7 +1473,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=52">
+  <link rel="manifest" href="./manifest.json?v=53">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2177,6 +2189,12 @@
       <button class="btn btn-ghost" onclick="rkTrainOpen()">Open routing trainer</button>
     </div>
     <div class="panel">
+      <h3>Restock location prompt</h3>
+      <p>When the planogram shows an item on a pod or endcap, ask which location
+         to file it under. Off just files it to its usual table.</p>
+      <label class="rk-lct"><input type="checkbox" id="rkPromptToggle" onchange="rkPromptSet(this.checked)"> Ask me which location</label>
+    </div>
+    <div class="panel">
       <h3>This phone</h3>
       <div class="field">
         <label for="setSecret">Shared secret</label>
@@ -2264,6 +2282,15 @@
   <div class="rk-tr-foot">
     <button class="rk-tr-back" type="button" onclick="rkTrainBack()">← Back</button>
     <button class="rk-tr-skip" type="button" onclick="rkTrainSkip()">Skip →</button>
+  </div>
+</div>
+
+<!-- restock location prompt (pod / endcap) -->
+<div class="rk-loc" id="rkLoc" aria-hidden="true">
+  <div class="rk-loc-card">
+    <div class="rk-loc-h">Where does <b id="rkLocName"></b> go?</div>
+    <div class="rk-loc-opts" id="rkLocOpts"></div>
+    <button class="rk-loc-x" type="button" onclick="rkLocClose()">Cancel</button>
   </div>
 </div>
 
@@ -3045,6 +3072,7 @@ function showView(name){
   if(name==="claims") renderClaims();
   if(name==="settings"){
     pluCountLabel(); renderAppearance();
+    { const _pt=document.getElementById("rkPromptToggle"); if(_pt) _pt.checked=rkPromptOn(); }
     // surface the claim button without making you go looking for it
     if(proxyUrl() && navigator.onLine) checkAccess();
   }
@@ -5054,7 +5082,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v52";
+const APP_VERSION = "v53";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -8858,7 +8886,9 @@ const RK_TABLES = [
   { id:"citrus", name:"Citrus & Stone",            run:"RUN 3", tc:"#e8a13a", g:"C", kind:"run" },
   { id:"ctp",    name:"Cucumber \u00b7 Tomato \u00b7 Potato", run:"RUN 4", tc:"#4a90d9", g:"V", kind:"run" },
   { id:"root",   name:"Root Veg & Onions",         run:"RUN 5", tc:"#b07d3a", g:"R", kind:"run" },
-  { id:"pods",   name:"Pods",                       run:"PODS",  tc:"#e0b23a", g:"P", kind:"loc" },
+  { id:"pod1",   name:"Pod 1",                       run:"POD 1", tc:"#e0b23a", g:"1", kind:"loc" },
+  { id:"pod2",   name:"Pod 2",                       run:"POD 2", tc:"#d99a2b", g:"2", kind:"loc" },
+  { id:"endcap", name:"Endcap",                      run:"ENDS",  tc:"#c76b9c", g:"E", kind:"loc" },
   { id:"lots",   name:"Case Lots",                  run:"LOTS",  tc:"#6b8fa3", g:"L", kind:"loc" },
   { id:"fridge", name:"Refrigerated Shelf",         run:"OTHER", tc:"#8c7cf0", g:"\u2744", kind:"fridge" }
 ];
@@ -9038,31 +9068,91 @@ function rkToggle(id){
   if(card) card.classList.toggle("rk-closed", rkClosed[id]);
 }
 
-/* ---- voice ---- resolve, file (taught map first), then refine online. */
+/* ---- voice ---- the SAME recognizer + matcher the Info tab uses.
+   The old path ran parseSpoken (the scrap parser) which mangled words like
+   "plantain" into "peas". Now we word-fix the phrase and match it straight
+   against the catalogue with pluSearch, exactly like Info search, then hand the
+   clean product name to the routing + trainer + (if on the planogram) the
+   location prompt. One press = one item. */
 function commitRestockSpoken(text){
-  const rows = parseSpoken(text, "loop");
   const h = document.getElementById("rkHeard");
-  if(!rows.length){ if(h) h.textContent = "Didn't catch an item \u2014 try again."; return; }
-  let n = 0, last = null;
-  rows.forEach(r=>{
-    const qty = r.kg ? (kgStr(r.qty) + " " + unitLabel())
-                     : (r.qty > 1 ? String(r.qty) : "");
-    const m = rkResolve(r.name);
-    const table = tableFor(m.name, m.plu);
-    if(table === "none"){
-      toastUndo("Not carried: " + m.name + " \u2014 skipped", ()=>{
-        const it = rkAddItem(m.name, "fridge", qty, m.plu, m.tags);
-        if(it) rkUpgradeOnline(r.name, it.id);
-      });
-      return;
-    }
-    const it = rkAddItem(m.name, table, qty, m.plu, m.tags);
-    if(it){ n++; last = it; rkUpgradeOnline(r.name, it.id); }
-  });
+  let t = String(text||"").trim().replace(/^(look ?up|find|search( for)?|show me|add|restock)\s+/i,"");
+  // let a spoken location win outright ("plantain on pod 1", "... case lot")
+  let forced = "";
+  if(/\bpod\s*(1|one)\b/i.test(t)){ forced="pod1"; t=t.replace(/\bpod\s*(1|one)\b/ig," "); }
+  else if(/\bpod\s*(2|two)\b/i.test(t)){ forced="pod2"; t=t.replace(/\bpod\s*(2|two)\b/ig," "); }
+  else if(/\bend\s*caps?\b/i.test(t)){ forced="endcap"; t=t.replace(/\bend\s*caps?\b/ig," "); }
+  else if(/\bcase\s*lots?\b/i.test(t)){ forced="lots"; t=t.replace(/\bcase\s*lots?\b/ig," "); }
+  t = t.replace(/\bon (the )?/ig," ").trim();
+  const nm = nmNormalize(t);
+  if(!nm.core){ if(h) h.textContent = "Didn't catch an item \u2014 try again."; return; }
+  const fixed = applyWordFix(nm.core.toLowerCase());        // Info-tab word repair
+  let name = rkCap(fixed), plu = "";
+  try{ const r = pluSearch(fixed); if(r.length){ name = rkTidy(r[0].name); plu = r[0].plu; } }catch(e){}
   if(h) h.textContent = "";
-  if(n === 1 && last) toast("Filed \u201C" + last.name + "\u201D \u2192 " + RK_BY_ID[last.table].name);
-  else if(n)          toast("Filed " + n + " items");
+  rkPlace(name, plu, nm.tags, nm.core, forced);
 }
+
+/* Route the recognized product, prompting for a pod/endcap when the planogram
+   says it lives in two places. */
+function rkPlace(name, plu, tags, heard, forced){
+  if(forced){ rkPlaceAt(name, plu, tags, [forced]); return; }
+  const table = tableFor(name, plu);
+  if(table === "none"){
+    toastUndo("Not carried: " + name + " \u2014 skipped", ()=>{ const it = rkAddItem(name,"fridge","",plu,tags); if(it) rkUpgradeOnline(heard, it.id); });
+    return;
+  }
+  const locs = rkPromptOn() ? pgLocationsFor(name) : [];
+  if(locs.length){ rkShowLocPrompt(name, plu, tags, table, locs); return; }
+  const it = rkAddItem(name, table, "", plu, tags);
+  if(it){ rkUpgradeOnline(heard, it.id); toast("Filed \u201C"+name+"\u201D \u2192 "+RK_BY_ID[table].name); }
+}
+function rkPlaceAt(name, plu, tags, ids){
+  ids.forEach(id=>rkAddItem(name, id, "", plu, tags));
+  toast("Filed \u201C"+name+"\u201D \u2192 "+ids.map(id=>RK_BY_ID[id]?RK_BY_ID[id].name:id).join(" + "));
+}
+
+/* ---- planogram lookup (is this on a pod / endcap this week?) ---- */
+const RK_GEN = new Set(["the","and","fresh","organic","bag","case","pack","loose","each"]);
+function pgLoad2(){ try{ return JSON.parse(localStorage.getItem("label_planogram_v1")||"null"); }catch(e){ return null; } }
+function pgFresh(s){ return !!(s && s.updatedAt) && (Date.now() - new Date(s.updatedAt).getTime()) < 14*864e5; }
+function pgMainTok(name){
+  const w = String(name||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(x=>x.length>2 && !RK_GEN.has(x));
+  return w.sort((a,b)=>b.length-a.length)[0] || "";
+}
+function pgHit(cell, tok){ return tok && String(cell||"").toLowerCase().indexOf(tok) !== -1; }
+function pgLocationsFor(name){
+  const s = pgLoad2(); if(!pgFresh(s)) return [];
+  const tok = pgMainTok(name); if(!tok) return [];
+  const out = [];
+  (s.pod1||[]).forEach(p=>{ if(pgHit(p && p.name, tok)) out.push({loc:"pod1", label:"Pod 1"}); });
+  (s.pod2||[]).forEach(v=>{ if(pgHit(v, tok)) out.push({loc:"pod2", label:"Pod 2"}); });
+  (s.runs||[]).forEach((r,ri)=>{ (r.wet||[]).concat(r.hmr||[]).forEach(v=>{ if(pgHit(v, tok)) out.push({loc:"endcap", label:"Run "+(ri+1)+" endcap"}); }); });
+  const seen = {}; return out.filter(o=>{ if(seen[o.loc]) return false; seen[o.loc]=1; return true; });
+}
+
+/* ---- location prompt ---- */
+const KEY_RK_PROMPT = "label_rk_locprompt_v1";
+function rkPromptOn(){ return localStorage.getItem(KEY_RK_PROMPT) !== "0"; }   // default on
+function rkPromptSet(on){ try{ localStorage.setItem(KEY_RK_PROMPT, on?"1":"0"); }catch(e){} }
+let rkLocCtx = null;
+function rkShowLocPrompt(name, plu, tags, table, locs){
+  const ov = document.getElementById("rkLoc");
+  if(!ov){ rkPlaceAt(name, plu, tags, [table]); return; }
+  const opts = [{ ids:[table], label: RK_BY_ID[table].name + " (usual)" }];
+  locs.forEach(l=>opts.push({ ids:[l.loc], label: l.label }));
+  if(locs.length) opts.push({ ids:[table].concat(locs.map(l=>l.loc)), label:"Both" });
+  rkLocCtx = { name, plu, tags, opts };
+  document.getElementById("rkLocName").textContent = name;
+  document.getElementById("rkLocOpts").innerHTML = opts.map((o,i)=>'<button class="rk-loc-btn" onclick="rkLocPick('+i+')">'+esc(o.label)+'</button>').join("");
+  ov.classList.add("open");
+}
+function rkLocPick(i){
+  const c = rkLocCtx; if(!c) return;
+  rkPlaceAt(c.name, c.plu, c.tags, c.opts[i].ids);
+  rkLocClose();
+}
+function rkLocClose(){ const ov = document.getElementById("rkLoc"); if(ov) ov.classList.remove("open"); rkLocCtx = null; }
 
 /* ---- manual-add dropdown ---- all eight, so Pods/Case Lots are reachable ---- */
 function rkFillSelect(){

@@ -1494,7 +1494,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=66">
+  <link rel="manifest" href="./manifest.json?v=67">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -5282,7 +5282,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v66";
+const APP_VERSION = "v67";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6577,8 +6577,10 @@ async function checkAccess(){
   if(!proxyUrl()){ n.textContent = "Not set up yet — see Settings."; return; }
   n.textContent = "Asking…";
   try{
-    await callProxy({ action:"hello" });
-    n.innerHTML = "<b style='color:var(--ok)'>You're approved.</b> This phone can write to the Sheet.";
+    const d = await callProxy({ action:"hello" });
+    const v = (d && d.ver) ? (" Script <b>" + d.ver + "</b>.")
+      : " <b style='color:var(--laser)'>Old script deployed</b> — redeploy the Apps Script as a New version.";
+    n.innerHTML = "<b style='color:var(--ok)'>You're approved.</b> This phone can write to the Sheet." + v;
   }catch(err){
     n.textContent = authMessage(err) || ("Couldn't reach the script: " + err.message);
   }

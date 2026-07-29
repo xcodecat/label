@@ -1100,6 +1100,7 @@
   #mBcPreviewWrap .cat-bcimg{margin:0 auto}
   #mUnitSeg{width:100%;flex:1}
   #mUnitSeg button{flex:1;min-width:0;padding:12px 0;font-size:14px}
+  #fabSync{display:none}
   .cat-nm .own{display:inline-block;font-size:9px;background:var(--laser);color:#fff;padding:2px 5px;border-radius:4px;margin-left:6px;vertical-align:middle;font-weight:700;letter-spacing:.02em}
   .cat-hint{font-family:var(--mono);font-size:9px;color:var(--ok);letter-spacing:0;margin-left:6px}
   .rk-tr{position:fixed;inset:0;z-index:80;background:var(--ink);display:none;flex-direction:column;
@@ -1503,7 +1504,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=69">
+  <link rel="manifest" href="./manifest.json?v=70">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4078,6 +4079,21 @@ async function publishDb(){
   return d;
 }
 /* Pull the two tabs back and cache them, keyed by code for instant lookups. */
+const KEY_DBQ = "label_dbq_v1";
+function queueDbUpsert(kind,row){ try{ const q=JSON.parse(localStorage.getItem(KEY_DBQ)||"[]"); q.push({kind,row}); localStorage.setItem(KEY_DBQ, JSON.stringify(q)); }catch(e){} }
+async function dbUpsert(kind,row){
+  if(!proxyUrl()) return;
+  if(!navigator.onLine){ queueDbUpsert(kind,row); return; }
+  try{ await callProxy({ action:"dbUpsert", kind, row }); }catch(e){ queueDbUpsert(kind,row); }
+}
+async function flushDbQueue(){
+  if(!proxyUrl() || !navigator.onLine) return;
+  let q; try{ q=JSON.parse(localStorage.getItem(KEY_DBQ)||"[]"); }catch(e){ q=[]; }
+  if(!q.length) return;
+  const rest=[];
+  for(const it of q){ try{ await callProxy({ action:"dbUpsert", kind:it.kind, row:it.row }); }catch(e){ rest.push(it); } }
+  try{ localStorage.setItem(KEY_DBQ, JSON.stringify(rest)); }catch(e){}
+}
 async function pullDb(){
   const d = await callProxy({ action:"getDb" });
   if(d && d.ok){
@@ -4435,6 +4451,12 @@ function searchEntries(q){
   const hit = (name, brand, code, plu)=>
     matchItem(name, brand, q) ||
     (code && String(code).includes(q)) || (plu && String(plu).includes(q));
+  // Sheet Barcode DB first — your data / corrections win over the baked lists.
+  const bm = dbBcMap();
+  for(const code in bm){ const c = bm[code];
+    if(hit(c.name, c.brand, code, "")) push({ name:c.name||"", code:String(code), plu:"",
+      brand:c.brand||"", packWt:c.packWt||"", pack:c.pack||"", size:c.size||"", unit:c.unit||"",
+      store:storeVal(c.store)===true }); }
   // built-in barcode catalogue
   if(typeof CATALOG !== "undefined") CATALOG.forEach(c=>{
     if(c && c.name && hit(c.name, c.brand, c.code, c.plu))
@@ -4442,11 +4464,11 @@ function searchEntries(q){
              packWt:wtFrom(c), pack:c.pack||"", size:c.size||"", unit:c.unit||"",
              store:dbStoreCodes.has(String(c.code||"")) });
   });
-  // Sheet Barcode DB
-  const bm = dbBcMap();
-  for(const code in bm){ const c = bm[code];
-    if(hit(c.name, c.brand, code, "")) push({ name:c.name||"", code:String(code), plu:"",
-      brand:c.brand||"", packWt:c.packWt||"", pack:c.pack||"", size:c.size||"", unit:c.unit||"",
+  // Sheet PLU DB
+  const pm = dbPluMap();
+  for(const plu in pm){ const c = pm[plu];
+    if(hit(c.name, c.brand, "", plu)) push({ name:c.name||"", code:"", plu:String(plu),
+      brand:c.brand||"", packWt:c.packWt||"", pack:"", size:"", unit:c.unit||"",
       store:storeVal(c.store)===true }); }
   // built-in PLU list (produce)
   if(Array.isArray(PLU)) PLU.forEach(e=>{
@@ -4454,12 +4476,6 @@ function searchEntries(q){
       push({ name:e.name, code:"", plu:String(e.plu||""), brand:"", packWt:"",
              pack:"", size:"", unit:(e.e?"ea":"kg"), store:!!e.own });
   });
-  // Sheet PLU DB
-  const pm = dbPluMap();
-  for(const plu in pm){ const c = pm[plu];
-    if(hit(c.name, c.brand, "", plu)) push({ name:c.name||"", code:"", plu:String(plu),
-      brand:c.brand||"", packWt:c.packWt||"", pack:"", size:"", unit:c.unit||"",
-      store:storeVal(c.store)===true }); }
   // barcodes first (so you can scan straight off the list), then PLUs
   out.sort((a,b)=> (a.code?0:1) - (b.code?0:1));
   return out.slice(0, 20);
@@ -4511,6 +4527,7 @@ function openManualPrefilled(c){
   document.getElementById("mQty").value = 1;
   setManualUnit(unit() === "kg");
   document.getElementById("mPluDrop").classList.add("hidden");
+  document.getElementById("mSave").textContent = "Save changes";
   if(c){
     const set=(id,v)=>{ const el=document.getElementById(id); if(el && v!=null && v!=="") el.value=v; };
     set("mName", c.name); set("mCode", c.code); set("mPlu", c.plu);
@@ -5376,7 +5393,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v69";
+const APP_VERSION = "v70";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -5902,6 +5919,7 @@ document.getElementById("fabAdd").addEventListener("click", ()=>{
   mOrigins = []; drawMOrigins();
   document.getElementById("mQty").value = 1;
   setManualUnit(unit() === "kg");     // start on whatever Settings weighs in
+  document.getElementById("mSave").textContent = "Add item";
   document.getElementById("mPluDrop").classList.add("hidden");
   renderMFormBarcode();
   manOverlay.classList.remove("hidden");
@@ -5972,44 +5990,36 @@ document.getElementById("mSave").addEventListener("click", ()=>{
       toast("Catalog updated for " + (patch.name || base.name));
     }
   }
-  const qty = 1;   // this form adds a product, not a count
-  const key = code || "";
-  const existing = code ? items.find(i=>i.code===code)
-                 : (plu ? items.find(i=>i.plu===plu && !i.code) : null);
-  if(existing){
-    // kg and each don't add together; only merge when the unit matches
-    if(!!existing.kg === mKg){
-      existing.qty = mKg ? kg3((parseFloat(existing.qty)||0) + qty) : (existing.qty + qty);
-      existing.synced = false;
-      toast("Quantity updated → " + (mKg ? kgStr(existing.qty) + " " + unit() : existing.qty));
-    } else {
-      addItem({ code:key, brand:brand, name:name||"(unnamed)", plu:plu, qty:qty, kg:mKg,
-                packWt:document.getElementById("mPackWt").value.trim(),
-                origin: mOrigins.slice(),
-                notes:document.getElementById("mNotes").value.trim() });
-      toast("Added as a separate " + (mKg ? "weight" : "each") + " line");
+  // The Add form edits the database directly: save the row to PLU DB / Barcode DB
+  // (locally + to the Sheet) and auto-sync. No staged scrap card is created.
+  const packWt = document.getElementById("mPackWt").value.trim();
+  const originStr = (mOrigins||[]).join("; ");
+  const unitStr = mKg ? unit() : "ea";
+  if(code){
+    const bm = dbBcMap();
+    bm[code] = { name:name||"", brand:brand||"", packWt:packWt, origin:originStr,
+                 unit:unitStr, pack:pack, size:size, store:(bm[code]&&bm[code].store)||"" };
+    try{ localStorage.setItem(KEY_DBBC, JSON.stringify(bm)); }catch(e){}
+    confirmCatalogCode(code);
+    dbUpsert("bc", { barcode:code, brand:brand, name:name, packWt:packWt,
+                     origin:originStr, unit:unitStr, pack:pack, size:size });
+    toast(navigator.onLine ? "Saved \u2713" : "Saved \u2014 will sync when online");
+  } else if(plu){
+    const pm = dbPluMap();
+    pm[plu] = { name:name||"", brand:brand||"", packWt:packWt, origin:originStr,
+                unit:unitStr, store:(pm[plu]&&pm[plu].store)||"" };
+    try{ localStorage.setItem(KEY_DBPLU, JSON.stringify(pm)); }catch(e){}
+    if(name && !PLU.some(e=>e.plu === plu && e.name.toLowerCase() === name.toLowerCase())){
+      savePlu(PLU.concat([{ plu, name, e:!mKg, own:true }])); VOCAB = null; SEED_KEYS = null;
     }
+    dbUpsert("plu", { plu:plu, brand:brand, name:name, packWt:packWt,
+                      origin:originStr, unit:unitStr });
+    toast(navigator.onLine ? "Saved \u2713" : "Saved \u2014 will sync when online");
   } else {
-    // a PLU you type in here is a fact about your store, so it joins the list
-    if(plu && name && !PLU.some(e=>e.plu === plu && e.name.toLowerCase() === name.toLowerCase())){
-      savePlu(PLU.concat([{ plu, name, e:false, own:true }]));
-      VOCAB = null;                 // vocabulary changed: rebuild on next use
-      SEED_KEYS = null;
-      toast("Added " + plu + " to your PLU list");
-    }
-    addItem({ code:key, brand:brand, name:name||"(unnamed)", plu:plu, qty:qty, kg:mKg,
-              packWt:document.getElementById("mPackWt").value.trim(),
-              article:document.getElementById("mArticle").value.trim(),
-              pack:document.getElementById("mPack").value.trim(),
-              size:document.getElementById("mSize").value.trim(),
-              corrected: corrected,
-              origin: mOrigins.slice(),
-              notes:document.getElementById("mNotes").value.trim() });
-    toast("Added");
+    return toast("Add a barcode or PLU to save it to the database");
   }
-  // Learn how this product is counted so it defaults right next time.
   rememberUnit({ article, code, name }, mKg);
-  persist(); renderList(); closeManual();
+  renderList(); closeManual();
 });
 
 function addItem(o){
@@ -10525,6 +10535,7 @@ async function dbAutoRefresh(force){
   const now = Date.now();
   if(!force && now - _dbAutoAt < 120000) return;
   _dbAutoAt = now;
+  try{ await flushDbQueue(); }catch(e){}
   try{ const d = await pullDb(); if(d && d.ok) renderList(); }catch(e){}
   try{ if(items.some(i=>!i.synced)) await doSync(true); }catch(e){}
 }

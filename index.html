@@ -1473,7 +1473,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=53">
+  <link rel="manifest" href="./manifest.json?v=54">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -5082,7 +5082,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v53";
+const APP_VERSION = "v54";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -9086,7 +9086,7 @@ function commitRestockSpoken(text){
   t = t.replace(/\bon (the )?/ig," ").trim();
   const nm = nmNormalize(t);
   if(!nm.core){ if(h) h.textContent = "Didn't catch an item \u2014 try again."; return; }
-  const fixed = applyWordFix(nm.core.toLowerCase());        // Info-tab word repair
+  const fixed = applyWordFix(nm.core.toLowerCase()) || nm.core;   // Info-tab word repair; keep the phrase when there's no fix
   let name = rkCap(fixed), plu = "";
   try{ const r = pluSearch(fixed); if(r.length){ name = rkTidy(r[0].name); plu = r[0].plu; } }catch(e){}
   if(h) h.textContent = "";

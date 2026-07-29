@@ -1084,6 +1084,15 @@
   .nm-bdg.brand{color:var(--laser);border:1px solid #4a2e28;background:#2a1a17;margin-right:5px}
   .nm-bdg.pack{color:#C8C2B7;border:1px solid #3A4148;background:var(--surface-2);margin-left:5px}
   .nm-bdg.org{color:#3ecf8e;border:1px solid #1f5c3f;background:#14261d;margin-right:5px}
+  .cat-wrap{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+  .cat-h{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--muted);margin:0 0 8px}
+  .cat-row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
+  .cat-nm{font-size:13px;color:var(--paper);min-width:0}
+  .cat-meta{font-family:var(--mono);font-size:9px;color:var(--muted);white-space:nowrap;align-self:center}
+  .cat-row.tappable{cursor:pointer}
+  .cat-row.tappable:active{background:var(--surface-2)}
+  .cat-add{color:var(--ok);font-weight:700;margin-left:8px}
+  .cat-hint{font-family:var(--mono);font-size:9px;color:var(--ok);letter-spacing:0;margin-left:6px}
   .rk-tr{position:fixed;inset:0;z-index:80;background:var(--ink);display:none;flex-direction:column;
     padding:calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom))}
   .rk-tr.open{display:flex}
@@ -1293,9 +1302,9 @@
 
   /* voice dictation mic inside the add-note sheet */
   .ho-inwrap{position:relative}
-  .ho-inwrap input,.ho-inwrap textarea{padding-right:48px}
+  .ho-inwrap input,.ho-inwrap textarea{padding-right:48px;box-sizing:border-box;width:100%}
   .ho-inwrap.no-mic input,.ho-inwrap.no-mic textarea{padding-right:12px}
-  .ho-mic{position:absolute;right:7px;bottom:7px;width:34px;height:34px;border-radius:9px;
+  .ho-mic{position:absolute;right:7px;top:7px;width:34px;height:34px;border-radius:9px;
     border:1px solid var(--line);background:var(--ink);color:var(--paper);display:grid;place-items:center;
     cursor:pointer;padding:0}
   .ho-mic svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -1485,7 +1494,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=57">
+  <link rel="manifest" href="./manifest.json?v=61">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2448,16 +2457,23 @@
         </div>
     </div>
     <div class="field">
-      <label for="mQty" id="mQtyLabel">Quantity</label>
+      <label>Sold by</label>
+      <label id="mQtyLabel" style="display:none"></label>
       <div class="qty-row">
-        <button type="button" class="qty-btn" id="mQtyMinus">−</button>
-        <input id="mQty" type="number" inputmode="numeric" value="1" min="0">
-        <button type="button" class="qty-btn" id="mQtyPlus">+</button>
+        <span style="display:none">
+          <button type="button" class="qty-btn" id="mQtyMinus">−</button>
+          <input id="mQty" type="number" inputmode="numeric" value="1" min="0">
+          <button type="button" class="qty-btn" id="mQtyPlus">+</button>
+        </span>
         <div class="useg" id="mUnitSeg" role="group" aria-label="Counted per each or by weight">
           <button type="button" class="on" data-u="each" aria-label="Per each" title="Per each">EA</button>
           <button type="button" id="mUKG" data-u="kg" aria-label="By weight" title="By weight">kg</button>
         </div>
       </div>
+    </div>
+    <div class="field">
+      <label for="mPackWt">Pack weight <span class="hint">(optional)</span></label>
+      <input id="mPackWt" type="text" inputmode="text" placeholder="e.g. 227g, 680g" autocomplete="off">
     </div>
     <div class="field">
       <label for="mNotes">Notes</label>
@@ -4267,25 +4283,50 @@ document.getElementById("fabSync").addEventListener("click", ()=>{
   doSync();
 });
 
+/* The Add filter also asks the Barcode DB, so items stay findable after they've
+   synced off your list. Read-only — just the catalogue answer. */
+function catFindHtml(q){
+  if(!q || typeof CATALOG === "undefined") return "";
+  const ql = q.toLowerCase();
+  const hits = CATALOG.filter(c => c && c.name && (c.name.toLowerCase().includes(ql) || String(c.code||"").includes(q))).slice(0, 12);
+  if(!hits.length) return "";
+  return '<div class="cat-h">In the barcode database <span class="cat-hint">tap to add</span></div>' + hits.map(c=>{
+    const code = String(c.code||"");
+    const meta = [code?esc(code):"", c.size?esc(c.size):"", c.pack?esc(c.pack):""].filter(Boolean).join(" \u00b7 ");
+    const tap = code ? ' class="cat-row tappable" onclick="addFromCatalog(\''+esc(code)+'\')"' : ' class="cat-row"';
+    return '<div'+tap+'><div class="cat-nm">'+nmNameHtml(c.name)+'</div><div class="cat-meta">'+meta+(code?'<span class="cat-add">+ add</span>':'')+'</div></div>';
+  }).join("");
+}
+/* Tap a catalogue result to add it to your list (write), same as scanning it. */
+function addFromCatalog(code){
+  const c = (typeof CAT_BY_CODE !== "undefined" && CAT_BY_CODE) ? CAT_BY_CODE.get(code) : null;
+  if(!c){ toast("Couldn't find that item"); return; }
+  addItem({ code: c.code||"", name: c.name||"(unnamed)", plu: c.plu||"", pack: c.pack||"", size: c.size||"" });
+  persist(); renderList();
+  toast("Added " + (c.name||"item"));
+}
 function renderList(){
   updateFabSync();
   const q = document.getElementById("search").value.toLowerCase();
   const list = document.getElementById("list");
+  const catHtml = q ? catFindHtml(q) : "";
   const shown = items.filter(i => !q || i.name.toLowerCase().includes(q)
     || (i.code||"").toLowerCase().includes(q) || (i.plu||"").includes(q)
     || (i.nameFr||"").toLowerCase().includes(q)
     || originList(i.origin).some(o=>(o + " " + originFull(o)).toLowerCase().includes(q)));
   if(!shown.length){
-    list.innerHTML = '<div class="empty"><div class="big-stripes"></div>' +
-      (items.length ? "No items match your search." :
-       "Nothing here yet.<br>Tap the round scan button, or <b>+</b> to add by hand.") + "</div>";
+    list.innerHTML = catHtml
+      ? '<div class="cat-wrap">'+catHtml+'</div>'
+      : '<div class="empty"><div class="big-stripes"></div>' +
+        (items.length ? "No items match your search." :
+         "Nothing here yet.<br>Tap the round scan button, or <b>+</b> to add by hand.") + "</div>";
     return;
   }
   list.innerHTML = shown.map(i=>`
     <div class="item">
       ${i.img ? `<img src="${i.img}" alt="Barcode photo">` : `<div class="no-img">no photo</div>`}
       <div class="info" onclick="openItem('${i.id}')">
-        <div class="name">${nmNameHtml(i.name)}${i.flyer?'<span class="badge">In flyer</span>':''}</div>
+        <div class="name">${nmNameHtml(i.name)}${wtBadge(i)}${i.flyer?'<span class="badge">In flyer</span>':''}</div>
         <div class="code">${[
             i.plu ? "PLU "+esc(i.plu) : "",
             (i.code && !/^PLU/.test(i.code)) ? esc(i.code) : ""
@@ -4298,7 +4339,7 @@ function renderList(){
         </div>
       </div>
       <button class="del" aria-label="Delete item" onclick="delItem('${i.id}')">✕</button>
-    </div>`).join("");
+    </div>`).join("") + (catHtml ? '<div class="cat-wrap">'+catHtml+'</div>' : "");
 }
 function esc(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function delItem(id){
@@ -5112,7 +5153,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v57";
+const APP_VERSION = "v61";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -5632,7 +5673,7 @@ pickOverlay.addEventListener("click", e=>{ if(e.target===pickOverlay) closePick(
 /* ================= manual add ================= */
 const manOverlay = document.getElementById("manualOverlay");
 document.getElementById("fabAdd").addEventListener("click", ()=>{
-  ["mCode","mName","mPlu","mNotes","mArticle","mPack","mSize"].forEach(id=>document.getElementById(id).value="");
+  ["mCode","mName","mPlu","mNotes","mArticle","mPack","mSize","mPackWt"].forEach(id=>document.getElementById(id).value="");
   const mkn=document.getElementById("mKnown"); if(mkn) mkn.textContent="";
   mOrigins = []; drawMOrigins();
   document.getElementById("mQty").value = 1;
@@ -5703,8 +5744,7 @@ document.getElementById("mSave").addEventListener("click", ()=>{
       toast("Catalog updated for " + (patch.name || base.name));
     }
   }
-  const qty = mKg ? kg3(parseFloat(document.getElementById("mQty").value)||0)
-                  : (parseInt(document.getElementById("mQty").value)||0);
+  const qty = 1;   // this form adds a product, not a count
   const key = code || (plu ? "PLU"+plu : "");
   const existing = key ? items.find(i=>i.code===key) : null;
   if(existing){
@@ -5715,6 +5755,7 @@ document.getElementById("mSave").addEventListener("click", ()=>{
       toast("Quantity updated → " + (mKg ? kgStr(existing.qty) + " " + unit() : existing.qty));
     } else {
       addItem({ code:key, name:name||"(unnamed)", plu:plu, qty:qty, kg:mKg,
+                packWt:document.getElementById("mPackWt").value.trim(),
                 origin: mOrigins.slice(),
                 notes:document.getElementById("mNotes").value.trim() });
       toast("Added as a separate " + (mKg ? "weight" : "each") + " line");
@@ -5728,6 +5769,7 @@ document.getElementById("mSave").addEventListener("click", ()=>{
       toast("Added " + plu + " to your PLU list");
     }
     addItem({ code:key, name:name||"(unnamed)", plu:plu, qty:qty, kg:mKg,
+              packWt:document.getElementById("mPackWt").value.trim(),
               article:document.getElementById("mArticle").value.trim(),
               pack:document.getElementById("mPack").value.trim(),
               size:document.getElementById("mSize").value.trim(),
@@ -5756,6 +5798,7 @@ function addItem(o){
     article: o.article || "",
     pack: o.pack || "",
     size: o.size || "",
+    packWt: o.packWt || "",
     corrected: !!o.corrected,
     notes: o.notes || "",
     img: o.img || "",
@@ -9008,9 +9051,12 @@ function rkTidy(n){ return String(n||"").replace(/\s*\([^)]*\)/g," ").replace(/\
 
 /* Store shorthand: brand + pack pulled into badges; matching runs on the core. */
 const NM_BRANDS = [
-  { tag:"FM",  re:/\b(farmer'?s?\s*market|farmers?\s*mkt)\b/ig },
-  { tag:"NNI", re:/\b(no\s*name\s*naturally\s*imperfect|naturally\s*imperfect|no\s*name|nn+i|n\s*n\s*n?\s*i)\b/ig },
-  { tag:"FM",  re:/\bfm\b/ig }
+  { tag:"FM",   re:/\b(farmer'?s?\s*market|farmers?\s*mkt)\b/ig },
+  { tag:"NNI",  re:/\b(no\s*name\s*naturally\s*imperfect|naturally\s*imperfect|no\s*name|nn+i|n\s*n\s*n?\s*i)\b/ig },
+  { tag:"PCBM", re:/\b(pc\s*blue\s*menu|blue\s*menu|pcbm)\b/ig },
+  { tag:"PCO",  re:/\b(president'?s?\s*choice\s*organic|pc\s*organic|pco)\b/ig },
+  { tag:"PC",   re:/\b(president'?s?\s*choice|pc)\b/ig },
+  { tag:"FM",   re:/\bfm\b/ig }
 ];
 function nmNormalize(raw){
   let s = " " + String(raw||"").replace(/\s+/g," ").trim() + " ";
@@ -9030,6 +9076,11 @@ function nmShort(raw){
   return [brand.join(" "), nm.core, pack.join(" ")].filter(Boolean).join(" ").trim() || String(raw||"").trim();
 }
 function nmBadgesHtml(tags){ return (tags&&tags.length) ? tags.map(t=>'<span class="nm-bdg '+nmTagKind(t)+'">'+esc(t)+'</span>').join("") : ""; }
+function wtBadge(i){
+  let w = String((i&&i.packWt)||"").trim();
+  if(!w && i && i.size && /\d\s*(g|kg|ml|l|oz|lb)\b/i.test(i.size)) w = String(i.size).trim();
+  return w ? '<span class="nm-bdg pack">'+esc(w)+'</span>' : "";
+}
 function nmNameHtml(name){
   const n = nmNormalize(name);
   const brand = n.tags.filter(t=>nmTagKind(t)!=="pack");
@@ -9121,12 +9172,11 @@ function commitRestockSpoken(text){
   const fixed = applyWordFix(nm.core.toLowerCase()) || nm.core;   // Info-tab word repair; keep the phrase when there's no fix
   let name = rkCap(fixed), plu = "";
   try{ const r = pluSearch(fixed); if(r.length){ name = rkTidy(r[0].name); plu = r[0].plu; } }catch(e){}
-  // Organic is a PLU distinction (9xxxx), rarely in the name — carry it as a badge.
-  const isOrg = /\borganic\b/i.test(nm.core) || /^9\d{4}$/.test(String(plu));
-  name = rkCap(name.replace(/\borganic\b/ig," ").replace(/\s{2,}/g," ").trim()) || name;
-  const tags = isOrg ? ["ORG"].concat(nm.tags) : nm.tags;
+  // Organic shows as plain text in the name (no badge). PC Organic is covered by its PCO badge.
+  const isOrg = /\borganic\b/i.test(nm.core);
+  if(isOrg && !/organic/i.test(name) && nm.tags.indexOf("PCO") < 0) name = "Organic " + name;
   if(h) h.textContent = "";
-  rkPlace(name, plu, tags, nm.core, forced);
+  rkPlace(name, plu, nm.tags, nm.core, forced);
 }
 
 /* Route the recognized product, prompting for a pod/endcap when the planogram
@@ -9756,9 +9806,12 @@ function hoWireMic(field, mic, SR){
   rec.onerror = (e)=>{ recording = false; mic.classList.remove("rec");
     if(e && e.error === "not-allowed") toast("Allow microphone access to dictate"); };
   rec.onresult = (e)=>{
-    let txt = "";
-    for(let i=0;i<e.results.length;i++) txt += e.results[i][0].transcript;
-    field.value = base + txt;
+    // Rebuild from the cumulative results each time with the same joiner the
+    // scrap/Info mics use — replaying finals can't pile up, and words get spaced.
+    const full = (typeof joinResults === "function")
+      ? joinResults(e.results, false)
+      : Array.from(e.results).map(r=>r[0].transcript).join(" ");
+    field.value = (base + full).replace(/\s{2,}/g, " ");
     if(field.id === "hoFTitle"){ const addB = document.getElementById("hoFAdd"); if(addB) addB.disabled = !field.value.trim(); }
   };
 }

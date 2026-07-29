@@ -1494,7 +1494,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=61">
+  <link rel="manifest" href="./manifest.json?v=63">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2409,19 +2409,23 @@
       <button class="modal-close" id="manClose" aria-label="Close">✕</button>
     </div>
     <div class="field">
+      <label for="mName">Product name</label>
+      <div class="plu-row">
+        <input id="mName" autocomplete="off">
+        <button type="button" class="qty-btn mic-sm" id="mSay" aria-label="Say the product name"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
+      </div>
+      <div class="plu-row" style="margin-top:6px;">
+        <input id="mBrand" list="brandList" placeholder="Brand — PC, PCO, FM, NNI, PCBM…" autocomplete="off">
+      </div>
+      <datalist id="brandList"><option value="PC"></option><option value="PCO"></option><option value="FM"></option><option value="NNI"></option><option value="PCBM"></option></datalist>
+    </div>
+    <div class="field">
       <label for="mCode">Barcode number <span class="hint">(optional)</span></label>
       <div class="plu-row">
         <input id="mCode" inputmode="numeric" placeholder="type, scan, or leave blank" autocomplete="off">
         <button type="button" class="qty-btn scan-sm" id="mScan" aria-label="Scan it instead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg></button>
       </div>
       <p class="lookup-note" id="mKnown"></p>
-    </div>
-    <div class="field">
-      <label for="mName">Product name</label>
-      <div class="plu-row">
-        <input id="mName" autocomplete="off">
-        <button type="button" class="qty-btn mic-sm" id="mSay" aria-label="Say the product name"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
-      </div>
     </div>
     <div class="field">
       <label for="mPlu">PLU <span class="hint">(produce code)</span></label>
@@ -2432,7 +2436,26 @@
       <div class="plu-drop hidden" id="mPluDrop"></div>
     </div>
     <div class="field">
-      <label for="mArticle">Article # <span class="hint">(warehouse code)</span></label>
+      <label>Sold by</label>
+      <label id="mQtyLabel" style="display:none"></label>
+      <div class="qty-row">
+        <span style="display:none">
+          <button type="button" class="qty-btn" id="mQtyMinus">−</button>
+          <input id="mQty" type="number" inputmode="numeric" value="1" min="0">
+          <button type="button" class="qty-btn" id="mQtyPlus">+</button>
+        </span>
+        <div class="useg" id="mUnitSeg" role="group" aria-label="Counted per each or by weight" style="display:flex;width:100%;">
+          <button type="button" class="on" data-u="each" aria-label="Per each" title="Per each" style="flex:1;">EA</button>
+          <button type="button" id="mUKG" data-u="kg" aria-label="By weight" title="By weight" style="flex:1;">kg</button>
+        </div>
+      </div>
+    </div>
+    <div class="field" id="mPackWtField">
+      <label for="mPackWt">Pack weight <span class="hint">(each only — e.g. 227g, 680g)</span></label>
+      <input id="mPackWt" type="text" inputmode="text" placeholder="e.g. 227g, 680g" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="mArticle">Article # <span class="hint">(optional — warehouse code)</span></label>
       <input id="mArticle" inputmode="numeric" placeholder="e.g. 20868985002" autocomplete="off">
     </div>
     <div class="field two-up">
@@ -2455,25 +2478,6 @@
           <div class="ocell"><label>Country 3</label>
             <input id="mOrigin3" list="originList" placeholder="—" autocomplete="off"></div>
         </div>
-    </div>
-    <div class="field">
-      <label>Sold by</label>
-      <label id="mQtyLabel" style="display:none"></label>
-      <div class="qty-row">
-        <span style="display:none">
-          <button type="button" class="qty-btn" id="mQtyMinus">−</button>
-          <input id="mQty" type="number" inputmode="numeric" value="1" min="0">
-          <button type="button" class="qty-btn" id="mQtyPlus">+</button>
-        </span>
-        <div class="useg" id="mUnitSeg" role="group" aria-label="Counted per each or by weight">
-          <button type="button" class="on" data-u="each" aria-label="Per each" title="Per each">EA</button>
-          <button type="button" id="mUKG" data-u="kg" aria-label="By weight" title="By weight">kg</button>
-        </div>
-      </div>
-    </div>
-    <div class="field">
-      <label for="mPackWt">Pack weight <span class="hint">(optional)</span></label>
-      <input id="mPackWt" type="text" inputmode="text" placeholder="e.g. 227g, 680g" autocomplete="off">
     </div>
     <div class="field">
       <label for="mNotes">Notes</label>
@@ -3443,6 +3447,7 @@ function setManualUnit(kg){
     if(minus) minus.style.display = "";
     if(plus)  plus.style.display  = "";
   }
+  const pwf=document.getElementById("mPackWtField"); if(pwf) pwf.style.display = mKg ? "none" : "";
 }
 function fillFromCatalog(hit, {overwrite=false}={}){
   if(!hit) return;
@@ -3996,8 +4001,8 @@ async function callProxy(payload){
    "Barcode DB" tabs (only fills them if they're still empty, so your edits are
    safe). After this you edit the tabs in Sheets and Pull to bring changes back. */
 async function publishDb(){
-  const pluRows = DEFAULT_PLU.map(p=>[ p.plu, p.name, "", p.e ? "ea" : "kg" ]);
-  const bcRows  = CATALOG.filter(c=>c.code).map(c=>[ c.code, c.name, "", "", c.pack||"", c.size||"" ]);
+  const pluRows = DEFAULT_PLU.map(p=>[ p.plu, p.brand||"", p.name, p.packWt||"", "", p.e ? "ea" : "kg" ]);
+  const bcRows  = CATALOG.filter(c=>c.code).map(c=>[ c.code, c.brand||"", c.name, "", "", "", c.pack||"", c.size||"" ]);
   const d = await callProxy({ action:"seedDb", plu: pluRows, barcodes: bcRows });
   return d;
 }
@@ -4005,8 +4010,8 @@ async function publishDb(){
 async function pullDb(){
   const d = await callProxy({ action:"getDb" });
   if(d && d.ok){
-    const pMap = {}; (d.plu || []).forEach(r=>{ if(r.plu) pMap[r.plu] = { name:r.name, origin:r.origin, unit:r.unit }; });
-    const bMap = {}; (d.barcodes || []).forEach(r=>{ if(r.code) bMap[r.code] = { name:r.name, origin:r.origin, unit:r.unit, pack:r.pack, size:r.size }; });
+    const pMap = {}; (d.plu || []).forEach(r=>{ if(r.plu) pMap[r.plu] = { name:r.name, brand:r.brand, packWt:r.packWt, origin:r.origin, unit:r.unit }; });
+    const bMap = {}; (d.barcodes || []).forEach(r=>{ if(r.code) bMap[r.code] = { name:r.name, brand:r.brand, packWt:r.packWt, origin:r.origin, unit:r.unit, pack:r.pack, size:r.size }; });
     localStorage.setItem(KEY_DBPLU, JSON.stringify(pMap));
     localStorage.setItem(KEY_DBBC, JSON.stringify(bMap));
     localStorage.setItem(KEY_DBAT, d.at || new Date().toISOString());
@@ -4285,32 +4290,99 @@ document.getElementById("fabSync").addEventListener("click", ()=>{
 
 /* The Add filter also asks the Barcode DB, so items stay findable after they've
    synced off your list. Read-only — just the catalogue answer. */
+/* --- brand-aware search: reuse the name normalizer so "PCO mushroom",
+   "NNI apple" etc. match brand + name, not just a raw substring. --- */
+function nmParts(name, brand){
+  const n = nmNormalize(name||"");
+  const b = nmNormalize(brand||"");
+  const brands = new Set([...n.tags, ...b.tags].filter(t=>nmTagKind(t)==="brand"));
+  return { core:(n.core+" "+b.core).toLowerCase().replace(/\s+/g," ").trim(), brands };
+}
+function matchItem(name, brand, q){
+  if(!q) return true;
+  const qn = nmNormalize(q);
+  const qBrands = qn.tags.filter(t=>nmTagKind(t)==="brand");
+  const p = nmParts(name, brand);
+  for(const t of qBrands){ if(!p.brands.has(t)) return false; }
+  const words = qn.core.toLowerCase().split(/\s+/).filter(Boolean);
+  return words.every(w=> p.core.indexOf(w) >= 0);
+}
+/* Draw the CODE128 strips that appear on compact result cards, so an item can
+   be scanned straight off the search list without opening the form. */
+function drawCatBarcodes(root){
+  if(typeof JsBarcode === "undefined" || !root) return;
+  root.querySelectorAll("svg.cat-bc[data-code]").forEach(svg=>{
+    try{ JsBarcode(svg, svg.getAttribute("data-code"),
+      { format:"CODE128", displayValue:false, height:34, margin:0, width:1.6 }); }catch(e){}
+  });
+}
+/* Pull a weight token (e.g. 680g) out of a size string when there's no explicit
+   pack weight. */
+function wtFrom(c){
+  if(c.packWt) return c.packWt;
+  const m = String(c.size||"").match(/(\d[\d.]*\s*(?:kg|g|ml|l|oz|lb))\b/i);
+  return m ? m[1] : "";
+}
 function catFindHtml(q){
   if(!q || typeof CATALOG === "undefined") return "";
-  const ql = q.toLowerCase();
-  const hits = CATALOG.filter(c => c && c.name && (c.name.toLowerCase().includes(ql) || String(c.code||"").includes(q))).slice(0, 12);
+  const hits = CATALOG.filter(c => c && c.name &&
+    (matchItem(c.name, c.brand, q) || String(c.code||"").includes(q))).slice(0, 12);
   if(!hits.length) return "";
-  return '<div class="cat-h">In the barcode database <span class="cat-hint">tap to add</span></div>' + hits.map(c=>{
+  return '<div class="cat-h">In the barcode database <span class="cat-hint">scan it, or tap to add</span></div>' + hits.map(c=>{
     const code = String(c.code||"");
-    const meta = [code?esc(code):"", c.size?esc(c.size):"", c.pack?esc(c.pack):""].filter(Boolean).join(" \u00b7 ");
-    const tap = code ? ' class="cat-row tappable" onclick="addFromCatalog(\''+esc(code)+'\')"' : ' class="cat-row"';
-    return '<div'+tap+'><div class="cat-nm">'+nmNameHtml(c.name)+'</div><div class="cat-meta">'+meta+(code?'<span class="cat-add">+ add</span>':'')+'</div></div>';
+    const wt = wtFrom(c);
+    const meta = [ c.plu ? "PLU "+esc(c.plu) : "", wt ? esc(wt) : "" ].filter(Boolean).join(" \u00b7 ");
+    return '<div class="cat-row tappable" onclick="addFromCatalog(\''+esc(code)+'\')">'
+      + '<div class="cat-nm">'+nmNameHtml(c.name)+'</div>'
+      + (code ? '<svg class="cat-bc" data-code="'+esc(code)+'"></svg><div class="cat-bcnum">'+esc(code)+'</div>' : '')
+      + (meta ? '<div class="cat-meta">'+meta+'</div>' : '')
+      + '</div>';
   }).join("");
 }
-/* Tap a catalogue result to add it to your list (write), same as scanning it. */
+/* Tap a catalogue result to open the SAME add form, pre-filled. (Manual +,
+   scan, and tapping a result all land on one identical form now.) */
 function addFromCatalog(code){
   const c = (typeof CAT_BY_CODE !== "undefined" && CAT_BY_CODE) ? CAT_BY_CODE.get(code) : null;
   if(!c){ toast("Couldn't find that item"); return; }
-  addItem({ code: c.code||"", name: c.name||"(unnamed)", plu: c.plu||"", pack: c.pack||"", size: c.size||"" });
-  persist(); renderList();
-  toast("Added " + (c.name||"item"));
+  openManualPrefilled(c);
+}
+/* Split any brand words out of the name box into the Brand field. Runs after
+   voice dictation and when the name box loses focus, so "PCO white mushroom"
+   becomes Brand: PCO / Name: White Mushroom. */
+function splitBrandIntoField(){
+  const nEl=document.getElementById("mName"), bEl=document.getElementById("mBrand");
+  if(!nEl||!bEl) return;
+  const p=nmNormalize((bEl.value?bEl.value+" ":"")+nEl.value);
+  const br=p.tags.filter(t=>nmTagKind(t)==="brand");
+  if(br.length){ bEl.value=br.join(" "); if(p.core) nEl.value=p.core; }
+}
+/* Open the manual form pre-filled from a catalogue entry. */
+function openManualPrefilled(c){
+  ["mCode","mName","mPlu","mNotes","mArticle","mPack","mSize","mPackWt","mBrand"]
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
+  const mkn=document.getElementById("mKnown"); if(mkn) mkn.textContent="";
+  mOrigins = []; drawMOrigins();
+  document.getElementById("mQty").value = 1;
+  setManualUnit(unit() === "kg");
+  document.getElementById("mPluDrop").classList.add("hidden");
+  if(c){
+    const set=(id,v)=>{ const el=document.getElementById(id); if(el && v!=null && v!=="") el.value=v; };
+    set("mName", c.name); set("mCode", c.code); set("mPlu", c.plu);
+    set("mPack", c.pack); set("mSize", c.size); set("mArticle", c.art);
+    const parts = nmNormalize((c.brand?c.brand+" ":"")+(c.name||""));
+    const br = parts.tags.filter(t=>nmTagKind(t)==="brand");
+    if(br.length){ set("mBrand", br.join(" ")); document.getElementById("mName").value = parts.core; }
+    else if(c.brand) set("mBrand", c.brand);
+  }
+  manOverlay.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
 }
 function renderList(){
   updateFabSync();
   const q = document.getElementById("search").value.toLowerCase();
   const list = document.getElementById("list");
   const catHtml = q ? catFindHtml(q) : "";
-  const shown = items.filter(i => !q || i.name.toLowerCase().includes(q)
+  const shown = items.filter(i => !q || matchItem(i.name, i.brand, q)
     || (i.code||"").toLowerCase().includes(q) || (i.plu||"").includes(q)
     || (i.nameFr||"").toLowerCase().includes(q)
     || originList(i.origin).some(o=>(o + " " + originFull(o)).toLowerCase().includes(q)));
@@ -4320,6 +4392,7 @@ function renderList(){
       : '<div class="empty"><div class="big-stripes"></div>' +
         (items.length ? "No items match your search." :
          "Nothing here yet.<br>Tap the round scan button, or <b>+</b> to add by hand.") + "</div>";
+    drawCatBarcodes(list);
     return;
   }
   list.innerHTML = shown.map(i=>`
@@ -5153,7 +5226,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v61";
+const APP_VERSION = "v63";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -5578,6 +5651,7 @@ function dictateInto(input, row, btn){
     } else {
       const plu = document.getElementById(input.id === "fName" ? "fPlu" : "mPlu");
       if(plu && !plu.value.trim()){ const h = pluFor(clean); if(h) plu.value = h; }
+      if(input.id === "mName") splitBrandIntoField();
     }
   };
   try{ d.start(); toast("Speak the name…"); }catch(e){ dictating = null; saveLock(false); clearHi(); }
@@ -5673,7 +5747,7 @@ pickOverlay.addEventListener("click", e=>{ if(e.target===pickOverlay) closePick(
 /* ================= manual add ================= */
 const manOverlay = document.getElementById("manualOverlay");
 document.getElementById("fabAdd").addEventListener("click", ()=>{
-  ["mCode","mName","mPlu","mNotes","mArticle","mPack","mSize","mPackWt"].forEach(id=>document.getElementById(id).value="");
+  ["mCode","mName","mPlu","mNotes","mArticle","mPack","mSize","mPackWt","mBrand"].forEach(id=>document.getElementById(id).value="");
   const mkn=document.getElementById("mKnown"); if(mkn) mkn.textContent="";
   mOrigins = []; drawMOrigins();
   document.getElementById("mQty").value = 1;
@@ -5699,6 +5773,7 @@ document.getElementById("mQtyMinus").addEventListener("click", ()=>{
    bar than PLU matching and always offered, never silently filled: a barcode
    is exact, so a confident wrong one is worse than a blank box.           */
 let mSuggest = null;
+document.getElementById("mName").addEventListener("change", splitBrandIntoField);
 document.getElementById("mName").addEventListener("input", ()=>{
   const nm = document.getElementById("mName").value.trim();
   const note = document.getElementById("mKnown");
@@ -5721,7 +5796,9 @@ document.getElementById("mName").addEventListener("input", ()=>{
 
 document.getElementById("mSave").addEventListener("click", ()=>{
   const code = document.getElementById("mCode").value.trim();
-  const name = document.getElementById("mName").value.trim();
+  let name = document.getElementById("mName").value.trim();
+  let brand = document.getElementById("mBrand").value.trim();
+  { const _p=nmNormalize((brand?brand+" ":"")+name); const _b=_p.tags.filter(t=>nmTagKind(t)==="brand"); if(_b.length){ brand=_b.join(" "); if(_p.core) name=_p.core; } }
   const plu  = document.getElementById("mPlu").value.trim();
   const article = document.getElementById("mArticle").value.trim();
   const pack = document.getElementById("mPack").value.trim();
@@ -5745,8 +5822,9 @@ document.getElementById("mSave").addEventListener("click", ()=>{
     }
   }
   const qty = 1;   // this form adds a product, not a count
-  const key = code || (plu ? "PLU"+plu : "");
-  const existing = key ? items.find(i=>i.code===key) : null;
+  const key = code || "";
+  const existing = code ? items.find(i=>i.code===code)
+                 : (plu ? items.find(i=>i.plu===plu && !i.code) : null);
   if(existing){
     // kg and each don't add together; only merge when the unit matches
     if(!!existing.kg === mKg){
@@ -5754,7 +5832,7 @@ document.getElementById("mSave").addEventListener("click", ()=>{
       existing.synced = false;
       toast("Quantity updated → " + (mKg ? kgStr(existing.qty) + " " + unit() : existing.qty));
     } else {
-      addItem({ code:key, name:name||"(unnamed)", plu:plu, qty:qty, kg:mKg,
+      addItem({ code:key, brand:brand, name:name||"(unnamed)", plu:plu, qty:qty, kg:mKg,
                 packWt:document.getElementById("mPackWt").value.trim(),
                 origin: mOrigins.slice(),
                 notes:document.getElementById("mNotes").value.trim() });
@@ -5768,7 +5846,7 @@ document.getElementById("mSave").addEventListener("click", ()=>{
       SEED_KEYS = null;
       toast("Added " + plu + " to your PLU list");
     }
-    addItem({ code:key, name:name||"(unnamed)", plu:plu, qty:qty, kg:mKg,
+    addItem({ code:key, brand:brand, name:name||"(unnamed)", plu:plu, qty:qty, kg:mKg,
               packWt:document.getElementById("mPackWt").value.trim(),
               article:document.getElementById("mArticle").value.trim(),
               pack:document.getElementById("mPack").value.trim(),
@@ -5788,6 +5866,7 @@ function addItem(o){
     id: "i"+Date.now()+Math.random().toString(36).slice(2,6),
     ts: Date.now(),
     code: o.code || "",
+    brand: o.brand || "",
     name: nmShort(o.name || "(unnamed)"),
     plu: o.plu || "",
     nameFr: o.nameFr || "",
@@ -8727,7 +8806,7 @@ async function doSync(quiet){
       origin: originList(i.origin).join("; "),
       nameFr: i.nameFr || "",
       name: i.name, qty: i.qty, unit: i.kg ? unit() : "each",
-      article: i.article||"", pack: i.pack||"", size: i.size||"",
+      brand: i.brand||"", packWt: i.packWt||"", article: i.article||"", pack: i.pack||"", size: i.size||"",
       corrected: i.corrected ? "YES" : "", notes: i.notes||"",
       price: i.flyer?Number(i.flyer.price).toFixed(2):"",
       promo: !!i.flyer,
@@ -9576,7 +9655,7 @@ function renderHoIcon(){
   el.classList.toggle("attn", attn);
   el.classList.toggle("smiling", attn);
   el.classList.toggle("seen", !attn && open>0);
-  el.classList.toggle("hasbadge", open>0);
+  el.classList.toggle("hasbadge", attn);   // count badge only where the note is unseen (not the author)
 
   const badge = document.getElementById("hoNavBadge");
   if(badge) badge.textContent = open>99 ? "99+" : open;

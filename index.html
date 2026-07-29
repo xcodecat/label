@@ -1092,6 +1092,14 @@
   .cat-row.tappable{cursor:pointer}
   .cat-row.tappable:active{background:var(--surface-2)}
   .cat-add{color:var(--ok);font-weight:700;margin-left:8px}
+  .cat-row2{display:block;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .cat-row2:active{background:var(--surface-2)}
+  .cat-bcimg{background:#fff;border-radius:6px;padding:6px 8px;margin-top:7px;display:inline-block;max-width:100%}
+  .cat-bcimg svg{display:block;max-width:100%;height:auto}
+  .cat-plu{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--laser);margin-top:6px;display:inline-block}
+  #mBcPreviewWrap .cat-bcimg{margin:0 auto}
+  #mUnitSeg{width:100%;flex:1}
+  #mUnitSeg button{flex:1;min-width:0}
   .cat-hint{font-family:var(--mono);font-size:9px;color:var(--ok);letter-spacing:0;margin-left:6px}
   .rk-tr{position:fixed;inset:0;z-index:80;background:var(--ink);display:none;flex-direction:column;
     padding:calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom))}
@@ -1494,7 +1502,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=67">
+  <link rel="manifest" href="./manifest.json?v=68">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2408,6 +2416,9 @@
       <h2>Add manually</h2>
       <button class="modal-close" id="manClose" aria-label="Close">✕</button>
     </div>
+    <div class="field" id="mBcPreviewWrap" style="display:none;text-align:center">
+      <div class="cat-bcimg"><svg id="mBcPreview"></svg></div>
+    </div>
     <div class="field">
       <label for="mName">Product name</label>
       <div class="plu-row">
@@ -2415,7 +2426,7 @@
         <button type="button" class="qty-btn mic-sm" id="mSay" aria-label="Say the product name"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
       </div>
       <div class="plu-row" style="margin-top:6px;">
-        <input id="mBrand" list="brandList" placeholder="Brand — PC, PCO, FM, NNI, PCBM…" autocomplete="off">
+        <input id="mBrand" list="brandList" placeholder="Brand — PC, PCO, FM, NNI…" autocomplete="off" style="flex:0 0 48%;max-width:48%">
       </div>
       <datalist id="brandList"><option value="PC"></option><option value="PCO"></option><option value="FM"></option><option value="NNI"></option><option value="PCBM"></option></datalist>
     </div>
@@ -3533,6 +3544,7 @@ document.getElementById("mArticle").addEventListener("input", e=>{
   const hit=catalogByArticle(e.target.value);
   if(hit) fillFromCatalog(hit,{overwrite:true});
 });
+document.getElementById("mCode").addEventListener("input", renderMFormBarcode);
 document.getElementById("mCode").addEventListener("input", e=>{
   const code = e.target.value;
   const hit=catalogByCode(code);
@@ -4365,12 +4377,39 @@ function matchItem(name, brand, q){
 }
 /* Draw the CODE128 strips that appear on compact result cards, so an item can
    be scanned straight off the search list without opening the form. */
+function barcodeFmt(code){
+  if(/^\d{13}$/.test(code)) return ["EAN13","CODE128"];
+  if(/^\d{12}$/.test(code)) return ["UPC","CODE128"];
+  if(/^\d{8}$/.test(code))  return ["EAN8","CODE128"];
+  return ["CODE128"];
+}
+function drawBc(target, code, opts){
+  if(typeof JsBarcode === "undefined") return false;
+  const fmts = barcodeFmt(code);
+  for(const f of fmts){ try{ JsBarcode(target, code, Object.assign({format:f}, opts)); return true; }catch(e){} }
+  return false;
+}
+// Clear, scannable strips on the result cards: real black bars on white.
 function drawCatBarcodes(root){
-  if(typeof JsBarcode === "undefined" || !root) return;
+  if(!root) return;
   root.querySelectorAll("svg.cat-bc[data-code]").forEach(svg=>{
-    try{ JsBarcode(svg, svg.getAttribute("data-code"),
-      { format:"CODE128", displayValue:false, height:34, margin:0, width:1.6 }); }catch(e){}
+    const code = String(svg.getAttribute("data-code")||"").replace(/\D/g,"");
+    drawBc(svg, code, { width:2, height:52, margin:6, displayValue:true,
+      fontSize:13, font:"monospace", background:"#ffffff", lineColor:"#000000" });
   });
+}
+// The barcode preview that sits at the top of the Add form.
+function renderMFormBarcode(){
+  const wrap = document.getElementById("mBcPreviewWrap");
+  if(!wrap) return;
+  const code = String((document.getElementById("mCode")||{}).value||"").replace(/\D/g,"");
+  if(code.length >= 6 && drawBc("#mBcPreview", code,
+      { width:2, height:64, margin:8, displayValue:true, fontSize:15, font:"monospace",
+        background:"#ffffff", lineColor:"#000000" })){
+    wrap.style.display = "";
+  } else {
+    wrap.style.display = "none";
+  }
 }
 /* Pull a weight token (e.g. 680g) out of a size string when there's no explicit
    pack weight. */
@@ -4379,21 +4418,68 @@ function wtFrom(c){
   const m = String(c.size||"").match(/(\d[\d.]*\s*(?:kg|g|ml|l|oz|lb))\b/i);
   return m ? m[1] : "";
 }
+// Search across everything: the built-in barcode catalogue and PLU list, plus
+// the Sheet's Barcode DB and PLU DB. Matches on brand + name (so "PCO mushroom"
+// works) or on the raw code / PLU number.
+let _searchEnts = [];
+function searchEntries(q){
+  const out = [], seen = new Set();
+  const push = (o)=>{
+    const key = o.code ? ("B"+o.code) : (o.plu ? ("P"+o.plu) : ("N"+o.name.toLowerCase()));
+    if(seen.has(key)) return; seen.add(key); out.push(o);
+  };
+  const hit = (name, brand, code, plu)=>
+    matchItem(name, brand, q) ||
+    (code && String(code).includes(q)) || (plu && String(plu).includes(q));
+  // built-in barcode catalogue
+  if(typeof CATALOG !== "undefined") CATALOG.forEach(c=>{
+    if(c && c.name && hit(c.name, c.brand, c.code, c.plu))
+      push({ name:c.name, code:String(c.code||""), plu:c.plu||"", brand:c.brand||"",
+             packWt:wtFrom(c), pack:c.pack||"", size:c.size||"",
+             store:dbStoreCodes.has(String(c.code||"")) });
+  });
+  // Sheet Barcode DB
+  const bm = dbBcMap();
+  for(const code in bm){ const c = bm[code];
+    if(hit(c.name, c.brand, code, "")) push({ name:c.name||"", code:String(code), plu:"",
+      brand:c.brand||"", packWt:c.packWt||"", pack:c.pack||"", size:c.size||"",
+      store:storeVal(c.store)===true }); }
+  // built-in PLU list (produce)
+  if(Array.isArray(PLU)) PLU.forEach(e=>{
+    if(e && e.name && hit(e.name, "", "", e.plu))
+      push({ name:e.name, code:"", plu:String(e.plu||""), brand:"", packWt:"",
+             pack:"", size:"", store:!!e.own });
+  });
+  // Sheet PLU DB
+  const pm = dbPluMap();
+  for(const plu in pm){ const c = pm[plu];
+    if(hit(c.name, c.brand, "", plu)) push({ name:c.name||"", code:"", plu:String(plu),
+      brand:c.brand||"", packWt:c.packWt||"", pack:"", size:"",
+      store:storeVal(c.store)===true }); }
+  // barcodes first (so you can scan straight off the list), then PLUs
+  out.sort((a,b)=> (a.code?0:1) - (b.code?0:1));
+  return out.slice(0, 20);
+}
 function catFindHtml(q){
-  if(!q || typeof CATALOG === "undefined") return "";
-  const hits = CATALOG.filter(c => c && c.name &&
-    (matchItem(c.name, c.brand, q) || String(c.code||"").includes(q))).slice(0, 12);
-  if(!hits.length) return "";
-  return '<div class="cat-h">In the barcode database <span class="cat-hint">scan it, or tap to add</span></div>' + hits.map(c=>{
-    const code = String(c.code||"");
-    const wt = wtFrom(c);
-    const meta = [ c.plu ? "PLU "+esc(c.plu) : "", wt ? esc(wt) : "" ].filter(Boolean).join(" \u00b7 ");
-    return '<div class="cat-row tappable" onclick="addFromCatalog(\''+esc(code)+'\')">'
-      + '<div class="cat-nm">'+nmNameHtml(c.name)+(dbStoreCodes.has(code)?'<span class="own">store</span>':'')+'</div>'
-      + (code ? '<svg class="cat-bc" data-code="'+esc(code)+'"></svg><div class="cat-bcnum">'+esc(code)+'</div>' : '')
-      + (meta ? '<div class="cat-meta">'+meta+'</div>' : '')
-      + '</div>';
-  }).join("");
+  if(!q) return "";
+  _searchEnts = searchEntries(q);
+  if(!_searchEnts.length) return "";
+  return '<div class="cat-h">In your PLU + barcode database <span class="cat-hint">scan it, or tap to add</span></div>' +
+    _searchEnts.map((o,i)=>{
+      const pw = o.packWt ? '<span class="nm-bdg pack">'+esc(o.packWt)+'</span>' : "";
+      const badge = o.store ? '<span class="own">store</span>' : "";
+      const nm = nmNameHtml((o.brand?o.brand+" ":"")+o.name);
+      const body = o.code
+        ? '<div class="cat-bcimg"><svg class="cat-bc" data-code="'+esc(o.code)+'"></svg></div>'
+        : (o.plu ? '<div><span class="cat-plu">PLU '+esc(o.plu)+'</span></div>' : "");
+      return '<div class="cat-row2 tappable" onclick="openEntry('+i+')">'
+        + '<div class="cat-nm">'+nm+badge+pw+'</div>' + body + '</div>';
+    }).join("");
+}
+function openEntry(i){
+  const o = _searchEnts[i]; if(!o) return;
+  openManualPrefilled({ name:o.name, code:o.code, plu:o.plu, brand:o.brand,
+                        packWt:o.packWt, pack:o.pack, size:o.size, art:"" });
 }
 /* Tap a catalogue result to open the SAME add form, pre-filled. (Manual +,
    scan, and tapping a result all land on one identical form now.) */
@@ -4424,7 +4510,7 @@ function openManualPrefilled(c){
   if(c){
     const set=(id,v)=>{ const el=document.getElementById(id); if(el && v!=null && v!=="") el.value=v; };
     set("mName", c.name); set("mCode", c.code); set("mPlu", c.plu);
-    set("mPack", c.pack); set("mSize", c.size); set("mArticle", c.art);
+    set("mPack", c.pack); set("mSize", c.size); set("mArticle", c.art); set("mPackWt", c.packWt);
     const parts = nmNormalize((c.brand?c.brand+" ":"")+(c.name||""));
     const br = parts.tags.filter(t=>nmTagKind(t)==="brand");
     if(br.length){ set("mBrand", br.join(" ")); document.getElementById("mName").value = parts.core; }
@@ -4432,6 +4518,7 @@ function openManualPrefilled(c){
   }
   manOverlay.classList.remove("hidden");
   document.body.style.overflow = "hidden";
+  renderMFormBarcode();
 }
 function renderList(){
   updateFabSync();
@@ -5282,7 +5369,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v67";
+const APP_VERSION = "v68";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -5809,6 +5896,7 @@ document.getElementById("fabAdd").addEventListener("click", ()=>{
   document.getElementById("mQty").value = 1;
   setManualUnit(unit() === "kg");     // start on whatever Settings weighs in
   document.getElementById("mPluDrop").classList.add("hidden");
+  renderMFormBarcode();
   manOverlay.classList.remove("hidden");
   document.body.style.overflow = "hidden";
 });

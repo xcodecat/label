@@ -677,6 +677,7 @@
 
   /* floating action buttons on the Items tab */
   .fab-stack{display:flex;flex-direction:column;gap:12px;pointer-events:auto;align-items:center}
+  #itemFabs{justify-content:flex-end}
   .fab.scan{background:var(--surface-2);color:var(--paper);border:1px solid var(--line);
     width:48px;height:48px}
   .scan-sheet{position:fixed;inset:0;z-index:70;background:var(--ink);
@@ -1471,6 +1472,11 @@
   .pg-mic.live{background:var(--laser);border-color:var(--laser)}
   .pg-mic.live svg{stroke:#fff}
   .pg-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px}
+  .pg-brandrow{display:flex;align-items:center;gap:9px;margin-top:11px}
+  .pg-brandrow label{font-size:12px;color:var(--muted)}
+  #pgBrandSel{flex:1;background:var(--surface-2);color:var(--paper);border:1px solid var(--line);
+    border-radius:9px;padding:10px 11px;font-family:inherit;font-size:14px}
+  #pgBrandSel:focus{border-color:var(--laser);outline:none}
   .pg-chip{border:1px solid var(--line);background:var(--surface-2);color:var(--paper-dim);border-radius:20px;
     padding:8px 12px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px}
   .pg-chip:active{border-color:var(--muted)}
@@ -1504,7 +1510,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=70">
+  <link rel="manifest" href="./manifest.json?v=72">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1705,7 +1711,7 @@
   <section id="view-sales" class="view">
     <div class="sticky-bar">
       <div class="sales-head">
-        <input id="saleSearch" placeholder="Search the flyer…" autocomplete="off">
+        <div class="sbox"><input id="saleSearch" placeholder="Search the flyer…" autocomplete="off"></div>
         <button class="icon-btn" id="btnRefreshSales" aria-label="Refresh flyer" title="Refresh flyer">
           <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         </button>
@@ -2090,6 +2096,17 @@
       <input id="pgSheetInput" placeholder="Type an item…" autocomplete="off" oninput="pgOnType(this.value)">
       <button class="pg-mic" id="pgMic" type="button" onclick="pgToggleMic()" aria-label="Speak the item"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></svg></button>
     </div>
+    <div class="pg-brandrow">
+      <label for="pgBrandSel">Brand badge</label>
+      <select id="pgBrandSel" onchange="pgSetBrand(this.value)">
+        <option value="">None</option>
+        <option value="PC">PC</option>
+        <option value="PCO">PCO</option>
+        <option value="PCBM">PCBM</option>
+        <option value="NNI">NNI</option>
+        <option value="FM">FM</option>
+      </select>
+    </div>
     <div id="pgMatches"></div>
     <div class="pg-matchhdr" id="pgSugHdr">Suggested for this spot</div>
     <div class="pg-chips" id="pgSug"></div>
@@ -2185,19 +2202,19 @@
         converts what you see, it never rewrites a saved list.</p>
     </div>
 
-    <div class="panel">
-      <h3>Known barcodes</h3>
-      <p>Scans on this phone are matched automatically. Pull the Sheet if you've
-         reinstalled or you're on a new phone, to recover barcodes scanned elsewhere.</p>
-      <button class="btn btn-ghost" id="btnPullKnown">Pull known items from Sheet</button>
-      <p class="lookup-note" id="knownNote"></p>
-    </div>
-
     <h4 class="sec-h">Export</h4>
     <div class="panel">
       <h3>Download CSV</h3>
       <p>Get a .csv file of all items, then import it in Google Sheets with <b>File → Import</b>. Images are not included in the CSV.</p>
       <button class="btn btn-ghost" id="btnCsv">Download CSV</button>
+    </div>
+    <div class="panel">
+      <h3>Backup &amp; restore</h3>
+      <p>Save a full backup of everything on this phone — items, PLU list, database cache and settings — as a file, or restore from one. Do this before reinstalling or moving to a new phone.</p>
+      <button class="btn btn-ghost" id="btnBackup">Back up to file</button>
+      <label class="btn btn-primary" for="restoreFile" style="cursor:pointer">Restore from file</label>
+      <input id="restoreFile" type="file" accept="application/json,.json" style="display:none">
+      <p class="lookup-note" id="backupNote"></p>
     </div>
     <div class="panel">
       <h3>Sync to Google Sheets</h3>
@@ -4753,6 +4770,7 @@ let weeks = [], salesTs = 0, activeWeek = 0;
 try{
   const s = JSON.parse(localStorage.getItem(KEY_SALES) || "{}");
   weeks = s.weeks || []; salesTs = s.ts || 0;
+  { let i = weeks.findIndex(w=>w.primary); if(i<0) i = weeks.findIndex(w=>w.current); activeWeek = Math.max(0, i); }
 }catch(e){}
 
 document.getElementById("saleSearch").addEventListener("input", renderSales);
@@ -4835,7 +4853,8 @@ function renderSales(){
 
 function dateRange(w){
   if(!w || !w.from) return "";
-  const a = new Date(w.from), b = new Date(w.to);
+  const p = s => { const x=String(s).slice(0,10).split("-"); return new Date(+x[0], (+x[1])-1, +x[2]); };
+  const a = p(w.from), b = p(w.to);
   const o = {month:"short", day:"numeric"};
   return a.toLocaleDateString(undefined,o) + "–" + b.toLocaleDateString(undefined,o);
 }
@@ -4857,7 +4876,7 @@ async function refreshSales(){
     if(!d || !d.ok) throw new Error((d && d.error) || "no reply");
     weeks = d.weeks || [];
     salesTs = Date.now();
-    activeWeek = Math.max(0, weeks.findIndex(w=>w.current));
+    { let i = weeks.findIndex(w=>w.primary); if(i<0) i = weeks.findIndex(w=>w.current); activeWeek = Math.max(0, i); }
     try{
       localStorage.setItem(KEY_SALES, JSON.stringify({ weeks: weeks, ts: salesTs }));
     }catch(e){ toast("Loaded, but too big to cache"); }
@@ -5393,7 +5412,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v70";
+const APP_VERSION = "v72";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6309,6 +6328,26 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
   });
 });
 
+/* Barcode items usually give themselves away: a brand tag (PC/PCO/PCBM/NNI/FM),
+   a pack count (3pk/6 pk), a weight in the name (1lb, 2.27kg), or the word
+   "pack". A few (e.g. "cauliflower organic") don't, but they still carry a real
+   barcode in the DB, so any code-bearing match is surfaced regardless. */
+function looksLikeBarcodeItem(name){
+  const n = String(name||"").toLowerCase();
+  if(/(^|[^a-z])(pc|pco|pcbm|nni|fm)([^a-z]|$)/.test(n)) return true;
+  if(/\b\d+\s?pk\b/.test(n)) return true;
+  if(/\b\d+(\.\d+)?\s?(lb|lbs|kg|g|ml|l|oz)\b/.test(n)) return true;
+  if(/\bpack\b/.test(n)) return true;
+  return false;
+}
+function barcodeSuggest(name){
+  if(!name || !name.trim() || typeof searchEntries !== "function") return [];
+  const ents = searchEntries(name.trim()).filter(e=>e.code);
+  ents.sort((a,b)=> (looksLikeBarcodeItem(b.name)?1:0) - (looksLikeBarcodeItem(a.name)?1:0));
+  const seen = new Set(), out = [];
+  for(const e of ents){ if(seen.has(e.code)) continue; seen.add(e.code); out.push(e); if(out.length>=6) break; }
+  return out;
+}
 /* ---- code sheet: PLU, barcode, or one we've seen before ---- */
 function openCodeSheet(r, list){
   const known = r.name.trim() ? knownFor(r.name) : null;
@@ -6325,6 +6364,13 @@ function openCodeSheet(r, list){
         <button data-code="${esc(known.code)}"><b>${esc(known.code)}</b><span>use this barcode</span></button>
       </div></div>`;
   }
+  barcodeSuggest(r.name).forEach(b=>{
+    html += `<div class="pick-row">
+      <div class="pn">${nmNameHtml((b.brand?b.brand+" ":"")+b.name)}${b.packWt?'<span class="eachtag">'+esc(b.packWt)+'</span>':''}<span class="own">barcode</span></div>
+      <div class="pick-btns">
+        <button data-code="${esc(b.code)}"><b>${esc(b.code)}</b><span>use barcode</span></button>
+      </div></div>`;
+  });
   html += pairs.map(p=>`
     <div class="pick-row">
       <div class="pn">${esc(p.name)}${p.own?'<span class="own">store</span>':''}</div>
@@ -6686,6 +6732,37 @@ document.getElementById("btnStripWt").addEventListener("click", async ()=>{
   }catch(e){ s.textContent = "Couldn't do it: " + (authMessage(e) || e.message); }
 });
 document.getElementById("btnHello").addEventListener("click", checkAccess);
+document.getElementById("btnBackup").addEventListener("click", ()=>{
+  const dump = {};
+  for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k && k.indexOf("label_")===0) dump[k]=localStorage.getItem(k); }
+  const payload = { app:"CatCaddy", ver:APP_VERSION, at:new Date().toISOString(), data:dump };
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" }));
+  a.download = "catcaddy-backup-" + new Date().toISOString().slice(0,10) + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+  const n=document.getElementById("backupNote"); if(n) n.textContent = "Backed up " + Object.keys(dump).length + " keys.";
+});
+document.getElementById("restoreFile").addEventListener("change", (e)=>{
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  const n = document.getElementById("backupNote");
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const parsed = JSON.parse(reader.result);
+      const data = (parsed && parsed.data) ? parsed.data : parsed;
+      if(!data || typeof data !== "object") throw new Error("not a backup file");
+      const keys = Object.keys(data).filter(k=>k.indexOf("label_")===0);
+      if(!keys.length) throw new Error("no CatCaddy data inside");
+      if(!confirm("Restore " + keys.length + " keys? This replaces current data on this phone.")){ e.target.value=""; return; }
+      keys.forEach(k=>{ try{ localStorage.setItem(k, data[k]); }catch(_){} });
+      if(n) n.textContent = "Restored " + keys.length + " keys. Reloading…";
+      setTimeout(()=>location.reload(), 700);
+    }catch(err){ if(n) n.textContent = "Couldn't restore: " + err.message; }
+    e.target.value = "";
+  };
+  reader.readAsText(f);
+});
 
 async function checkAccess(){
   const n = document.getElementById("helloNote");
@@ -9140,24 +9217,6 @@ window.addEventListener("offline", setOnline);
 setOnline();
 
 /* ---- pull the barcode history out of the Sheet ---- */
-document.getElementById("btnPullKnown").addEventListener("click", async ()=>{
-  const note = document.getElementById("knownNote");
-  if(!proxyUrl()){ toast("Not set up yet — see Settings"); return; }
-  if(!navigator.onLine){ note.textContent = "You're offline."; return; }
-  const btn = document.getElementById("btnPullKnown");
-  btn.disabled = true; note.textContent = "Pulling…";
-  try{
-    const d = await callProxy({ action:"known" });
-    if(!d || !d.ok) throw new Error((d && d.error) || "failed");
-    localStorage.setItem(KEY_KNOWN, JSON.stringify(d.rows || []));
-    note.textContent = "Recovered " + (d.rows||[]).length + " known item(s).";
-    toast("Pulled " + (d.rows||[]).length + " item(s)");
-  }catch(err){
-    note.textContent = "Couldn't pull: " + err.message;
-  }
-  btn.disabled = false;
-});
-
 /* ---- clear buttons ----
    The grey ✕ Chrome puts in its address bar. Wired generically rather than four
    times by hand, so the next search box gets one for free instead of being the
@@ -10324,6 +10383,12 @@ function pgSpotMeta(key){
     return {type:"run", spot:"run"+(ri+1)+"-"+end, label:"Run "+PG_RUN_DEF[ri].tag+" \u00b7 "+(end==="wet"?"Wet Cases":"HMR"), get:()=>pgState.runs[ri][end][i], set:v=>pgState.runs[ri][end][i]=v}; }
   if(key.indexOf("lot-")===0){ const i=+key.split("-")[1]; return {type:"lot", spot:"lot", label:"Case Lot "+(i+1), get:()=>pgState.lots[i], set:v=>pgState.lots[i]=v}; }
 }
+function pgSetBrand(v){
+  const inp = document.getElementById("pgSheetInput"); if(!inp) return;
+  const p = nmNormalize(inp.value || "");
+  inp.value = (v ? v + " " : "") + String(p.core || "").trim();
+  if(typeof pgOnType === "function") pgOnType(inp.value);
+}
 function pgEdit(key){
   const m = pgSpotMeta(key); if(!m) return;
   pgCur = Object.assign({key}, m);
@@ -10332,6 +10397,8 @@ function pgEdit(key){
   const cur = m.get()||"";
   const inp = document.getElementById("pgSheetInput");
   inp.value = /^(tap to add|empty|mango case)$/i.test(cur) ? "" : cur;
+  { const bsel=document.getElementById("pgBrandSel");
+    if(bsel){ const b=nmNormalize(inp.value||"").tags.filter(t=>nmTagKind(t)==="brand"); bsel.value=b[0]||""; } }
   document.getElementById("pgMatches").innerHTML = "";
   pgRenderSug();
   document.getElementById("pgScrim").classList.add("show");

@@ -784,7 +784,8 @@
   .sticky-bar{position:sticky;top:47px;z-index:15;background:var(--ink);
     padding:12px 0 8px;margin-top:-4px}
   .sales-head{display:flex;gap:8px;align-items:center;display:flex;gap:10px;align-items:center;margin-bottom:10px}
-  .sales-head input{flex:1;background:var(--surface);border:1px solid var(--line);
+  .sales-head .sbox{min-width:0}
+  .sales-head input{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);
     color:var(--paper);border-radius:10px;padding:11px 12px;font-size:15px}
   .sales-head input::placeholder{color:var(--muted)}
   .icon-btn{flex:none;width:44px;height:44px;border-radius:10px;background:var(--surface);
@@ -1510,7 +1511,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=72">
+  <link rel="manifest" href="./manifest.json?v=73">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2229,6 +2230,7 @@
       <button class="btn btn-ghost" id="btnDbPublish">Publish built-in lists to Sheet</button>
       <button class="btn btn-primary" id="btnDbPull">Pull database from Sheet</button>
       <button class="btn btn-ghost" id="btnStripWt">Move weights out of names</button>
+      <button class="btn btn-ghost" id="btnStripBrand">Move brands out of names</button>
       <p class="lookup-note" id="dbStatus"></p>
     </div>
     <div class="panel">
@@ -3188,7 +3190,7 @@ function showView(name){
   if(name === "settings") hoRenderDevInfo();
   if(name==="list") renderList();
   if(name==="sales"){ renderWeekTabs(); renderSales(); }
-  if(name==="scrap") renderLists();
+  if(name==="scrap"){ maybeResumeWip(); renderLists(); }
   if(name==="restock"){ renderRestock(); rkPull(); rkStartPoll(); }
   if(name==="handoff"){ hoMarkSeen(); renderHandoff(); hoPull(); hoStartPoll(); hoMaybePrompt(); renderHoIcon(); }
   if(name==="planogram"){ renderPlanogram(); pgPull(); pgStartPoll(); }
@@ -4451,9 +4453,9 @@ function renderMFormBarcode(){
 /* Pull a weight token (e.g. 680g) out of a size string when there's no explicit
    pack weight. */
 function wtFrom(c){
-  if(c.packWt) return c.packWt;
+  if(c.packWt) return cleanWt(c.packWt);
   const m = String(c.size||"").match(/(\d[\d.]*\s*(?:kg|g|ml|l|oz|lb))\b/i);
-  return m ? m[1] : "";
+  return m ? cleanWt(m[1]) : "";
 }
 // Search across everything: the built-in barcode catalogue and PLU list, plus
 // the Sheet's Barcode DB and PLU DB. Matches on brand + name (so "PCO mushroom"
@@ -4503,7 +4505,7 @@ function catFindHtml(q){
   if(!_searchEnts.length) return "";
   return '<div class="cat-h">In your PLU + barcode database <span class="cat-hint">scan it, or tap to add</span></div>' +
     _searchEnts.map((o,i)=>{
-      const pw = o.packWt ? '<span class="nm-bdg pack">'+esc(o.packWt)+'</span>' : "";
+      const pw = o.packWt ? '<span class="nm-bdg pack">'+esc(cleanWt(o.packWt))+'</span>' : "";
       const badge = o.store ? '<span class="own">store</span>' : "";
       const nm = nmNameHtml((o.brand?o.brand+" ":"")+o.name);
       const body = o.code
@@ -4548,7 +4550,7 @@ function openManualPrefilled(c){
   if(c){
     const set=(id,v)=>{ const el=document.getElementById(id); if(el && v!=null && v!=="") el.value=v; };
     set("mName", c.name); set("mCode", c.code); set("mPlu", c.plu);
-    set("mPack", c.pack); set("mSize", c.size); set("mArticle", c.art); set("mPackWt", c.packWt);
+    set("mPack", c.pack); set("mSize", c.size); set("mArticle", c.art); set("mPackWt", cleanWt(c.packWt));
     const parts = nmNormalize((c.brand?c.brand+" ":"")+(c.name||""));
     const br = parts.tags.filter(t=>nmTagKind(t)==="brand");
     if(br.length){ set("mBrand", br.join(" ")); document.getElementById("mName").value = parts.core; }
@@ -5412,7 +5414,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v72";
+const APP_VERSION = "v73";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6011,7 +6013,7 @@ document.getElementById("mSave").addEventListener("click", ()=>{
   }
   // The Add form edits the database directly: save the row to PLU DB / Barcode DB
   // (locally + to the Sheet) and auto-sync. No staged scrap card is created.
-  const packWt = document.getElementById("mPackWt").value.trim();
+  const packWt = cleanWt(document.getElementById("mPackWt").value.trim());
   const originStr = (mOrigins||[]).join("; ");
   const unitStr = mKg ? unit() : "ea";
   if(code){
@@ -6078,7 +6080,26 @@ function confirmCatalogCode(code){
 function codeIsConfirmed(code){ return confirmedCodes().has(String(code||"").replace(/\D/g,"")); }
 // Two codes you scanned in person are already proven — seed them once.
 ["060383075446","060383092139","06038315980","06148306450","06038321256","06038300661","06038321255","06038321254","06038300357","03338365002","62755700030","03338365162","07266860006","03338365301","03338367002","07315015201","03338370219","62071600002","03338345955","03338370040","87417800001","07357482000","06038321461"].forEach(confirmCatalogCode);
-let lists = { loop: [], flashfood: [] };
+const KEY_WIP = "label_wip_v1";
+function loadWip(){
+  try{ const w = JSON.parse(localStorage.getItem(KEY_WIP) || "null");
+    if(w && Array.isArray(w.loop) && Array.isArray(w.flashfood)) return w; }catch(e){}
+  return { loop: [], flashfood: [] };
+}
+function saveWip(){
+  try{ localStorage.setItem(KEY_WIP, JSON.stringify({ loop:lists.loop, flashfood:lists.flashfood })); }catch(e){}
+}
+let lists = loadWip();   // restored instantly so closing the app never loses work
+let _wipAsked = false;
+function maybeResumeWip(){
+  if(_wipAsked) return; _wipAsked = true;
+  const n = lists.loop.length + lists.flashfood.length;
+  if(!n) return;
+  if(!confirm("You have " + n + " unsaved item(s) from your last session. Resume them?\n\nOK = resume \u00b7 Cancel = start fresh")){
+    lists = { loop: [], flashfood: [] };
+    saveWip();
+  }
+}
 let activeList = "loop";
 let justAdded = new Set();      // green ring on rows the mic just created
 let openRow = null;                      // id of the row expanded for editing
@@ -6101,6 +6122,7 @@ const LIST_META = {
 };
 
 function renderLists(){
+  saveWip();
   document.querySelectorAll("#listTabs .wtab").forEach(b=>{
     const n = lists[b.dataset.list].length;
     b.classList.toggle("active", b.dataset.list === activeList);
@@ -6366,7 +6388,7 @@ function openCodeSheet(r, list){
   }
   barcodeSuggest(r.name).forEach(b=>{
     html += `<div class="pick-row">
-      <div class="pn">${nmNameHtml((b.brand?b.brand+" ":"")+b.name)}${b.packWt?'<span class="eachtag">'+esc(b.packWt)+'</span>':''}<span class="own">barcode</span></div>
+      <div class="pn">${nmNameHtml((b.brand?b.brand+" ":"")+b.name)}${b.packWt?'<span class="eachtag">'+esc(cleanWt(b.packWt))+'</span>':''}<span class="own">barcode</span></div>
       <div class="pick-btns">
         <button data-code="${esc(b.code)}"><b>${esc(b.code)}</b><span>use barcode</span></button>
       </div></div>`;
@@ -6728,6 +6750,16 @@ document.getElementById("btnStripWt").addEventListener("click", async ()=>{
   try{
     const d = await callProxy({ action:"stripWeights" });
     if(d && d.ok){ s.textContent = "Moved " + d.moved + " weight(s) into the Pack Weight column."; await pullDb(); renderList(); }
+    else s.textContent = "Couldn't do it: " + ((d && d.error) || "unknown");
+  }catch(e){ s.textContent = "Couldn't do it: " + (authMessage(e) || e.message); }
+});
+document.getElementById("btnStripBrand").addEventListener("click", async ()=>{
+  const s = document.getElementById("dbStatus");
+  if(!proxyUrl()) return toast("Set up the Sheet link first");
+  s.textContent = "Moving brands…";
+  try{
+    const d = await callProxy({ action:"stripBrands" });
+    if(d && d.ok){ s.textContent = "Moved " + d.moved + " brand(s) into the Brand column."; await pullDb(); renderList(); }
     else s.textContent = "Couldn't do it: " + ((d && d.error) || "unknown");
   }catch(e){ s.textContent = "Couldn't do it: " + (authMessage(e) || e.message); }
 });
@@ -9388,10 +9420,20 @@ function nmShort(raw){
   return [brand.join(" "), nm.core, pack.join(" ")].filter(Boolean).join(" ").trim() || String(raw||"").trim();
 }
 function nmBadgesHtml(tags){ return (tags&&tags.length) ? tags.map(t=>'<span class="nm-bdg '+nmTagKind(t)+'">'+esc(t)+'</span>').join("") : ""; }
+function cleanWt(s){
+  s = String(s||"").trim();
+  const m = s.match(/(\d+(?:\.\d+)?)\s*(kg|g|ml|l|oz|lb|lbs)/i);
+  if(!m) return s;
+  let num = parseFloat(m[1]); if(!isFinite(num)) return s;
+  num = Math.round(num*1000)/1000;
+  const numStr = Number.isInteger(num) ? String(num) : String(num).replace(/\.?0+$/,"");
+  let unit = m[2].toLowerCase(); if(unit==="lbs") unit="lb";
+  return numStr + unit;
+}
 function wtBadge(i){
   let w = String((i&&i.packWt)||"").trim();
   if(!w && i && i.size && /\d\s*(g|kg|ml|l|oz|lb)\b/i.test(i.size)) w = String(i.size).trim();
-  return w ? '<span class="nm-bdg pack">'+esc(w)+'</span>' : "";
+  return w ? '<span class="nm-bdg pack">'+esc(cleanWt(w))+'</span>' : "";
 }
 function nmNameHtml(name){
   const n = nmNormalize(name);

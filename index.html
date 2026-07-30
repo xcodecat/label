@@ -1511,7 +1511,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=73">
+  <link rel="manifest" href="./manifest.json?v=74">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -5414,7 +5414,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v73";
+const APP_VERSION = "v74";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6324,6 +6324,16 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
     if(f.r.kg){ f.r.qty = kg3(parseFloat(f.r.qty) || 0); renderLists(); }
   }, true);
 
+  host.addEventListener("change", e=>{
+    if(!e.target.classList.contains("s-nm")) return;
+    const box = e.target.closest(".srow"); if(!box) return;
+    const found = rowById(box.dataset.id); if(!found) return;
+    if(!found.r.plu && !found.r.code && found.r.name.trim()){
+      const cc = codeForName(found.r.name);
+      found.r.plu = cc.plu; found.r.code = cc.code;
+      if(cc.plu || cc.code) renderLists();
+    }
+  });
   host.addEventListener("input", e=>{
     const box = e.target.closest(".srow"); if(!box) return;
     const found = rowById(box.dataset.id); if(!found) return;
@@ -6362,18 +6372,50 @@ function looksLikeBarcodeItem(name){
   if(/\bpack\b/.test(n)) return true;
   return false;
 }
-function barcodeSuggest(name){
+/* The product words only — brand tag and weight/pack stripped out — so a PLU
+   search on "pco white mushroom 227g" looks for "white mushroom", not every
+   item that merely contains "white". */
+function coreProductQuery(name){
+  const p = (typeof nmNormalize==="function") ? nmNormalize(name||"") : { core:name };
+  let core = String(p.core || name || "");
+  core = core.replace(/\b\d+(?:\.\d+)?\s*(kg|g|ml|l|oz|lb|lbs)\b/ig," ")
+             .replace(/\b\d+\s?pk\b/ig," ")
+             .replace(/\bpack\b/ig," ")
+             .replace(/\s{2,}/g," ").trim();
+  return core || String(name||"");
+}
+/* Barcode matches that respect brand + ALL product words (via matchItem), then
+   narrow by weight/pack only when the user actually said one. When they don't,
+   every sensible variant (227g, 680g, 3pk…) is returned so they can pick. */
+function bcMatches(name){
   if(!name || !name.trim() || typeof searchEntries !== "function") return [];
-  const ents = searchEntries(name.trim()).filter(e=>e.code);
-  ents.sort((a,b)=> (looksLikeBarcodeItem(b.name)?1:0) - (looksLikeBarcodeItem(a.name)?1:0));
+  let ents = searchEntries(name).filter(e=>e.code);
+  const hasWt = /\b\d+(?:\.\d+)?\s*(kg|g|ml|l|oz|lb|lbs)\b/i.test(name);
+  const wantWt = hasWt ? cleanWt(name).toLowerCase() : "";
+  const pkM = name.match(/\b(\d+)\s?pk\b/i);
+  const wantPk = pkM ? pkM[1] : "";
+  if(wantWt || wantPk){
+    ents = ents.filter(e=>{
+      const hay = (String(e.name||"")+" "+String(e.packWt||"")+" "+String(e.size||"")).toLowerCase();
+      const wtOk = !wantWt || hay.indexOf(wantWt)>=0 || cleanWt(String(e.packWt||"")).toLowerCase()===wantWt;
+      const pkOk = !wantPk || new RegExp("\\b"+wantPk+"\\s?pk\\b","i").test(hay);
+      return wtOk && pkOk;
+    });
+  }
   const seen = new Set(), out = [];
-  for(const e of ents){ if(seen.has(e.code)) continue; seen.add(e.code); out.push(e); if(out.length>=6) break; }
+  for(const e of ents){ if(seen.has(e.code)) continue; seen.add(e.code); out.push(e); if(out.length>=8) break; }
   return out;
+}
+function strictBarcodeMatches(name){ return bcMatches(name); }
+function barcodeSuggest(name){
+  const out = bcMatches(name);
+  out.sort((a,b)=> (looksLikeBarcodeItem(b.name)?1:0) - (looksLikeBarcodeItem(a.name)?1:0));
+  return out.slice(0,6);
 }
 /* ---- code sheet: PLU, barcode, or one we've seen before ---- */
 function openCodeSheet(r, list){
   const known = r.name.trim() ? knownFor(r.name) : null;
-  const pairs = r.name.trim() ? pluPairs(r.name) : [];
+  const pairs = r.name.trim() ? pluPairs(coreProductQuery(r.name)) : [];
   document.getElementById("pickHead").textContent = r.name || "Pick a code";
   document.getElementById("pickNote").textContent = r.name
     ? "Produce takes a PLU; packaged goods take a barcode."
@@ -6451,7 +6493,10 @@ function knownFor(name){
 function codeForName(name){
   const k = knownFor(name);
   if(k && k.code) return { code:k.code, plu:"" };
-  const p = pluFor(name);
+  const bc = strictBarcodeMatches(name);
+  if(bc.length === 1) return { code:bc[0].code, plu:"" };   // one clear brand+name+weight match
+  if(bc.length > 1)   return { plu:"", code:"" };           // ambiguous — let them pick from the sheet
+  const p = pluFor(coreProductQuery(name));
   if(p) return { plu:p, code:"" };
   return { plu:"", code:"" };
 }

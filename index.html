@@ -1512,7 +1512,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=78">
+  <link rel="manifest" href="./manifest.json?v=79">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -5354,7 +5354,8 @@ function parseSpoken(text, defList){
       // "pounds of" as filler — so "3 kg of bananas" became "3 bananas", three
       // each, and the weight silently vanished. Read the unit before anything
       // is allowed to delete it. "of" is part of the match, not a separator.
-      let kg = null;
+      let kg = null, packWt = "";
+      const brandHit = /(^|[^a-z])(pc|pco|pcbm|nni|fm)([^a-z]|$)/i.test(chunk);
       const wm = chunk.match(RE_WEIGHT);
       if(wm){
         const mult = WEIGHT_UNITS[wm[2].toLowerCase()];
@@ -5363,7 +5364,12 @@ function parseSpoken(text, defList){
         // product name with "for" in it can't be mistaken for four.
         const n = /^[\d.,]+$/.test(wm[1]) ? parseFloat(wm[1].replace(",",".")) : NUMWORDS[wm[1]];
         if(mult !== undefined && n !== undefined){
-          kg = kg3(n * mult);
+          if(brandHit){
+            // branded packet: the weight is a pack-size badge, never a bulk amount
+            packWt = cleanWt(wm[0].replace(/\s+/g,""));
+          } else {
+            kg = kg3(n * mult);
+          }
           chunk = (chunk.slice(0, wm.index) + " " + chunk.slice(wm.index + wm[0].length)).trim();
         }
       }
@@ -5395,13 +5401,14 @@ function parseSpoken(text, defList){
       const nm = repairName(applyAlias(chunk));
       if(kg !== null){
         rememberWeighed(nm, true);            // learn it, for next time
-        return { qty: kg, kg: true, name: nm, list: cur, heard };
+        return { qty: kg, kg: true, name: nm, list: cur, heard, packWt };
       }
       // said a bare number for something you've told me sells by weight? it's kg.
-      if(nm && !packed && isWeighed(nm) && qty !== null){
-        return { qty: kg3(qty), kg: true, name: nm, list: cur, heard };
+      // never for branded packets — those are always each.
+      if(nm && !packed && !brandHit && isWeighed(nm) && qty !== null){
+        return { qty: kg3(qty), kg: true, name: nm, list: cur, heard, packWt };
       }
-      return { qty: qty === null ? 1 : Math.max(1, qty), kg: false, name: nm, list: cur, heard };
+      return { qty: qty === null ? 1 : Math.max(1, qty), kg: false, name: nm, list: cur, heard, packWt };
     })
     .filter(x=>x.name.length >= 2);
 }
@@ -5415,7 +5422,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v78";
+const APP_VERSION = "v79";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -5737,23 +5744,26 @@ function addOrMerge(list, row){
 function commitPhrase(text){
   const heard = parseSpoken(text, activeList);
   if(!heard.length) return;
-  let _pickRow = null, _pickList = "";
   heard.forEach(it=>{
-    const resolved = snapSpokenName(it.heard || it.name);
-    it.name = displayName(resolved) || it.name;
+    const resolved0 = snapSpokenName(it.heard || it.name);
+    const resolved = resolved0 + (it.packWt ? " " + it.packWt : "");
+    it.name = displayName(resolved0) || it.name;
     const cc = codeForName(resolved);
+    const isBc = !!cc.code;
     const res = addOrMerge(it.list, newRow({
       name: it.name.replace(/\b\w/g, c=>c.toUpperCase()),
-      plu: cc.plu, code: cc.code, qty: it.qty, kg: !!it.kg, heard: it.heard || ""
+      plu: cc.plu, code: cc.code,
+      qty: (isBc && it.kg) ? 1 : it.qty,
+      kg: isBc ? false : !!it.kg,
+      packWt: cc.packWt || it.packWt || "",
+      heard: it.heard || ""
     }));
     justAdded.add(res.row.id);
-    _pickRow = res.row; _pickList = it.list;
     if(res.merged) toast(res.row.name + ": " + res.was + " + " + it.qty +
                          " = " + res.row.qty + (res.row.kg ? " kg" : ""));
   });
   contCount += heard.length;
   renderLists();
-  if(heard.length === 1 && _pickRow && !_pickRow.plu && !_pickRow.code) openCodeSheet(_pickRow, _pickList);
   const first = document.querySelector(".srow.just");
   if(first) first.scrollIntoView({ behavior:"smooth", block:"nearest" });
 }
@@ -5774,21 +5784,24 @@ function commitSpoken(){
   }
   let matched = 0, elsewhere = 0;
   justAdded.clear();
-  let _pickRow = null, _pickList = "";
   heard.forEach(it=>{
-    const resolved = snapSpokenName(it.heard || it.name);
-    it.name = displayName(resolved) || it.name;
+    const resolved0 = snapSpokenName(it.heard || it.name);
+    const resolved = resolved0 + (it.packWt ? " " + it.packWt : "");
+    it.name = displayName(resolved0) || it.name;
     const cc = codeForName(resolved);      // "organic zucchini" -> 94067, or a seen barcode
     if(cc.plu || cc.code) matched++;
+    const isBc = !!cc.code;
     const res = addOrMerge(it.list, newRow({
       name: it.name.replace(/\b\w/g, c=>c.toUpperCase()),
-      plu: cc.plu, code: cc.code, qty: it.qty, kg: !!it.kg, heard: it.heard || ""
+      plu: cc.plu, code: cc.code,
+      qty: (isBc && it.kg) ? 1 : it.qty,
+      kg: isBc ? false : !!it.kg,
+      packWt: cc.packWt || it.packWt || "",
+      heard: it.heard || ""
     }));
     if(it.list === activeList) justAdded.add(res.row.id); else elsewhere++;
-    _pickRow = res.row; _pickList = it.list;
   });
   renderLists();
-  if(heard.length === 1 && _pickRow && !_pickRow.plu && !_pickRow.code) openCodeSheet(_pickRow, _pickList);
   const first = document.querySelector(".srow.just");
   if(first) first.scrollIntoView({ behavior:"smooth", block:"center" });
   const noPlu = heard.length - matched;
@@ -6117,7 +6130,7 @@ let openRow = null;                      // id of the row expanded for editing
 
 function newRow(o){
   return Object.assign({ id:"s"+Date.now()+Math.random().toString(36).slice(2,6),
-                         name:"", plu:"", code:"", qty:1, kg:false, heard:"" }, o||{});
+                         name:"", plu:"", code:"", qty:1, kg:false, packWt:"", heard:"" }, o||{});
 }
 function rowById(id){
   for(const k of ["loop","flashfood"]){
@@ -6189,6 +6202,7 @@ function rowHtml(r, key){
   const realBc = !!(r.code && !r.plu);          // a scannable barcode (not a produce PLU)
   return `<div class="srow${just}${(realBc && !open) ? " has-bc" : ""}" data-id="${r.id}">
     ${open ? "" : `<div class="s-name ${r.name?"":"blank"}${(realBc)?" wide":""}">${esc(r.name || "tap to name")}${
+        r.packWt ? '<span class="wtag">'+esc(cleanWt(r.packWt))+'</span>' : ""}${
         r.kg ? '<span class="wtag">'+esc(unitLabel())+'</span>' : ""}</div>`}
     ${(open || realBc) ? "" : `<div class="s-code ${code?"":"none"}">
         <b>${esc(code || "—")}</b>${kind?`<i>${kind}</i>`:""}</div>`}
@@ -6350,6 +6364,7 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
     if(!found.r.plu && !found.r.code && found.r.name.trim()){
       const cc = codeForName(found.r.name);
       found.r.plu = cc.plu; found.r.code = cc.code;
+      if(cc.code){ found.r.kg = false; found.r.packWt = cc.packWt || found.r.packWt || ""; }
       if(cc.plu || cc.code) renderLists();
     }
   });
@@ -6610,19 +6625,19 @@ function hasEachHint(name){
 }
 function codeForName(name){
   const k = knownFor(name);
-  if(k && k.code) return { code:k.code, plu:"" };
+  if(k && k.code) return { code:k.code, plu:"", packWt:"" };
   const eachy = hasEachHint(name) || isBarcodeException(name);
   if(eachy){
     const bc = strictBarcodeMatches(name);
-    if(bc.length === 1) return { code:bc[0].code, plu:"" };   // clear sell-by-each match
-    if(bc.length > 1)   return { plu:"", code:"" };           // ambiguous -> let them pick
+    if(bc.length === 1) return { code:bc[0].code, plu:"", packWt:cleanWt(bc[0].packWt||"") };
+    if(bc.length > 1)   return { plu:"", code:"", packWt:"" };   // ambiguous -> let them pick
     // hinted but no barcode on file -> fall through to PLU
   }
   const p = pluFor(coreProductQuery(name));      // default: the by-weight PLU (e.g. vine tomato 4664)
-  if(p) return { plu:p, code:"" };
+  if(p) return { plu:p, code:"", packWt:"" };
   const bc2 = strictBarcodeMatches(name);        // no PLU at all -> offer a lone barcode if there is one
-  if(bc2.length === 1) return { code:bc2[0].code, plu:"" };
-  return { plu:"", code:"" };
+  if(bc2.length === 1) return { code:bc2[0].code, plu:"", packWt:cleanWt(bc2[0].packWt||"") };
+  return { plu:"", code:"", packWt:"" };
 }
 
 /* ---- saved sessions ----

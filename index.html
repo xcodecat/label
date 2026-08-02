@@ -883,7 +883,8 @@
     color:var(--paper);border-radius:7px;padding:0 10px;font-size:12px;font-weight:600;
     font-family:var(--sans);cursor:pointer;min-height:38px;display:flex;align-items:center;justify-content:center}
   .s-edit .s-say,.s-edit .s-scan{min-width:38px;padding:0 8px}
-  .s-edit .s-ok{margin-left:auto;background:var(--laser);border-color:var(--laser);color:#fff}
+  .s-edit .s-cancel{margin-left:auto;background:none;border:1px solid var(--line);color:var(--muted)}
+  .s-edit .s-ok{margin-left:8px;background:var(--laser);border-color:var(--laser);color:#fff}
   .s-edit .useg{flex:none}
   .tbl-empty{font-size:12px;color:var(--muted);padding:14px 2px;font-style:italic}
   /* saved sessions */
@@ -1511,7 +1512,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=75">
+  <link rel="manifest" href="./manifest.json?v=76">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -5414,7 +5415,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v75";
+const APP_VERSION = "v76";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6202,6 +6203,7 @@ function rowHtml(r, key){
             <button type="button" class="s-uKG${r.kg?" on":""}" data-u="kg" title="By weight">${esc(unitLabel())}</button>
           </div>
           <button class="s-move">→ ${key==="loop"?"Flash":"Loop"}</button>
+          <button class="s-cancel">Cancel</button>
           <button class="s-ok">Done</button>
         </div>
       </div>` : ""}
@@ -6286,6 +6288,13 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
       lists[list] = lists[list].filter(x=>x.id!==r.id);
       renderLists();
       toastUndo("Removed " + (r.name||"line"), ()=>{ lists[list].splice(idx,0,r); renderLists(); });
+      return;
+    }
+    if(e.target.classList.contains("s-cancel")){
+      const idx = lists[list].indexOf(r);
+      lists[list] = lists[list].filter(x=>x.id!==r.id);
+      openRow = null; renderLists();
+      toastUndo("Cancelled " + (r.name||"line"), ()=>{ lists[list].splice(idx,0,r); renderLists(); });
       return;
     }
     if(e.target.classList.contains("qm")){
@@ -6381,6 +6390,8 @@ function coreProductQuery(name){
   core = core.replace(/\b\d+(?:\.\d+)?\s*(kg|g|ml|l|oz|lb|lbs)\b/ig," ")
              .replace(/\b\d+\s?pk\b/ig," ")
              .replace(/\bpack\b/ig," ")
+             .replace(/\bbag\b/ig," ")
+             .replace(/\beach\b/ig," ")
              .replace(/\s{2,}/g," ").trim();
   return core || String(name||"");
 }
@@ -6389,7 +6400,8 @@ function coreProductQuery(name){
    every sensible variant (227g, 680g, 3pk…) is returned so they can pick. */
 function bcMatches(name){
   if(!name || !name.trim() || typeof searchEntries !== "function") return [];
-  let ents = searchEntries(name).filter(e=>e.code);
+  const q = String(name).replace(/\bbag\b/ig," ").replace(/\beach\b/ig," ").replace(/\s{2,}/g," ").trim();
+  let ents = searchEntries(q).filter(e=>e.code);
   const hasWt = /\b\d+(?:\.\d+)?\s*(kg|g|ml|l|oz|lb|lbs)\b/i.test(name);
   const wantWt = hasWt ? cleanWt(name).toLowerCase() : "";
   const pkM = name.match(/\b(\d+)\s?pk\b/i);
@@ -6490,14 +6502,38 @@ function knownFor(name){
 /* Naming an item should pull back whatever we already know about it. A barcode
    you scanned once is a stronger, more specific signal than a generic produce
    PLU, so if we've seen this name carry a barcode before, that wins. */
+// Items sold by each (barcode) usually announce themselves: a brand tag, a pack
+// count (3pk/6pk), a weight in the name (1lb/2.27kg), the word "pack" or "bag",
+// or an explicit "each". A few (e.g. "cauliflower organic") don't — those are
+// listed as exceptions. Without any of these, the by-weight PLU is meant.
+const BARCODE_EXCEPTIONS = [["cauliflower","organic"]];
+function isBarcodeException(name){
+  const n = String(name||"").toLowerCase();
+  return BARCODE_EXCEPTIONS.some(words => words.every(w => n.indexOf(w) >= 0));
+}
+function hasEachHint(name){
+  const n = String(name||"").toLowerCase();
+  return /(^|[^a-z])(pc|pco|pcbm|nni|fm)([^a-z]|$)/.test(n)
+      || /\b\d+\s?pk\b/.test(n)
+      || /\b\d+(?:\.\d+)?\s?(lb|lbs|kg|g|ml|l|oz)\b/.test(n)
+      || /\bpack\b/.test(n)
+      || /\bbag\b/.test(n)
+      || /\beach\b/.test(n);
+}
 function codeForName(name){
   const k = knownFor(name);
   if(k && k.code) return { code:k.code, plu:"" };
-  const bc = strictBarcodeMatches(name);
-  if(bc.length === 1) return { code:bc[0].code, plu:"" };   // one clear brand+name+weight match
-  if(bc.length > 1)   return { plu:"", code:"" };           // ambiguous — let them pick from the sheet
-  const p = pluFor(coreProductQuery(name));
+  const eachy = hasEachHint(name) || isBarcodeException(name);
+  if(eachy){
+    const bc = strictBarcodeMatches(name);
+    if(bc.length === 1) return { code:bc[0].code, plu:"" };   // clear sell-by-each match
+    if(bc.length > 1)   return { plu:"", code:"" };           // ambiguous -> let them pick
+    // hinted but no barcode on file -> fall through to PLU
+  }
+  const p = pluFor(coreProductQuery(name));      // default: the by-weight PLU (e.g. vine tomato 4664)
   if(p) return { plu:p, code:"" };
+  const bc2 = strictBarcodeMatches(name);        // no PLU at all -> offer a lone barcode if there is one
+  if(bc2.length === 1) return { code:bc2[0].code, plu:"" };
   return { plu:"", code:"" };
 }
 

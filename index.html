@@ -1512,7 +1512,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=76">
+  <link rel="manifest" href="./manifest.json?v=77">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -5415,7 +5415,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v76";
+const APP_VERSION = "v77";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -5738,7 +5738,9 @@ function commitPhrase(text){
   const heard = parseSpoken(text, activeList);
   if(!heard.length) return;
   heard.forEach(it=>{
-    const cc = codeForName(it.name);
+    const resolved = snapSpokenName(it.heard || it.name);
+    it.name = displayName(resolved) || it.name;
+    const cc = codeForName(resolved);
     const res = addOrMerge(it.list, newRow({
       name: it.name.replace(/\b\w/g, c=>c.toUpperCase()),
       plu: cc.plu, code: cc.code, qty: it.qty, kg: !!it.kg, heard: it.heard || ""
@@ -5770,7 +5772,9 @@ function commitSpoken(){
   let matched = 0, elsewhere = 0;
   justAdded.clear();
   heard.forEach(it=>{
-    const cc = codeForName(it.name);       // "organic zucchini" -> 94067, or a seen barcode
+    const resolved = snapSpokenName(it.heard || it.name);
+    it.name = displayName(resolved) || it.name;
+    const cc = codeForName(resolved);      // "organic zucchini" -> 94067, or a seen barcode
     if(cc.plu || cc.code) matched++;
     const res = addOrMerge(it.list, newRow({
       name: it.name.replace(/\b\w/g, c=>c.toUpperCase()),
@@ -6398,6 +6402,75 @@ function coreProductQuery(name){
 /* Barcode matches that respect brand + ALL product words (via matchItem), then
    narrow by weight/pack only when the user actually said one. When they don't,
    every sensible variant (227g, 680g, 3pk…) is returned so they can pick. */
+let _knownNamesCache = null, _knownNamesAt = 0;
+function knownProductNames(){
+  const now = Date.now();
+  if(_knownNamesCache && (now - _knownNamesAt) < 30000) return _knownNamesCache;
+  const set = new Set();
+  const add = nm => { const c = coreProductQuery(nm||"").toLowerCase().trim(); if(c.length >= 3) set.add(c); };
+  if(Array.isArray(PLU)) PLU.forEach(e=> add(e.name));
+  if(typeof CATALOG !== "undefined") CATALOG.forEach(c=> add(c.name));
+  try{ const bm = dbBcMap(); for(const k in bm) add(bm[k].name); }catch(e){}
+  try{ const pm = dbPluMap(); for(const k in pm) add(pm[k].name); }catch(e){}
+  _knownNamesCache = Array.from(set); _knownNamesAt = now;
+  return _knownNamesCache;
+}
+function _lev(a,b){
+  const m=a.length, n=b.length; if(!m) return n; if(!n) return m;
+  let prev = Array.from({length:n+1}, (_,j)=>j), cur = new Array(n+1);
+  for(let i=1;i<=m;i++){ cur[0]=i;
+    for(let j=1;j<=n;j++) cur[j]=Math.min(prev[j]+1, cur[j-1]+1, prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    [prev,cur]=[cur,prev];
+  }
+  return prev[n];
+}
+function _sim(a,b){ const L=Math.max(a.length,b.length)||1; return 1 - _lev(a,b)/L; }
+// Return the closest known product name, or "" if nothing's close enough.
+function snapToKnown(core){
+  core = String(core||"").toLowerCase().trim();
+  if(core.length < 3) return "";
+  const names = knownProductNames();
+  if(names.indexOf(core) >= 0) return core;
+  const cw = core.split(/\s+/).filter(Boolean), cwSet = new Set(cw);
+  let cand = names.filter(nm => nm.split(/\s+/).some(w=>cwSet.has(w)));
+  if(!cand.length) cand = names;
+  let best="", bestScore=0;
+  for(const nm of cand){
+    const nw = nm.split(/\s+/).filter(Boolean);
+    const common = cw.filter(w=> nw.indexOf(w) >= 0).length;
+    const overlap = common / Math.max(cw.length, nw.length);
+    const score = overlap * 0.55 + _sim(core, nm) * 0.45;
+    if(score > bestScore){ bestScore = score; best = nm; }
+  }
+  return bestScore >= 0.6 ? best : "";
+}
+// Correct a spoken name: fix "each"/"peach" mishearing, snap the product words
+// to a real DB name, and keep brand + weight + each-hints attached.
+function snapSpokenName(raw){
+  let n = String(raw||"").toLowerCase().trim();
+  const w = n.split(/\s+/).filter(Boolean);
+  let extraEach = false;
+  if(w.length >= 2 && /^peach(es)?$/.test(w[w.length-1])){ extraEach = true; w.pop(); n = w.join(" "); }
+  const nm = (typeof nmNormalize === "function") ? nmNormalize(n) : { core:n, tags:[] };
+  const brand = nm.tags.filter(t=> nmTagKind(t) === "brand");
+  const wtM = n.match(/\b\d+(?:\.\d+)?\s?(lb|lbs|kg|g|ml|l|oz)\b/i);
+  const pkM = n.match(/\b\d+\s?pk\b/i);
+  const kws = [];
+  if(/\bbag\b/.test(n)) kws.push("bag");
+  if(/\beach\b/.test(n) || extraEach) kws.push("each");
+  if(/\bpack\b/.test(n)) kws.push("pack");
+  const core = coreProductQuery(n);
+  const snapped = snapToKnown(core) || core;
+  const parts = [];
+  brand.forEach(b=> parts.push(b));
+  parts.push(snapped);
+  if(wtM) parts.push(wtM[0].replace(/\s+/g,""));
+  if(pkM) parts.push(pkM[0].replace(/\s+/g,""));
+  kws.forEach(k=> parts.push(k));
+  return parts.join(" ").replace(/\s{2,}/g," ").trim();
+}
+// The name shown on the row: keywords dropped, brand/weight kept.
+function displayName(s){ return String(s||"").replace(/\b(bag|each)\b/ig," ").replace(/\s{2,}/g," ").trim(); }
 function bcMatches(name){
   if(!name || !name.trim() || typeof searchEntries !== "function") return [];
   const q = String(name).replace(/\bbag\b/ig," ").replace(/\beach\b/ig," ").replace(/\s{2,}/g," ").trim();

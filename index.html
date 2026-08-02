@@ -1512,7 +1512,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=77">
+  <link rel="manifest" href="./manifest.json?v=78">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -5415,7 +5415,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v77";
+const APP_VERSION = "v78";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -5737,6 +5737,7 @@ function addOrMerge(list, row){
 function commitPhrase(text){
   const heard = parseSpoken(text, activeList);
   if(!heard.length) return;
+  let _pickRow = null, _pickList = "";
   heard.forEach(it=>{
     const resolved = snapSpokenName(it.heard || it.name);
     it.name = displayName(resolved) || it.name;
@@ -5746,11 +5747,13 @@ function commitPhrase(text){
       plu: cc.plu, code: cc.code, qty: it.qty, kg: !!it.kg, heard: it.heard || ""
     }));
     justAdded.add(res.row.id);
+    _pickRow = res.row; _pickList = it.list;
     if(res.merged) toast(res.row.name + ": " + res.was + " + " + it.qty +
                          " = " + res.row.qty + (res.row.kg ? " kg" : ""));
   });
   contCount += heard.length;
   renderLists();
+  if(heard.length === 1 && _pickRow && !_pickRow.plu && !_pickRow.code) openCodeSheet(_pickRow, _pickList);
   const first = document.querySelector(".srow.just");
   if(first) first.scrollIntoView({ behavior:"smooth", block:"nearest" });
 }
@@ -5771,6 +5774,7 @@ function commitSpoken(){
   }
   let matched = 0, elsewhere = 0;
   justAdded.clear();
+  let _pickRow = null, _pickList = "";
   heard.forEach(it=>{
     const resolved = snapSpokenName(it.heard || it.name);
     it.name = displayName(resolved) || it.name;
@@ -5781,8 +5785,10 @@ function commitSpoken(){
       plu: cc.plu, code: cc.code, qty: it.qty, kg: !!it.kg, heard: it.heard || ""
     }));
     if(it.list === activeList) justAdded.add(res.row.id); else elsewhere++;
+    _pickRow = res.row; _pickList = it.list;
   });
   renderLists();
+  if(heard.length === 1 && _pickRow && !_pickRow.plu && !_pickRow.code) openCodeSheet(_pickRow, _pickList);
   const first = document.querySelector(".srow.just");
   if(first) first.scrollIntoView({ behavior:"smooth", block:"center" });
   const noPlu = heard.length - matched;
@@ -6500,7 +6506,16 @@ function barcodeSuggest(name){
 /* ---- code sheet: PLU, barcode, or one we've seen before ---- */
 function openCodeSheet(r, list){
   const known = r.name.trim() ? knownFor(r.name) : null;
-  const pairs = r.name.trim() ? pluPairs(coreProductQuery(r.name)) : [];
+  let pairs = r.name.trim() ? pluPairs(coreProductQuery(r.name)) : [];
+  { const _cw = coreProductQuery(r.name).toLowerCase().split(/\s+/).filter(Boolean);
+    if(_cw.length > 1){
+      const inc = (pp,w) => String(pp.name||"").toLowerCase().indexOf(w) >= 0;
+      const all = pairs.filter(pp => _cw.every(w => inc(pp,w)));
+      if(all.length){ pairs = all; }                 // exact "white mushroom"
+      else { const head = _cw[_cw.length-1];          // else keep to the noun: mushrooms only
+             const hh = pairs.filter(pp => inc(pp, head));
+             if(hh.length) pairs = hh; }
+    } }
   document.getElementById("pickHead").textContent = r.name || "Pick a code";
   document.getElementById("pickNote").textContent = r.name
     ? "Produce takes a PLU; packaged goods take a barcode."

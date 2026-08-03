@@ -440,7 +440,7 @@
   .pick-row .pn{font-size:14px;font-weight:600;color:var(--paper);margin-bottom:8px;line-height:1.3}
   .pick-row .pn .own{font-size:9px;background:var(--laser);color:#fff;padding:2px 5px;
     border-radius:3px;margin-left:6px;letter-spacing:.06em;vertical-align:middle}
-  .pick-row .pn .eachtag{font-size:9px;background:#e7e3d5;color:var(--muted);padding:2px 5px;
+  .pick-row .pn .eachtag{font-size:11px;font-weight:700;background:#2a2118;color:#f0c98a;padding:2px 6px;
     border-radius:3px;margin-left:6px;letter-spacing:.06em;vertical-align:middle}
   .pick-btns{display:flex;gap:8px}
   .pick-btns button{flex:1;border:1.5px solid #c9c4b4;background:#fff;border-radius:7px;
@@ -847,6 +847,13 @@
     min-height:44px;display:flex;align-items:center;gap:4px;min-width:0;overflow:hidden}
   .s-nmtext{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
   .s-name .wtag{flex:none;margin-left:0}
+  .s-name,.s-nmtext{-webkit-user-select:none;user-select:none}
+  .app-dlg{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;z-index:10000;padding:26px}
+  .app-dlg.show{display:flex}
+  .app-dlg-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;max-width:340px;width:100%;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+  .app-dlg-card h3{margin:0 0 9px;font-size:18px;color:var(--paper)}
+  .app-dlg-card p{margin:0 0 18px;color:var(--muted);font-size:14px;line-height:1.45}
+  .app-dlg-btns{display:flex;gap:10px;justify-content:flex-end}
   .s-name:active{opacity:.6}
   .s-name.blank{color:var(--muted);font-style:italic}
   /* PLU and barcode chips are the same fixed width so the column lines up */
@@ -928,8 +935,8 @@
   .sess-f button{flex:1;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);
     border-radius:7px;padding:8px;font-size:11px;font-family:var(--sans);cursor:pointer}
   .expiry{font-size:10px;color:var(--muted);font-style:italic;margin-bottom:6px}
-  .wtag{display:inline-block;background:var(--surface-2);border:1px solid var(--line);
-    color:var(--muted);border-radius:3px;padding:0 3px;font-size:8px;margin-left:4px;
+  .wtag{display:inline-block;background:#2a2118;border:1px solid #5a4a33;
+    color:#f0c98a;border-radius:4px;padding:1px 6px;font-size:11px;margin-left:5px;font-weight:700;
     font-family:var(--sans);letter-spacing:.04em;vertical-align:middle}
   /* ---------- top section switcher ---------- */
   .htop{display:flex;align-items:baseline;justify-content:space-between}
@@ -1086,7 +1093,7 @@
   .nm-bdg{display:inline-block;margin:0;font-family:var(--mono);font-size:8px;font-weight:700;
     letter-spacing:.04em;border-radius:5px;padding:1px 5px;vertical-align:middle;line-height:1.5;white-space:nowrap}
   .nm-bdg.brand{color:var(--laser);border:1px solid #4a2e28;background:#2a1a17;margin-right:5px}
-  .nm-bdg.pack{color:#C8C2B7;border:1px solid #3A4148;background:var(--surface-2);margin-left:5px}
+  .nm-bdg.pack{color:#f0c98a;border:1px solid #5a4a33;background:#2a2118;margin-left:5px;font-size:10px;padding:1px 5px}
   .nm-bdg.org{color:#3ecf8e;border:1px solid #1f5c3f;background:#14261d;margin-right:5px}
   .cat-wrap{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
   .cat-h{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--muted);margin:0 0 8px}
@@ -1513,7 +1520,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=81">
+  <link rel="manifest" href="./manifest.json?v=82">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -3383,6 +3390,19 @@ function downloadCsv(rows, filename){
 /* ================= toast ================= */
 let toastTimer;
 let undoTimer = null;
+function appConfirm(title, msg, okLabel, onOk){
+  const ov = document.getElementById("appDlg");
+  if(!ov){ if(confirm(msg)) onOk(); return; }
+  document.getElementById("appDlgTitle").textContent = title || "";
+  document.getElementById("appDlgMsg").textContent = msg || "";
+  const okB = document.getElementById("appDlgOk"), caB = document.getElementById("appDlgCancel");
+  okB.textContent = okLabel || "OK";
+  ov.classList.add("show");
+  const close = ()=> ov.classList.remove("show");
+  okB.onclick = ()=>{ close(); onOk(); };
+  caB.onclick = close;
+  ov.onclick = (e)=>{ if(e.target === ov) close(); };
+}
 function toastUndo(msg, undo){
   const t = document.getElementById("toast");
   t.innerHTML = esc(msg) + ' <button id="undoBtn">Undo</button>';
@@ -5583,7 +5603,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v81";
+const APP_VERSION = "v82";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -5910,6 +5930,7 @@ function commitPhrase(text){
     const resolved = resolved0 + (it.packWt ? " " + it.packWt : "");
     it.name = displayName(resolved0) || it.name;
     const cc = codeForName(resolved);
+    if(cc.code && cc.name) it.name = displayName(cc.name);
     const isBc = !!cc.code;
     const res = addOrMerge(it.list, newRow({
       name: it.name.replace(/\b\w/g, c=>c.toUpperCase()),
@@ -5950,6 +5971,7 @@ function commitSpoken(){
     const resolved = resolved0 + (it.packWt ? " " + it.packWt : "");
     it.name = displayName(resolved0) || it.name;
     const cc = codeForName(resolved);      // "organic zucchini" -> 94067, or a seen barcode
+    if(cc.code && cc.name) it.name = displayName(cc.name);
     if(cc.plu || cc.code) matched++;
     const isBc = !!cc.code;
     const res = addOrMerge(it.list, newRow({
@@ -6418,7 +6440,7 @@ function renderRowBarcodes(){
 }
 
 document.getElementById("btnScrapRow").addEventListener("click", ()=>{
-  const r = newRow(); lists[activeList].push(r); openRow = r.id; renderLists();
+  const r = newRow(); r._new = true; lists[activeList].push(r); openRow = r.id; renderLists();
 });
 
 document.getElementById("btnScrapClear").addEventListener("click", ()=>{
@@ -6426,18 +6448,20 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
   if(!n) return toast("Nothing to clear");
   // Named, counted, and undoable. A morning's scrap is an hour of walking —
   // "are you sure?" is not enough on its own.
-  if(!confirm("Clear all " + n + " line(s) from " + LIST_META[activeList].label + "?\n\n" +
-              "They haven't been saved. You'll get one chance to undo.")) return;
-  const backup = lists[activeList].slice();
-  const which = activeList;
-  lists[which] = [];
-  justAdded.clear();
-  renderLists();
-  toastUndo("Cleared " + n + " line(s)", ()=>{
-    lists[which] = backup;
-    renderLists();
-    toast("Put back");
-  });
+  appConfirm("Clear all?",
+    "Clear all " + n + " line(s) from " + LIST_META[activeList].label + "? They haven't been saved \u2014 you'll get one chance to undo.",
+    "Clear all", ()=>{
+      const which = activeList;
+      const backup = lists[which].slice();
+      lists[which] = [];
+      justAdded.clear();
+      renderLists();
+      toastUndo("Cleared " + n + " line(s)", ()=>{
+        lists[which] = backup.slice();
+        renderLists();
+        toast("Put back");
+      });
+    });
 });
 
 ["tblActive"].forEach(id=>{
@@ -6448,7 +6472,7 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
     const found = rowById(box.dataset.id); if(!found) return;
     const { r, list } = found;
 
-    if(e.target.classList.contains("s-name")){ openRow = r.id; renderLists(); return; }
+    if(e.target.classList.contains("s-name")){ if(!r._new) r._snap = { name:r.name, plu:r.plu, code:r.code, qty:r.qty, kg:r.kg, packWt:r.packWt }; openRow = r.id; renderLists(); return; }
     if(e.target.classList.contains("s-ok")){
       // you just told me what that mangled phrase actually meant — remember it
       if(r.heard && r.name.trim()){
@@ -6476,10 +6500,15 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
       return;
     }
     if(e.target.classList.contains("s-cancel")){
-      const idx = lists[list].indexOf(r);
-      lists[list] = lists[list].filter(x=>x.id!==r.id);
-      openRow = null; renderLists();
-      toastUndo("Cancelled " + (r.name||"line"), ()=>{ lists[list].splice(idx,0,r); renderLists(); });
+      if(r._new || (!r.name && !r.plu && !r.code)){
+        const idx = lists[list].indexOf(r);
+        lists[list] = lists[list].filter(x=>x.id!==r.id);
+        openRow = null; renderLists();
+        toastUndo("Cancelled " + (r.name||"line"), ()=>{ lists[list].splice(idx,0,r); renderLists(); });
+      } else {
+        if(r._snap){ Object.assign(r, r._snap); r._snap = null; }
+        openRow = null; renderLists();
+      }
       return;
     }
     if(e.target.classList.contains("qm")){
@@ -6525,7 +6554,7 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
     if(!found.r.plu && !found.r.code && found.r.name.trim()){
       const cc = codeForName(found.r.name);
       found.r.plu = cc.plu; found.r.code = cc.code;
-      if(cc.code){ found.r.kg = false; found.r.packWt = cc.packWt || found.r.packWt || ""; }
+      if(cc.code){ found.r.kg = false; found.r.packWt = cc.packWt || found.r.packWt || ""; if(cc.name) found.r.name = displayName(cc.name); }
       if(cc.plu || cc.code) renderLists();
     }
   });
@@ -6574,7 +6603,7 @@ function coreProductQuery(name){
   const p = (typeof nmNormalize==="function") ? nmNormalize(name||"") : { core:name };
   let core = String(p.core || name || "");
   core = core.replace(/\b\d+(?:\.\d+)?\s*(kg|g|ml|l|oz|lb|lbs)\b/ig," ")
-             .replace(/\b\d+\s?pk\b/ig," ")
+             .replace(/\b\d+\s?(pk|ct)\b/ig," ")
              .replace(/\bpack\b/ig," ")
              .replace(/\bbag\b/ig," ")
              .replace(/\beach\b/ig," ")
@@ -6659,13 +6688,13 @@ function bcMatches(name){
   let ents = searchEntries(q).filter(e=>e.code);
   const hasWt = /\b\d+(?:\.\d+)?\s*(kg|g|ml|l|oz|lb|lbs)\b/i.test(name);
   const wantWt = hasWt ? cleanWt(name).toLowerCase() : "";
-  const pkM = name.match(/\b(\d+)\s?pk\b/i);
-  const wantPk = pkM ? pkM[1] : "";
+  const pkM = name.match(/\b(\d+)\s?(pk|ct)\b/i);
+  const wantPk = pkM ? (pkM[1]+pkM[2].toLowerCase()) : "";
   if(wantWt || wantPk){
     ents = ents.filter(e=>{
       const hay = (String(e.name||"")+" "+String(e.packWt||"")+" "+String(e.size||"")).toLowerCase();
       const wtOk = !wantWt || hay.indexOf(wantWt)>=0 || cleanWt(String(e.packWt||"")).toLowerCase()===wantWt;
-      const pkOk = !wantPk || new RegExp("\\b"+wantPk+"\\s?pk\\b","i").test(hay);
+      const pkOk = !wantPk || new RegExp("\\b"+wantPk.replace(/(pk|ct)$/,"")+"\\s?"+wantPk.slice(-2)+"\\b","i").test(hay);
       return wtOk && pkOk;
     });
   }
@@ -6788,11 +6817,18 @@ function isBarcodeException(name){
 function hasEachHint(name){
   const n = String(name||"").toLowerCase();
   return /(^|[^a-z])(pc|pco|pcbm|nni|fm)([^a-z]|$)/.test(n)
-      || /\b\d+\s?pk\b/.test(n)
+      || /\b\d+\s?(pk|ct)\b/.test(n)
       || /\b\d+(?:\.\d+)?\s?(lb|lbs|kg|g|ml|l|oz)\b/.test(n)
       || /\bpack\b/.test(n)
       || /\bbag\b/.test(n)
       || /\beach\b/.test(n);
+}
+function nameForCode(code){
+  code = String(code);
+  if(typeof STORE_ITEMS !== "undefined"){ const it = STORE_ITEMS.find(x=>x.t==="bc" && String(x.k)===code); if(it) return (it.b?it.b+" ":"")+it.n; }
+  const b = dbBcMap()[code]; if(b && b.name) return (b.brand?b.brand+" ":"")+b.name;
+  if(typeof CAT_BY_CODE !== "undefined" && CAT_BY_CODE.get){ const c = CAT_BY_CODE.get(code); if(c && c.name) return (c.brand?c.brand+" ":"")+c.name; }
+  return "";
 }
 function storeMeta(key, isPlu){
   key = String(key);
@@ -6808,9 +6844,9 @@ function codeForName(name){
   const eachy = hasEachHint(name) || isBarcodeException(name);
   if(eachy){
     const k = knownFor(name);
-    if(k && k.code) return { code:k.code, plu:"", packWt:cleanWt(storeMeta(k.code,false).packWt||""), unit:"ea" };
+    if(k && k.code) return { code:k.code, plu:"", packWt:cleanWt(storeMeta(k.code,false).packWt||""), unit:"ea", name:nameForCode(k.code) };
     const bc = strictBarcodeMatches(name);
-    if(bc.length === 1) return { code:bc[0].code, plu:"", packWt:cleanWt(bc[0].packWt||""), unit:"ea" };
+    if(bc.length === 1) return { code:bc[0].code, plu:"", packWt:cleanWt(bc[0].packWt||""), unit:"ea", name:(bc[0].brand?bc[0].brand+" ":"")+bc[0].name };
     if(bc.length > 1)   return { plu:"", code:"", packWt:"", unit:"" };   // ambiguous -> let them pick
     // hinted but no barcode on file -> fall through to PLU
   }
@@ -6818,7 +6854,7 @@ function codeForName(name){
   if(p){ const meta = storeMeta(p, true); return { plu:p, code:"", packWt:cleanWt(meta.packWt||""), unit:meta.unit }; }
   if(!eachy){
     const k = knownFor(name);
-    if(k && k.code && !isWeighed(name)) return { code:k.code, plu:"", packWt:"", unit:"ea" };
+    if(k && k.code && !isWeighed(name)) return { code:k.code, plu:"", packWt:cleanWt(storeMeta(k.code,false).packWt||""), unit:"ea", name:nameForCode(k.code) };
   }
   return { plu:"", code:"", packWt:"", unit:"" };
 }
@@ -7136,8 +7172,8 @@ document.getElementById("btnSyncStore").addEventListener("click", async ()=>{
   if(typeof STORE_ITEMS === "undefined") return;
   s.textContent = "Syncing store items…";
   const items = STORE_ITEMS.map(it => it.t === "bc"
-    ? { kind:"bc",  row:{ barcode:it.k, brand:it.b, name:it.n, packWt:it.w, unit:it.u, origin:it.o, store:"YES", caseCount:it.c } }
-    : { kind:"plu", row:{ plu:it.k,     brand:it.b, name:it.n, packWt:it.w, unit:it.u, origin:it.o, store:"YES", caseCount:it.c } });
+    ? { kind:"bc",  row:{ barcode:it.k, brand:it.b, name:it.n, packWt:(it.w||"").toUpperCase(), unit:it.u, origin:it.o, store:"YES", caseCount:it.c } }
+    : { kind:"plu", row:{ plu:it.k,     brand:it.b, name:it.n, packWt:(it.w||"").toUpperCase(), unit:it.u, origin:it.o, store:"YES", caseCount:it.c } });
   try{
     const d = await callProxy({ action:"dbBulkUpsert", items });
     if(d && d.ok){ s.textContent = "Synced " + items.length + " store items to the Sheet."; await pullDb(); renderList(); }
@@ -9803,13 +9839,13 @@ function nmShort(raw){
 function nmBadgesHtml(tags){ return (tags&&tags.length) ? tags.map(t=>'<span class="nm-bdg '+nmTagKind(t)+'">'+esc(t)+'</span>').join("") : ""; }
 function cleanWt(s){
   s = String(s||"").trim();
-  const m = s.match(/(\d+(?:\.\d+)?)\s*(kg|g|ml|l|oz|lb|lbs)/i);
-  if(!m) return s;
-  let num = parseFloat(m[1]); if(!isFinite(num)) return s;
+  const m = s.match(/(\d+(?:\.\d+)?)\s*(kg|lbs|lb|oz|ml|g|l)\b/i);
+  if(!m) return s.toUpperCase();
+  let num = parseFloat(m[1]); if(!isFinite(num)) return s.toUpperCase();
   num = Math.round(num*1000)/1000;
   const numStr = Number.isInteger(num) ? String(num) : String(num).replace(/\.?0+$/,"");
   let unit = m[2].toLowerCase(); if(unit==="lbs") unit="lb";
-  return numStr + unit;
+  return (numStr + unit).toUpperCase();
 }
 function packBadge(s){
   s = String(s||"").trim(); if(!s) return "";
@@ -11053,5 +11089,15 @@ document.getElementById("btnClear").addEventListener("click", ()=>{
   }
 });
 </script>
+  <div class="app-dlg" id="appDlg">
+    <div class="app-dlg-card">
+      <h3 id="appDlgTitle"></h3>
+      <p id="appDlgMsg"></p>
+      <div class="app-dlg-btns">
+        <button class="btn btn-ghost" id="appDlgCancel">Cancel</button>
+        <button class="btn btn-primary" id="appDlgOk">OK</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

@@ -374,7 +374,7 @@
     font-size:11px;letter-spacing:.06em;text-align:center;
     padding:calc(6px + env(safe-area-inset-top)) 10px 6px}
   .offbar.hidden{display:none}
-  .toast.with-undo{display:flex;align-items:center;gap:12px}
+  .toast.with-undo{display:flex;align-items:center;gap:12px;pointer-events:auto}
   .toast button{background:none;border:1px solid currentColor;color:inherit;border-radius:5px;
     padding:4px 9px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
     cursor:pointer;font-family:var(--sans)}
@@ -854,6 +854,8 @@
   .app-dlg-card h3{margin:0 0 9px;font-size:18px;color:var(--paper)}
   .app-dlg-card p{margin:0 0 18px;color:var(--muted);font-size:14px;line-height:1.45}
   .app-dlg-btns{display:flex;gap:10px;justify-content:flex-end}
+  .app-dlg .btn.go{background:var(--ok);border:1px solid var(--ok);color:#08130d;font-weight:700}
+  .app-dlg .btn.stop{background:none;border:1px solid var(--laser);color:var(--laser);font-weight:700}
   .s-name:active{opacity:.6}
   .s-name.blank{color:var(--muted);font-style:italic}
   /* PLU and barcode chips are the same fixed width so the column lines up */
@@ -1520,7 +1522,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=82">
+  <link rel="manifest" href="./manifest.json?v=84">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2795,27 +2797,6 @@ const PRODUCT_CATALOG_RAW = [
 ["20325816","Berry Boost","","6","6x946.000ML","Bolthouse"],
 ["20101393010","Bittermelon","","7","1x1.000KG",""],
 ["20080137003","Blueberries Pint","411117554032","12","1x340.000G","",1],
-["", "Peppers Sweet Mixed 2.5LB", "06038315980", "", "", "NNI", 0, "ea"],
-["", "Peppers Sweet XL 3CT", "06148306450", "", "", "FM", 0, "ea"],
-["", "Live Lettuce Trio 1CT", "06038321256", "", "", "PC", 0, "ea"],
-["", "Live Lettuce Boston 1CT", "06038300661", "", "", "PC", 0, "ea"],
-["", "Live Lettuce Green 1CT", "06038321255", "", "", "PC", 0, "ea"],
-["", "Live Lettuce Red 1CT", "06038321254", "", "", "PC", 0, "ea"],
-["", "Live Lettuce Green 2CT", "06038300357", "", "", "PC", 0, "ea"],
-["", "Lettuce Iceberg", "03338365002", "", "", "", 0, "ea"],
-["", "Romaine Hearts 6PK", "62755700030", "", "", "", 0, "ea"],
-["", "Romaine Heart 3PK", "03338365162", "", "", "", 0, "ea"],
-["", "Broccolini", "07266860006", "", "", "", 0, "ea"],
-["", "Celery Hearts", "03338365301", "", "", "", 0, "ea"],
-["", "Radish 1LB", "03338367002", "", "", "", 0, "ea"],
-["", "Duda Celery Sticks 1LB US", "07315015201", "", "", "", 0, "ea"],
-["", "Beet 2LB", "03338370219", "", "", "", 0, "ea"],
-["", "Stew Pack 2.27KG", "62071600002", "", "", "", 0, "ea"],
-["", "Rutabaga 5LB", "03338345955", "", "", "", 0, "ea"],
-["", "Parsnip 1LB", "03338370040", "", "", "", 0, "ea"],
-["", "Broccoli Crown 28", "87417800001", "", "", "", 0, "ea"],
-["", "Cauliflower Organic", "07357482000", "", "", "", 0, "ea"],
-["", "Zucchini", "06038321461", "", "", "NNI", 0, "ea"]
 ];
 const STORE_ITEMS = [
 {t:"bc",k:"060383851712",b:"",n:"Apple Cortland",w:"4lb",u:"ea",o:"Canada",c:""},
@@ -3390,17 +3371,21 @@ function downloadCsv(rows, filename){
 /* ================= toast ================= */
 let toastTimer;
 let undoTimer = null;
-function appConfirm(title, msg, okLabel, onOk){
+function appConfirm(title, msg, okLabel, onOk, opts){
+  opts = opts || {};
   const ov = document.getElementById("appDlg");
-  if(!ov){ if(confirm(msg)) onOk(); return; }
+  if(!ov){ if(confirm(msg)) onOk(); else if(opts.onCancel) opts.onCancel(); return; }
   document.getElementById("appDlgTitle").textContent = title || "";
   document.getElementById("appDlgMsg").textContent = msg || "";
   const okB = document.getElementById("appDlgOk"), caB = document.getElementById("appDlgCancel");
   okB.textContent = okLabel || "OK";
+  okB.className = "btn " + (opts.okClass || "btn-primary");
+  caB.textContent = opts.cancelLabel || "Cancel";
+  caB.className = "btn " + (opts.cancelClass || "btn-ghost");
   ov.classList.add("show");
   const close = ()=> ov.classList.remove("show");
   okB.onclick = ()=>{ close(); onOk(); };
-  caB.onclick = close;
+  caB.onclick = ()=>{ close(); if(opts.onCancel) opts.onCancel(); };
   ov.onclick = (e)=>{ if(e.target === ov) close(); };
 }
 function toastUndo(msg, undo){
@@ -5603,7 +5588,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v82";
+const APP_VERSION = "v84";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6302,10 +6287,11 @@ function maybeResumeWip(){
   if(_wipAsked) return; _wipAsked = true;
   const n = lists.loop.length + lists.flashfood.length;
   if(!n) return;
-  if(!confirm("You have " + n + " unsaved item(s) from your last session. Resume them?\n\nOK = resume \u00b7 Cancel = start fresh")){
-    lists = { loop: [], flashfood: [] };
-    saveWip();
-  }
+  appConfirm("Resume last session?",
+    "You have " + n + " unsaved item(s) from last time. Pick up where you left off, or start fresh?",
+    "Resume", ()=>{ /* keep what's already loaded */ },
+    { okClass:"go", cancelLabel:"Start fresh", cancelClass:"stop",
+      onCancel:()=>{ lists = { loop: [], flashfood: [] }; saveWip(); renderLists(); } });
 }
 let activeList = "loop";
 let justAdded = new Set();      // green ring on rows the mic just created
@@ -6472,7 +6458,7 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
     const found = rowById(box.dataset.id); if(!found) return;
     const { r, list } = found;
 
-    if(e.target.classList.contains("s-name")){ if(!r._new) r._snap = { name:r.name, plu:r.plu, code:r.code, qty:r.qty, kg:r.kg, packWt:r.packWt }; openRow = r.id; renderLists(); return; }
+    if(e.target.closest(".s-name")){ if(!r._new) r._snap = { name:r.name, plu:r.plu, code:r.code, qty:r.qty, kg:r.kg, packWt:r.packWt }; openRow = r.id; renderLists(); return; }
     if(e.target.classList.contains("s-ok")){
       // you just told me what that mangled phrase actually meant — remember it
       if(r.heard && r.name.trim()){
@@ -6684,7 +6670,13 @@ function snapSpokenName(raw){
 function displayName(s){ return String(s||"").replace(/\b(bag|each)\b/ig," ").replace(/\s{2,}/g," ").trim(); }
 function bcMatches(name){
   if(!name || !name.trim() || typeof searchEntries !== "function") return [];
-  const q = String(name).replace(/\bbag\b/ig," ").replace(/\beach\b/ig," ").replace(/\s{2,}/g," ").trim();
+  // strip size/pack/keywords for the name match, but keep the brand; the weight
+  // and pack count are used only to narrow below (they live in their own fields).
+  const q = String(name)
+    .replace(/\b\d+(?:\.\d+)?\s*(kg|lbs|lb|oz|ml|g|l)\b/ig," ")
+    .replace(/\b\d+\s?(pk|ct)\b/ig," ")
+    .replace(/\bbag\b/ig," ").replace(/\beach\b/ig," ").replace(/\bpack\b/ig," ")
+    .replace(/\s{2,}/g," ").trim();
   let ents = searchEntries(q).filter(e=>e.code);
   const hasWt = /\b\d+(?:\.\d+)?\s*(kg|g|ml|l|oz|lb|lbs)\b/i.test(name);
   const wantWt = hasWt ? cleanWt(name).toLowerCase() : "";
@@ -6850,8 +6842,13 @@ function codeForName(name){
     if(bc.length > 1)   return { plu:"", code:"", packWt:"", unit:"" };   // ambiguous -> let them pick
     // hinted but no barcode on file -> fall through to PLU
   }
-  const p = pluFor(coreProductQuery(name));      // no brand/each hint => the by-weight PLU default
-  if(p){ const meta = storeMeta(p, true); return { plu:p, code:"", packWt:cleanWt(meta.packWt||""), unit:meta.unit }; }
+  const _q = coreProductQuery(name);
+  const _pr = pluSearch(_q);
+  const _amb = _pr.length >= 2 && _pr[1]._score >= _pr[0]._score - 6;   // two near-equal matches
+  if(_pr.length && _pr[0]._score >= 95 && !_amb){                       // clear single winner only
+    const p = _pr[0].plu, meta = storeMeta(p, true);
+    return { plu:p, code:"", packWt:cleanWt(meta.packWt||""), unit:meta.unit };
+  }
   if(!eachy){
     const k = knownFor(name);
     if(k && k.code && !isWeighed(name)) return { code:k.code, plu:"", packWt:cleanWt(storeMeta(k.code,false).packWt||""), unit:"ea", name:nameForCode(k.code) };
@@ -9826,8 +9823,9 @@ function nmNormalize(raw){
   const packs = [];
   s = s.replace(/\b(\d{1,2})[\s-]*(?:packs?|pk|p\s*k)\b/ig,(m,n)=>{ const t=n+"pk"; if(packs.indexOf(t)<0)packs.push(t); return " "; });
   const core = s.replace(/\s{2,}/g," ").trim();
-  if(!core) return { core: String(raw||"").trim(), tags: [] };
-  return { core, tags: brands.concat(packs) };
+  const tags = brands.concat(packs);
+  if(!core && !tags.length) return { core: String(raw||"").trim(), tags: [] };
+  return { core, tags };
 }
 function nmTagKind(t){ return /pk$/i.test(t) ? "pack" : (/^org$/i.test(t) ? "org" : "brand"); }
 function nmShort(raw){

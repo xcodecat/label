@@ -1522,7 +1522,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=84">
+  <link rel="manifest" href="./manifest.json?v=85">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -5588,7 +5588,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v84";
+const APP_VERSION = "v85";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -5921,7 +5921,7 @@ function commitPhrase(text){
       name: it.name.replace(/\b\w/g, c=>c.toUpperCase()),
       plu: cc.plu, code: cc.code,
       qty: ((isBc || cc.unit==="ea") && it.kg) ? 1 : it.qty,
-      kg: isBc ? false : ((cc.unit==="lb"||cc.unit==="kg") ? true : (cc.unit==="ea" ? false : !!it.kg)),
+      kg: isBc ? false : ((cc.unit==="lb"||cc.unit==="kg") ? true : (cc.unit==="ea" ? false : (cc.plu ? true : !!it.kg))),
       packWt: cc.packWt || it.packWt || "",
       heard: it.heard || ""
     }));
@@ -5963,7 +5963,7 @@ function commitSpoken(){
       name: it.name.replace(/\b\w/g, c=>c.toUpperCase()),
       plu: cc.plu, code: cc.code,
       qty: ((isBc || cc.unit==="ea") && it.kg) ? 1 : it.qty,
-      kg: isBc ? false : ((cc.unit==="lb"||cc.unit==="kg") ? true : (cc.unit==="ea" ? false : !!it.kg)),
+      kg: isBc ? false : ((cc.unit==="lb"||cc.unit==="kg") ? true : (cc.unit==="ea" ? false : (cc.plu ? true : !!it.kg))),
       packWt: cc.packWt || it.packWt || "",
       heard: it.heard || ""
     }));
@@ -6370,7 +6370,7 @@ function rowHtml(r, key){
   const just = justAdded.has(r.id) ? " just" : "";
   const realBc = !!(r.code && !r.plu);          // a scannable barcode (not a produce PLU)
   return `<div class="srow${just}${(realBc && !open) ? " has-bc" : ""}" data-id="${r.id}">
-    ${open ? "" : `<div class="s-name ${r.name?"":"blank"}${(realBc)?" wide":""}"><span class="s-nmtext">${esc(r.name || "tap to name")}</span>${
+    ${open ? "" : `<div class="s-name ${r.name?"":"blank"}${(realBc)?" wide":""}"><span class="s-nmtext">${r.name ? nmNameHtml(r.name) : "tap to name"}</span>${
         r.packWt ? '<span class="wtag">'+esc(cleanWt(r.packWt))+'</span>' : ""}${
         r.kg ? '<span class="wtag">'+esc(unitLabel())+'</span>' : ""}</div>`}
     ${(open || realBc) ? "" : `<div class="s-code ${code?"":"none"}">
@@ -6750,14 +6750,18 @@ function openCodeSheet(r, list){
       closePick();
       if(b.dataset.plu){
         r.plu = b.dataset.plu; r.code = "";
-        const u = String((dbPluMap()[r.plu]||{}).unit||"").toLowerCase();
-        r.kg = !(u === "ea" || u === "each");          // picked produce PLU weighs unless sheet says each
+        const meta = storeMeta(r.plu, true);
+        r.kg = !(meta.unit === "ea" || meta.unit === "each");   // produce weighs unless marked each
+        r.packWt = cleanWt(meta.packWt || "");
+        const nm = nameForPlu(r.plu); if(nm) r.name = displayName(nm);
         if(r.name) rememberWeighed(r.name, r.kg);
         renderLists();
       }
       else if(b.dataset.code){
         r.code = b.dataset.code; r.plu = ""; r.kg = false;   // a barcode is always each
-        r.packWt = cleanWt((dbBcMap()[r.code]||{}).packWt || r.packWt || "");
+        const meta = storeMeta(r.code, false);
+        r.packWt = cleanWt(meta.packWt || r.packWt || "");
+        const nm = nameForCode(r.code); if(nm) r.name = displayName(nm);
         renderLists();
       }
       else if(b.dataset.scan){ openScanner({ type:"row", id:r.id }); }
@@ -6822,6 +6826,13 @@ function nameForCode(code){
   if(typeof CAT_BY_CODE !== "undefined" && CAT_BY_CODE.get){ const c = CAT_BY_CODE.get(code); if(c && c.name) return (c.brand?c.brand+" ":"")+c.name; }
   return "";
 }
+function nameForPlu(plu){
+  plu = String(plu);
+  if(typeof STORE_ITEMS !== "undefined"){ const it = STORE_ITEMS.find(x=>x.t==="plu" && String(x.k)===plu); if(it) return (it.b?it.b+" ":"")+it.n; }
+  const m = dbPluMap()[plu]; if(m && m.name) return (m.brand?m.brand+" ":"")+m.name;
+  if(Array.isArray(PLU)){ const e = PLU.find(x=>String(x.plu)===plu); if(e) return e.name; }
+  return "";
+}
 function storeMeta(key, isPlu){
   key = String(key);
   if(typeof STORE_ITEMS !== "undefined"){
@@ -6843,11 +6854,15 @@ function codeForName(name){
     // hinted but no barcode on file -> fall through to PLU
   }
   const _q = coreProductQuery(name);
+  const _words = _q.split(/\s+/).filter(Boolean).length;
   const _pr = pluSearch(_q);
-  const _amb = _pr.length >= 2 && _pr[1]._score >= _pr[0]._score - 6;   // two near-equal matches
-  if(_pr.length && _pr[0]._score >= 95 && !_amb){                       // clear single winner only
-    const p = _pr[0].plu, meta = storeMeta(p, true);
-    return { plu:p, code:"", packWt:cleanWt(meta.packWt||""), unit:meta.unit };
+  if(_pr.length && _pr[0]._score >= 95){
+    const _tied = _pr.length >= 2 && _pr[1]._score >= _pr[0]._score - 6;
+    if(_words >= 2 || !_tied){                       // specific enough to commit to a PLU
+      const _own = _pr.find(r=>r.own && r._score >= _pr[0]._score - 4);   // store's own wins ties
+      const p = (_own || _pr[0]).plu, meta = storeMeta(p, true);
+      return { plu:p, code:"", packWt:cleanWt(meta.packWt||""), unit:meta.unit };
+    }
   }
   if(!eachy){
     const k = knownFor(name);

@@ -1132,10 +1132,18 @@
   .cat-catnote{font-family:var(--mono);font-size:9px;color:var(--muted);font-style:italic;margin:2px 0 8px}
   /* PLU shown as Info-style red regular / green organic boxes */
   .look-codes{display:flex;gap:7px;margin-top:7px;flex-wrap:wrap}
-  .store-check{display:flex;align-items:center;gap:10px;padding:12px;margin:0 0 4px;
+  .store-check{display:flex;align-items:center;gap:12px;padding:14px;margin:0 0 4px;
     background:var(--surface-2);border:1px solid var(--line);border-radius:9px;cursor:pointer;
-    font-size:14px;color:var(--paper)}
-  .store-check input{width:20px;height:20px;accent-color:var(--laser);flex:none;margin:0}
+    font-size:15px;color:var(--paper);-webkit-tap-highlight-color:transparent}
+  .store-check input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+  .store-box{flex:none;width:26px;height:26px;border:2px solid var(--muted);border-radius:7px;
+    display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s}
+  .store-box svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:3;
+    stroke-linecap:round;stroke-linejoin:round;opacity:0;transition:opacity .12s}
+  .store-check input:checked ~ .store-box{background:var(--laser);border-color:var(--laser)}
+  .store-check input:checked ~ .store-box svg{opacity:1}
+  .store-check input:focus-visible ~ .store-box{box-shadow:0 0 0 3px rgba(232,68,46,.3)}
+  .store-lbl{font-weight:600;letter-spacing:.01em}
   .rk-tr{position:fixed;inset:0;z-index:80;background:var(--ink);display:none;flex-direction:column;
     padding:calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom))}
   .rk-tr.open{display:flex}
@@ -1542,7 +1550,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=87">
+  <link rel="manifest" href="./manifest.json?v=88">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1722,7 +1730,14 @@
   <!-- ============ LIST VIEW ============ -->
   <section id="view-list" class="view active">
     <div class="toolbar">
-      <input id="search" placeholder="Filter your list…" autocomplete="off">
+      <div class="sbox">
+        <input id="search" placeholder="Filter your list…" autocomplete="off">
+        <button id="addMic" aria-label="Say what you're looking for">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+        </button>
+      </div>
     </div>
     <div id="list"></div>
     <div class="fabs" id="itemFabs">
@@ -2509,7 +2524,8 @@
     </div>
     <label class="store-check" for="mStore">
       <input type="checkbox" id="mStore">
-      <span>We carry this at 0374</span>
+      <span class="store-box"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-11"/></svg></span>
+      <span class="store-lbl">Store</span>
     </label>
     <div class="field">
       <label>Sold by</label>
@@ -5658,7 +5674,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v87";
+const APP_VERSION = "v88";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -5767,6 +5783,19 @@ function lookHeard(t){
   renderProduct();
 }
 
+/* Same idea as lookHeard, but for the Add tab: strip wake words, repair the
+   phrase with the Info word-fixer, drop it into #search, and re-render. */
+function addHeard(t){
+  t = String(t).trim();
+  t = t.replace(/^(look ?up|find|search( for)?|show me|add|what'?s the plu (for|of)|plu for)\s+/i, "");
+  if(!t) return;
+  const fixed = applyWordFix(t.toLowerCase());
+  const box = document.getElementById("search");
+  if(!box) return;
+  box.value = fixed || t;
+  renderList();
+}
+
 function setMic(on){
   micOn = on;
   // The scrap mic is a FAB with .on/.cont; the search mic is the small icon in
@@ -5780,6 +5809,14 @@ function setMic(on){
     if(box){
       if(on) box.setAttribute("placeholder", micCont ? "Listening — say them one by one…" : "Listening…");
       else   box.setAttribute("placeholder", "PLU, barcode, product, country…");
+    }
+  } else if(micMode === "add"){
+    const b = document.getElementById("addMic");
+    if(b){ b.classList.toggle("live", on); b.classList.toggle("cont", on && micCont); }
+    const box = document.getElementById("search");
+    if(box){
+      if(on) box.setAttribute("placeholder", micCont ? "Listening — say them one by one…" : "Listening…");
+      else   box.setAttribute("placeholder", "Filter your list…");
     }
   } else if(micMode === "restock"){
     const b = document.getElementById("rkMic");
@@ -5839,12 +5876,12 @@ function startMic(continuous, mode){
       // new, once talking pauses. A pause ends an item, not the recogniser.
       finalText = fin + " ";
       clearTimeout(contTimer);
-      contTimer = setTimeout(flushCont, micMode === "look" ? 750 : 1100);
-      if(micMode === "look"){
+      contTimer = setTimeout(flushCont, (micMode === "look" || micMode === "add") ? 750 : 1100);
+      if(micMode === "look" || micMode === "add"){
         // show the live guess right in the box so it feels instant
-        const box = document.getElementById("prodSearch");
+        const box = document.getElementById(micMode === "add" ? "search" : "prodSearch");
         const preview = (finalText.slice(committedLen) + " " + interim).trim();
-        if(preview){ box.value = preview; clearTimeout(prodT); renderProduct(); }
+        if(preview){ box.value = preview; if(micMode === "add"){ renderList(); } else { clearTimeout(prodT); renderProduct(); } }
       } else {
         const pending = finalText.slice(committedLen).trim();
         heardBox.innerHTML = (contCount ? "<b>" + contCount + " added</b> · " : "") +
@@ -5857,6 +5894,12 @@ function startMic(continuous, mode){
       const box = document.getElementById("prodSearch");
       const live = (all || fin).trim();
       if(live){ box.value = live; clearTimeout(prodT); renderProduct(); }
+    } else if(micMode === "add"){
+      // single-shot: same as look, but drives the Add search box + list
+      heardText = fin;
+      const box = document.getElementById("search");
+      const live = (all || fin).trim();
+      if(live && box){ box.value = live; renderList(); }
     } else if(micMode === "restock"){
       // single-shot: echo the phrase live; onend files it to a table
       heardText = fin;
@@ -5901,6 +5944,11 @@ function startMic(continuous, mode){
       micMode = "scrap";                 // back to default for the next press
       return;
     }
+    if(micMode === "add"){
+      if(micCont) flushCont(); else if(heardText.trim()) addHeard(heardText);
+      micMode = "scrap";
+      return;
+    }
     if(micMode === "restock"){
       if(heardText.trim()) commitRestockSpoken(heardText);
       micMode = "scrap";
@@ -5931,6 +5979,17 @@ pressHold(document.getElementById("btnProdMic"), {
   onHold: ()=>{ if(micOn) stopMic(); else startMic(true,  "look"); }
 });
 
+/* The Add-tab search mic — same engine, "add" mode. Tap = one lookup, hold =
+   keep listening. Voice writes into #search, then renderList() runs, so the
+   grouped PLU/barcode results appear exactly as if you'd typed. */
+{
+  const addMicEl = document.getElementById("addMic");
+  if(addMicEl) pressHold(addMicEl, {
+    onTap:  ()=>{ if(micOn) stopMic(); else startMic(false, "add"); },
+    onHold: ()=>{ if(micOn) stopMic(); else startMic(true,  "add"); }
+  });
+}
+
 /* Restock mic — single-shot only. One press captures one item and files it to
    a table; hold behaves the same, so it never enters the continuous path that
    feeds the scrap list. Same engine, new mode. */
@@ -5948,6 +6007,7 @@ function flushCont(){
   committedLen = finalText.length;
   if(!pending) return;
   if(micMode === "look") lookHeard(pending);
+  else if(micMode === "add") addHeard(pending);
   else commitPhrase(pending);
 }
 

@@ -1116,6 +1116,21 @@
   #fabSync{display:none}
   .cat-nm .own{display:inline-block;font-size:9px;background:var(--laser);color:#fff;padding:2px 5px;border-radius:4px;margin-left:6px;vertical-align:middle;font-weight:700;letter-spacing:.02em}
   .cat-hint{font-family:var(--mono);font-size:9px;color:var(--ok);letter-spacing:0;margin-left:6px}
+  /* Add-search grouping: carried up top, catalogue-only collapsed & muted below */
+  .cat-rowtop{display:flex;align-items:flex-start;gap:10px}
+  .cat-rowtop .cat-nm{flex:1}
+  .cat-plus{flex:none;width:32px;height:32px;border-radius:8px;border:1px solid var(--ok);
+    background:var(--surface-2);color:var(--ok);font-size:20px;line-height:1;font-weight:700;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .cat-plus:active{background:var(--ok);color:#fff}
+  /* Muted rows: dim the text/codes but keep the + fully live (no parent opacity,
+     which would clamp the child and grey the + too). */
+  .cat-row2.dim .cat-nm{opacity:.5}
+  .cat-row2.dim .cat-bcimg{opacity:.6}
+  .cat-row2.dim .look-codes{opacity:.6}
+  .cat-catnote{font-family:var(--mono);font-size:9px;color:var(--muted);font-style:italic;margin:2px 0 8px}
+  /* PLU shown as Info-style red regular / green organic boxes */
+  .look-codes{display:flex;gap:7px;margin-top:7px;flex-wrap:wrap}
   .rk-tr{position:fixed;inset:0;z-index:80;background:var(--ink);display:none;flex-direction:column;
     padding:calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom))}
   .rk-tr.open{display:flex}
@@ -1522,7 +1537,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=85">
+  <link rel="manifest" href="./manifest.json?v=86">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4666,21 +4681,61 @@ function searchEntries(q){
   out.sort((a,b)=> (a.code?0:1) - (b.code?0:1));
   return out.slice(0, 20);
 }
+/* Add-tab search results, grouped: what your store carries first, then a
+   collapsed-by-default "catalogue" section (muted rows, each with a live + to
+   add it). One ranked stream from searchEntries — barcodes and PLUs together. */
+let _catOpen = false, _catLastQ = "";
+function catToggle(){ _catOpen = !_catOpen; renderList(); }
+/* A PLU rendered as Info-style boxes: red regular + green organic twin. Only a
+   bare 4-digit code has a derivable 9xxxx twin; a 5-digit 9xxxx stands alone. */
+function pluBoxes(plu, mine){
+  plu = String(plu||""); if(!plu) return "";
+  const hasTwin = /^\d{4}$/.test(plu);
+  return '<div class="look-codes">'
+    + '<div class="look-code'+(mine?' mine':'')+'">'+esc(plu)+'<small>regular</small></div>'
+    + (hasTwin ? '<div class="look-code org">9'+esc(plu)+'<small>organic</small></div>' : '')
+    + '</div>';
+}
+function catRow2(o, dim){
+  const pw = o.packWt ? '<span class="nm-bdg pack">'+esc(cleanWt(o.packWt))+'</span>' : "";
+  const badge = o.store ? '<span class="own">store</span>' : "";
+  const nm = nmNameHtml((o.brand?o.brand+" ":"")+o.name);
+  const body = o.code
+    ? '<div class="cat-bcimg"><svg class="cat-bc" data-code="'+esc(o.code)+'"></svg></div>'
+    : (o.plu ? pluBoxes(o.plu, !!o.store) : "");
+  // muted catalogue rows get an explicit + (the whole row still opens the form too)
+  const plus = dim
+    ? '<button class="cat-plus" aria-label="Add to store" onclick="event.stopPropagation();openEntry('+o._i+')">+</button>'
+    : "";
+  return '<div class="cat-row2 tappable'+(dim?' dim':'')+'" onclick="openEntry('+o._i+')">'
+    + '<div class="cat-rowtop"><div class="cat-nm">'+nm+badge+pw+'</div>'+plus+'</div>'
+    + body + '</div>';
+}
 function catFindHtml(q){
   if(!q) return "";
   _searchEnts = searchEntries(q);
   if(!_searchEnts.length) return "";
-  return '<div class="cat-h">In your PLU + barcode database <span class="cat-hint">scan it, or tap to add</span></div>' +
-    _searchEnts.map((o,i)=>{
-      const pw = o.packWt ? '<span class="nm-bdg pack">'+esc(cleanWt(o.packWt))+'</span>' : "";
-      const badge = o.store ? '<span class="own">store</span>' : "";
-      const nm = nmNameHtml((o.brand?o.brand+" ":"")+o.name);
-      const body = o.code
-        ? '<div class="cat-bcimg"><svg class="cat-bc" data-code="'+esc(o.code)+'"></svg></div>'
-        : (o.plu ? '<div><span class="cat-plu">PLU '+esc(o.plu)+'</span></div>' : "");
-      return '<div class="cat-row2 tappable" onclick="openEntry('+i+')">'
-        + '<div class="cat-nm">'+nm+badge+pw+'</div>' + body + '</div>';
-    }).join("");
+  if(q !== _catLastQ){ _catOpen = false; _catLastQ = q; }   // collapse fresh on a new query
+  const carried = [], cat = [];
+  _searchEnts.forEach((o,i)=>{ const r = Object.assign({ _i:i }, o); (o.store?carried:cat).push(r); });
+
+  let html = "";
+  if(carried.length){
+    html += '<div class="cat-h">Your store <span class="cat-hint">tap to edit</span></div>';
+    html += carried.map(o=>catRow2(o,false)).join("");
+  }
+  if(cat.length){
+    const n = cat.length, plural = n>1 ? "es" : "";
+    if(!_catOpen){
+      html += '<button class="showall" onclick="catToggle()">Show '+n+' catalogue match'+plural+'</button>';
+    } else {
+      html += '<div class="cat-h" style="margin-top:12px">Also in the catalogue</div>'
+        + '<p class="cat-catnote">not carried at 0374 \u2014 tap + to add</p>'
+        + cat.map(o=>catRow2(o,true)).join("")
+        + '<button class="showall" onclick="catToggle()">Hide catalogue</button>';
+    }
+  }
+  return html;
 }
 function openEntry(i){
   const o = _searchEnts[i]; if(!o) return;
@@ -5588,7 +5643,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v85";
+const APP_VERSION = "v86";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is

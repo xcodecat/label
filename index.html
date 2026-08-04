@@ -1117,8 +1117,9 @@
   .cat-nm .own{display:inline-block;font-size:9px;background:var(--laser);color:#fff;padding:2px 5px;border-radius:4px;margin-left:6px;vertical-align:middle;font-weight:700;letter-spacing:.02em}
   .cat-hint{font-family:var(--mono);font-size:9px;color:var(--ok);letter-spacing:0;margin-left:6px}
   /* Add-search grouping: carried up top, catalogue-only collapsed & muted below */
-  .cat-rowtop{display:flex;align-items:flex-start;gap:10px}
-  .cat-rowtop .cat-nm{flex:1}
+  .cat-rowtop{display:flex;align-items:center;gap:8px}
+  .cat-rowtop .cat-nm{flex:1;min-width:0}
+  .cat-rowtop .look-codes{margin-top:0;flex:none}
   .cat-plus{flex:none;width:32px;height:32px;border-radius:8px;border:1px solid var(--ok);
     background:var(--surface-2);color:var(--ok);font-size:20px;line-height:1;font-weight:700;
     cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
@@ -1131,6 +1132,10 @@
   .cat-catnote{font-family:var(--mono);font-size:9px;color:var(--muted);font-style:italic;margin:2px 0 8px}
   /* PLU shown as Info-style red regular / green organic boxes */
   .look-codes{display:flex;gap:7px;margin-top:7px;flex-wrap:wrap}
+  .store-check{display:flex;align-items:center;gap:10px;padding:12px;margin:0 0 4px;
+    background:var(--surface-2);border:1px solid var(--line);border-radius:9px;cursor:pointer;
+    font-size:14px;color:var(--paper)}
+  .store-check input{width:20px;height:20px;accent-color:var(--laser);flex:none;margin:0}
   .rk-tr{position:fixed;inset:0;z-index:80;background:var(--ink);display:none;flex-direction:column;
     padding:calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom))}
   .rk-tr.open{display:flex}
@@ -1537,7 +1542,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=86">
+  <link rel="manifest" href="./manifest.json?v=87">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2502,6 +2507,10 @@
       </div>
       <div class="plu-drop hidden" id="mPluDrop"></div>
     </div>
+    <label class="store-check" for="mStore">
+      <input type="checkbox" id="mStore">
+      <span>We carry this at 0374</span>
+    </label>
     <div class="field">
       <label>Sold by</label>
       <label id="mQtyLabel" style="display:none"></label>
@@ -4457,8 +4466,12 @@ document.getElementById("search").addEventListener("input", renderList);
    got". The header magnifier jumps here from anywhere. */
 let lookAll = false;
 function renderLookup(){
-  const q = document.getElementById("prodSearch").value.trim();
   const el = document.getElementById("lookRes");
+  // Info tab is cards-only now (Add owns PLU/barcode lookup). The result code
+  // below is kept DORMANT for revert safety — flip INFO_SHOW_CODES to restore.
+  const INFO_SHOW_CODES = false;
+  if(!INFO_SHOW_CODES){ if(el) el.innerHTML = ""; return; }
+  const q = document.getElementById("prodSearch").value.trim();
   if(!q){ el.innerHTML = ""; return; }
   const ql = q.toLowerCase();
   let html = "";
@@ -4700,16 +4713,17 @@ function catRow2(o, dim){
   const pw = o.packWt ? '<span class="nm-bdg pack">'+esc(cleanWt(o.packWt))+'</span>' : "";
   const badge = o.store ? '<span class="own">store</span>' : "";
   const nm = nmNameHtml((o.brand?o.brand+" ":"")+o.name);
-  const body = o.code
-    ? '<div class="cat-bcimg"><svg class="cat-bc" data-code="'+esc(o.code)+'"></svg></div>'
-    : (o.plu ? pluBoxes(o.plu, !!o.store) : "");
   // muted catalogue rows get an explicit + (the whole row still opens the form too)
   const plus = dim
     ? '<button class="cat-plus" aria-label="Add to store" onclick="event.stopPropagation();openEntry('+o._i+')">+</button>'
     : "";
+  // PLU boxes ride on the RIGHT of the name to keep rows compact; a barcode's
+  // scannable image is wide, so it stays on its own line below.
+  const codesRight = (!o.code && o.plu) ? pluBoxes(o.plu, !!o.store) : "";
+  const bcBelow = o.code ? '<div class="cat-bcimg"><svg class="cat-bc" data-code="'+esc(o.code)+'"></svg></div>' : "";
   return '<div class="cat-row2 tappable'+(dim?' dim':'')+'" onclick="openEntry('+o._i+')">'
-    + '<div class="cat-rowtop"><div class="cat-nm">'+nm+badge+pw+'</div>'+plus+'</div>'
-    + body + '</div>';
+    + '<div class="cat-rowtop"><div class="cat-nm">'+nm+badge+pw+'</div>'+codesRight+plus+'</div>'
+    + bcBelow + '</div>';
 }
 function catFindHtml(q){
   if(!q) return "";
@@ -4721,7 +4735,7 @@ function catFindHtml(q){
 
   let html = "";
   if(carried.length){
-    html += '<div class="cat-h">Your store <span class="cat-hint">tap to edit</span></div>';
+    html += '<div class="cat-h">In store <span class="cat-hint">tap to edit</span></div>';
     html += carried.map(o=>catRow2(o,false)).join("");
   }
   if(cat.length){
@@ -4740,7 +4754,7 @@ function catFindHtml(q){
 function openEntry(i){
   const o = _searchEnts[i]; if(!o) return;
   openManualPrefilled({ name:o.name, code:o.code, plu:o.plu, brand:o.brand,
-                        packWt:o.packWt, pack:o.pack, size:o.size, unit:o.unit, art:"" });
+                        packWt:o.packWt, pack:o.pack, size:o.size, unit:o.unit, store:o.store, art:"" });
 }
 /* Tap a catalogue result to open the SAME add form, pre-filled. (Manual +,
    scan, and tapping a result all land on one identical form now.) */
@@ -4769,6 +4783,7 @@ function openManualPrefilled(c){
   setManualUnit(unit() === "kg");
   document.getElementById("mPluDrop").classList.add("hidden");
   document.getElementById("mSave").textContent = "Save changes";
+  { const st=document.getElementById("mStore"); if(st) st.checked = !!(c && c.store && c.store !== "NO"); }
   if(c){
     const set=(id,v)=>{ const el=document.getElementById(id); if(el && v!=null && v!=="") el.value=v; };
     set("mName", c.name); set("mCode", c.code); set("mPlu", c.plu);
@@ -5643,7 +5658,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v86";
+const APP_VERSION = "v87";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6240,6 +6255,7 @@ document.getElementById("mSave").addEventListener("click", ()=>{
   const article = document.getElementById("mArticle").value.trim();
   const pack = document.getElementById("mPack").value.trim();
   const size = document.getElementById("mSize").value.trim();
+  const store = document.getElementById("mStore").checked ? "YES" : "NO";
   if(!name && !code && !plu) return toast("Enter a name, barcode or PLU");
   // If this is a known catalog article and you edited any field, save the fix.
   let corrected = false;
@@ -6266,22 +6282,22 @@ document.getElementById("mSave").addEventListener("click", ()=>{
   if(code){
     const bm = dbBcMap();
     bm[code] = { name:name||"", brand:brand||"", packWt:packWt, origin:originStr,
-                 unit:unitStr, pack:pack, size:size, store:(bm[code]&&bm[code].store)||"" };
+                 unit:unitStr, pack:pack, size:size, store:store };
     try{ localStorage.setItem(KEY_DBBC, JSON.stringify(bm)); }catch(e){}
     confirmCatalogCode(code);
     dbUpsert("bc", { barcode:code, brand:brand, name:name, packWt:packWt,
-                     origin:originStr, unit:unitStr, pack:pack, size:size, caseCount:pack });
+                     origin:originStr, unit:unitStr, pack:pack, size:size, store:store, caseCount:pack });
     toast(navigator.onLine ? "Saved \u2713" : "Saved \u2014 will sync when online");
   } else if(plu){
     const pm = dbPluMap();
     pm[plu] = { name:name||"", brand:brand||"", packWt:packWt, origin:originStr,
-                unit:unitStr, store:(pm[plu]&&pm[plu].store)||"" };
+                unit:unitStr, store:store };
     try{ localStorage.setItem(KEY_DBPLU, JSON.stringify(pm)); }catch(e){}
     if(name && !PLU.some(e=>e.plu === plu && e.name.toLowerCase() === name.toLowerCase())){
       savePlu(PLU.concat([{ plu, name, e:!mKg, own:true }])); VOCAB = null; SEED_KEYS = null;
     }
     dbUpsert("plu", { plu:plu, brand:brand, name:name, packWt:packWt,
-                      origin:originStr, unit:unitStr, caseCount:pack });
+                      origin:originStr, unit:unitStr, store:store, caseCount:pack });
     toast(navigator.onLine ? "Saved \u2713" : "Saved \u2014 will sync when online");
   } else {
     return toast("Add a barcode or PLU to save it to the database");

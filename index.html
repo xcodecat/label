@@ -1552,7 +1552,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=91">
+  <link rel="manifest" href="./manifest.json?v=92">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1569,7 +1569,7 @@
     </svg>
   </div>
   <h1 class="lock-name"><span class="w1">Cat</span><span class="w2">Caddy</span></h1>
-  <p class="lock-sub" id="lockSub">Checking…</p>
+  <p class="lock-sub" id="lockSub">Warming up the engine…</p>
   <p class="lock-hint" id="lockHint">Locks itself after 30 minutes.</p>
   <div class="lock-form">
     <input id="lockPass" type="password" placeholder="Password" autocomplete="current-password"
@@ -4003,7 +4003,7 @@ function showLock(msg, bad){
   resetLockFx();                // clear the ring + line morph
   // The subtitle asks; the note is for problems only. Both saying "enter the
   // password" just told you twice.
-  document.getElementById("lockSub").textContent = "Enter the password to open";
+  document.getElementById("lockSub").textContent = rotLine(TYPING_LINES, "typing");
   document.getElementById("appWrap").classList.add("hidden-until-open");
   document.body.style.overflow = "hidden";
   const n = document.getElementById("lockNote");
@@ -4095,7 +4095,7 @@ const GREET_NONAME = [
 const KEY_GREET_LAST = "label_greet_last_v1";
 function pickGreeting(){
   let name = "";
-  try{ name = (localStorage.getItem(KEY_ME_NAME) || "").trim(); }catch(e){}
+  try{ name = (meName() || "").trim(); }catch(e){}
   if(!name){
     const p = GREET_NONAME;
     return p[Math.floor(Math.random() * p.length)];
@@ -4108,6 +4108,72 @@ function pickGreeting(){
   try{ localStorage.setItem(KEY_GREET_LAST, line); }catch(e){}
   return line.replace(/\{n\}/g, name);
 }
+
+/* ---- other rotating lock-screen lines ---------------------------------
+   boot (app opening), typing (while the password is entered) and wrong
+   (bad password). Same idea as the greeting: baked in, picked at random,
+   skipping the last one shown so it never repeats back-to-back. {n} becomes
+   the name when there is one, or a friendly "you" when there isn't. */
+const _lastLine = {};
+function nameOr(fallback){
+  let n = "";
+  try{ n = (meName() || "").trim(); }catch(e){}
+  return n || (fallback || "you");
+}
+function rotLine(arr, key){
+  let line = arr[Math.floor(Math.random() * arr.length)];
+  for(let i = 0; i < 5 && arr.length > 1 && line === _lastLine[key]; i++) line = arr[Math.floor(Math.random() * arr.length)];
+  _lastLine[key] = line;
+  return line.replace(/\{n\}/g, nameOr());
+}
+const BOOT_LINES = [
+  "Warming up the engine\u2026",
+  "Waking the cat\u2026",
+  "Polishing the apples\u2026",
+  "Untangling the barcodes\u2026",
+  "Stacking the pixels neatly\u2026",
+  "Firing up the produce\u2026"
+];
+const TYPING_LINES = [
+  "Typing like you mean it.",
+  "Ooh, a secret. Go on\u2026",
+  "Nobody's looking. Probably.",
+  "The cat can't read \u2014 you're safe.",
+  "Bold choice of characters.",
+  "Mysterious. I like it.",
+  "Hope you remember this one.",
+  "Password energy: strong.",
+  "Take your time, {n}.",
+  "Careful with the caps lock.",
+  "Spelling counts, you know.",
+  "That'd better not be 'password'.",
+  "Fingers crossed you nail it.",
+  "Tap tap tap. Suspenseful.",
+  "Make those keys count, {n}.",
+  "No peeking from here, promise."
+];
+const WRONG_LINES = [
+  "Nope. The cat is judging you.",
+  "That's a bold guess, {n}.",
+  "Wrong \u2014 but confidently wrong.",
+  "Not even close, champ.",
+  "The password disagrees.",
+  "Try again \u2014 fingers, not thumbs.",
+  "That's not it. The cat winced.",
+  "Denied. Elegantly, though.",
+  "Close! (No it wasn't.)",
+  "Wrong one, {n}. Shake it off.",
+  "The door remains unimpressed.",
+  "Nice try. The cat says no.",
+  "Incorrect. Also a little rude.",
+  "That password's on vacation.",
+  "Swing and a miss, {n}.",
+  "Access denied. Vibes noted.",
+  "Almost. In another universe.",
+  "Not today \u2014 give it another go.",
+  "The keypad felt that one.",
+  "The cat has trust issues now."
+];
 const RING_C = 452.4;      // 2·π·72 — the ring circumference
 // Vibration can't set amplitude, so "stronger" = longer pulses. Kept clearly
 // distinct: success is short-short-LONG (rising, positive); wrong is three
@@ -4181,6 +4247,7 @@ async function tryUnlock(pass){
 }
 
 async function bootLock(){
+  try{ document.getElementById("lockSub").textContent = rotLine(BOOT_LINES, "boot"); }catch(e){}
   const remembered = localStorage.getItem(KEY_UNLOCK);
   // A cold start is always a fresh ask when a password is in play. The remembered
   // password only saves you from retyping WITHIN a session, never across one.
@@ -4240,7 +4307,7 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
     const ib = input.getBoundingClientRect();
     lineAsBox(ib);
     document.getElementById("lockLine").style.opacity = "1";
-    lock.classList.add("checking"); sub.textContent = "Checking…";   // hide the form; cat stays small
+    lock.classList.add("checking"); sub.textContent = "";   // hide the form; the morph is the "checking" tell
     await lockRaf();
     lineAsLine(ib.left + ib.width/2, ib.top + ib.height/2, ib.width); // collapse to a line
     await lockDelay(320);
@@ -4276,7 +4343,7 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
       const msg = d && d.code === "BADPASS" ? "That's not it — try again."
                 : d && d.code === "OFFLINE" ? "No signal, and this phone hasn't unlocked here before. Connect once."
                 : ((d && d.error) || "Couldn't check.");
-      sub.textContent = "Nope";
+      sub.textContent = rotLine(WRONG_LINES, "wrong");
       catReact("nope");                                // quick shake, matched to the buzz
       if(navigator.vibrate) navigator.vibrate(VIB_NO);
       await lockDelay(CAT_NO_MS);
@@ -4312,6 +4379,12 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
 });
 document.getElementById("lockPass").addEventListener("keydown", e=>{
   if(e.key === "Enter") document.getElementById("lockGo").click();
+});
+let _typeN = 0;
+document.getElementById("lockPass").addEventListener("input", ()=>{
+  const l = document.getElementById("lockScreen");
+  if(l.classList.contains("checking") || l.classList.contains("big")) return;
+  if((++_typeN % 3) === 0) document.getElementById("lockSub").textContent = rotLine(TYPING_LINES, "typing");
 });
 
 /* ---- who is asking ----
@@ -5772,7 +5845,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v91";
+const APP_VERSION = "v92";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is

@@ -1407,6 +1407,8 @@
   body.dev-on .ho-menu button.dev-only{display:flex}
   body.dev-on .ho-menu-sep.dev-only{display:block}
   body.dev-on .devsec.dev-only{display:block}
+  body.dev-on .panel.dev-only{display:block}
+  body.dev-on .sec-h.dev-only{display:block}
 
   /* settings header + Done */
   .set-head{display:flex;align-items:flex-end;justify-content:space-between;margin:0 0 4px;padding:2px 2px 0}
@@ -1550,7 +1552,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=89">
+  <link rel="manifest" href="./manifest.json?v=90">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2231,6 +2233,11 @@
       <p class="lookup-note">Unlocked from the logo. Diagnostics below; more tools will land here as they're built.</p>
       <div class="devinfo" id="devInfo"></div>
     </div>
+    <div class="panel dev-only">
+      <h3>Mic debug logging</h3>
+      <p>Writes one compact row per mic session to the Sheet's <b>Errors</b> tab (each line starts with <b>MIC</b>) so voice problems can be traced. Users never see it. On by default.</p>
+      <label class="rk-lct"><input type="checkbox" id="micDbgToggle" onchange="micDbgSet(this.checked)"> Log mic sessions to Sheet</label>
+    </div>
     <div class="panel">
       <h3>Appearance</h3>
       <div class="setrow">
@@ -2250,7 +2257,7 @@
     </div>
 
     <h4 class="sec-h">Export</h4>
-    <div class="panel">
+    <div class="panel dev-only">
       <h3>Download CSV</h3>
       <p>Get a .csv file of all items, then import it in Google Sheets with <b>File → Import</b>. Images are not included in the CSV.</p>
       <button class="btn btn-ghost" id="btnCsv">Download CSV</button>
@@ -2263,14 +2270,14 @@
       <input id="restoreFile" type="file" accept="application/json,.json" style="display:none">
       <p class="lookup-note" id="backupNote"></p>
     </div>
-    <div class="panel">
+    <div class="panel dev-only">
       <h3>Sync to Google Sheets</h3>
       <p>Sends new items — including the barcode photo — straight into your spreadsheet. Paste the setup link below; Faisal has it.</p>
       <input id="scriptUrl" placeholder="https://script.google.com/macros/s/…/exec">
       <button class="btn btn-primary" id="btnSync">Sync new items</button>
       <div class="status" id="syncStatus"></div>
     </div>
-    <div class="panel">
+    <div class="panel dev-only">
       <h3>PLU &amp; barcode database</h3>
       <p>Keeps a <b>PLU DB</b> and <b>Barcode DB</b> tab in your Sheet. Edit names, country of origin and unit (ea/kg/lb/gm) there, then Pull to bring the changes into the app. Adding items on the Add tab also grows the Barcode DB.</p>
       <button class="btn btn-ghost" id="btnDbPublish">Publish built-in lists to Sheet</button>
@@ -2280,13 +2287,13 @@
       <button class="btn btn-primary" id="btnSyncStore">Sync store items \u2192 Sheet</button>
       <p class="lookup-note" id="dbStatus"></p>
     </div>
-    <div class="panel">
+    <div class="panel dev-only">
       <h3>Restock routing <span class="hint">(developer)</span></h3>
       <p>Teach which table each product belongs on, walking your PLU DB one item
          at a time. Taught items always file where you put them, on every phone.</p>
       <button class="btn btn-ghost" onclick="rkTrainOpen()">Open routing trainer</button>
     </div>
-    <div class="panel">
+    <div class="panel dev-only">
       <h3>Store assortment <span class="hint">(developer)</span></h3>
       <p>Mark what your store actually carries. Not-carried items are skipped on
          restock, and the trainer only walks what's in store — faster and more
@@ -3395,7 +3402,10 @@ function showView(name){
     // surface the claim button without making you go looking for it
     if(proxyUrl() && navigator.onLine) checkAccess();
   }
-  if(name==="settings") document.getElementById("scriptUrl").value = localStorage.getItem(KEY_URL)||"";
+  if(name==="settings"){
+    document.getElementById("scriptUrl").value = localStorage.getItem(KEY_URL)||"";
+    const _md = document.getElementById("micDbgToggle"); if(_md) _md.checked = micDbgOn();
+  }
 }
 
 /* ================= csv helper ================= */
@@ -5674,7 +5684,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v89";
+const APP_VERSION = "v90";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -5852,6 +5862,7 @@ function startMic(continuous, mode){
   rec.lang = "en-CA"; rec.interimResults = true; rec.continuous = true; rec.maxAlternatives = 1;
   micCont = continuous;
   micWanted = true;
+  const _mic = micLog("info/" + micMode + (continuous ? "/cont" : ""));
   heardText = ""; contCount = 0;
   finalText = ""; committedLen = 0;
   clearTimeout(contTimer);
@@ -5868,6 +5879,7 @@ function startMic(continuous, mode){
     const fin = joinResults(ev.results, true);
     const all = joinResults(ev.results, false);
     const interim = all.startsWith(fin) ? all.slice(fin.length).trim() : all;
+    _mic.e("res", interim || fin);
     if(micCont){
       // Chrome finalises a phrase PIECE BY PIECE — "organic", then "organic
       // banana", then "organic banana 4 kilo" — so committing on every final
@@ -5912,6 +5924,7 @@ function startMic(continuous, mode){
     }
   };
   rec.onerror = ev=>{
+    _mic.e("err", ev.error);
     // Silence is not a failure. Ending on it is why held-open mode kept dying
     // between items.
     if(micCont && micWanted && (ev.error === "no-speech" || ev.error === "aborted")) return;
@@ -5926,6 +5939,7 @@ function startMic(continuous, mode){
     else heardBox.textContent = "Speech error: " + ev.error;
   };
   rec.onend = ()=>{
+    _mic.e(micCont && micWanted ? "end/restart" : "end");
     // The engine stops on its own — Chrome around a minute, iOS sooner. In hold
     // mode that would cut a long list off mid-way, so restart until YOU stop it.
     if(micCont && micWanted){
@@ -5936,6 +5950,7 @@ function startMic(continuous, mode){
       finalText = ""; committedLen = 0;
       try{ rec.start(); return; }catch(e){}
     }
+    _mic.done(heardText || finalText || "");
     clearTimeout(contTimer);
     setMic(false);
     if(micMode === "look"){
@@ -5956,7 +5971,7 @@ function startMic(continuous, mode){
     }
     if(micCont){ flushCont(); finishCont(); } else commitSpoken();
   };
-  rec.onstart = ()=>{ setMic(true); };   // truth: the engine really began
+  rec.onstart = ()=>{ _mic.e("start"); setMic(true); };   // truth: the engine really began
   try{ rec.start(); setMic(true); }
   catch(e){
     setMic(false);
@@ -6126,6 +6141,7 @@ function dictateInto(input, row, btn){
   if(dictating){ dictating._stopped = true; try{ dictating.stop(); }catch(e){} return; }  // tap again = stop
   const d = new SR();
   dictating = d; d._stopped = false;
+  const _mic = micLog("add/" + (input && input.id ? input.id : "?"));
   saveLock(true);
   d.lang = "en-CA"; d.interimResults = true; d.continuous = true;   // keep listening through pauses
   const clearHi = ()=>document.querySelectorAll(".mic-sm.on,.s-say.on,.fSay.on").forEach(b=>b.classList.remove("on"));
@@ -6134,11 +6150,13 @@ function dictateInto(input, row, btn){
     let txt = "";
     for(let i = 0; i < ev.results.length; i++) txt += ev.results[i][0].transcript;
     input.value = txt.trim();
+    _mic.e("res", input.value);
     // commit shortly after you stop talking
     clearTimeout(dictTimer);
-    dictTimer = setTimeout(()=>{ d._stopped = true; try{ d.stop(); }catch(e){} }, 1300);
+    dictTimer = setTimeout(()=>{ _mic.e("stop-timer"); d._stopped = true; try{ d.stop(); }catch(e){} }, 1300);
   };
   d.onerror = ev=>{
+    _mic.e("err", ev.error);
     // a gap in speech or a benign abort shouldn't kill the session — let onend
     // decide whether to restart
     if(ev.error === "no-speech" || ev.error === "aborted") return;
@@ -6146,14 +6164,16 @@ function dictateInto(input, row, btn){
     if(ev.error === "not-allowed") toast("Mic blocked — allow it in browser settings");
   };
   d.onend = ()=>{
+    _mic.e(d._stopped ? "end" : "end/restart");
     // the browser often ends recognition on its own mid-use; restart unless the
     // pause-timer (or a second tap) actually meant to stop
     if(!d._stopped){ try{ d.start(); return; }catch(e){} }
     dictating = null; saveLock(false); clearTimeout(dictTimer); clearHi();
     const v = input.value.trim();
-    if(!v) return;
+    if(!v){ _mic.done("(empty)"); return; }
     const clean = repairName(v) || v;
     input.value = clean.replace(/\b\w/g, c=>c.toUpperCase());
+    _mic.done(input.value);
     if(row){
       row.name = input.value;
       if(!row.plu && !row.code){ const cc = codeForName(clean); row.plu = cc.plu; row.code = cc.code; }
@@ -6164,7 +6184,7 @@ function dictateInto(input, row, btn){
       if(input.id === "mName") splitBrandIntoField();
     }
   };
-  try{ d.start(); toast("Speak the name…"); }catch(e){ dictating = null; saveLock(false); clearHi(); }
+  try{ d.start(); _mic.e("start"); toast("Speak the name…"); }catch(e){ dictating = null; saveLock(false); clearHi(); }
 }
 document.getElementById("fSay").addEventListener("click", e=>{
   const b = e.currentTarget; dictateInto(document.getElementById("fName"), null, b);
@@ -9762,6 +9782,38 @@ async function flushErrors(){
 }
 window.addEventListener("online", flushErrors);
 
+/* ---- mic debug logging (developer toggle, default ON) ------------------
+   One compact row per mic session, prefixed "MIC", into the same Errors
+   queue as everything else. Buffers the lifecycle timeline in memory and
+   flushes a single row when the session ends -- or 12s after the last event
+   if it never cleanly ends (which is exactly the iOS "won't stop" symptom).
+   Purely observational: it never starts, stops, or restarts a recogniser. */
+const KEY_MICDBG = "label_micdbg_v1";
+function micDbgOn(){ const v = localStorage.getItem(KEY_MICDBG); return v === null ? true : v === "1"; }
+function micDbgSet(on){ try{ localStorage.setItem(KEY_MICDBG, on ? "1" : "0"); }catch(e){} toast(on ? "Mic logging on" : "Mic logging off"); }
+function micLog(tag){
+  if(!micDbgOn()) return { e:function(){}, done:function(){} };
+  const t0 = Date.now();
+  const ua = navigator.userAgent || "";
+  const os = /iPhone|iPad|iPod/i.test(ua) ? "iOS" : /Android/i.test(ua) ? "Android" : "web";
+  const ev = []; let closed = false, idle = null;
+  function flush(v){
+    if(closed) return; closed = true; clearTimeout(idle);
+    try{ queueError("MIC " + tag + " " + os + " | " + ev.join("  ") + (v ? "  => " + v : "")); }catch(e){}
+  }
+  function bump(){ clearTimeout(idle); idle = setTimeout(function(){ flush("idle-flush (never ended)"); }, 12000); }
+  bump();
+  return {
+    e:function(k, x){
+      if(closed) return;
+      ev.push((Date.now() - t0) + (k ? " " + k : "") + (x != null && x !== "" ? ":" + String(x).slice(0, 32) : ""));
+      if(ev.length > 150) ev.shift();
+      bump();
+    },
+    done:function(v){ flush(v || ""); }
+  };
+}
+
 window.addEventListener("error", ev=>{
   if(isNoise(ev.message)) return;
   showErr("Something broke — tell Faisal this bit", ev.message + "  @ line " + ev.lineno, { log:true });
@@ -10725,14 +10777,16 @@ function hoWireMic(field, mic, SR){
   let rec; try{ rec = new SR(); }catch(e){ mic.style.display="none"; return; }
   rec.interimResults = true; rec.continuous = true; rec.lang = "en-US";
   let base = "", recording = false;
+  let _mic = { e:function(){}, done:function(){} };
   mic.onclick = ()=>{
     if(recording){ rec.stop(); return; }
     base = field.value ? field.value.replace(/\s*$/,"")+" " : "";
-    try{ rec.start(); }catch(e){}
+    _mic = micLog("handoff/" + (field.id || "?"));
+    try{ rec.start(); _mic.e("start-call"); }catch(e){}
   };
-  rec.onstart = ()=>{ recording = true; mic.classList.add("rec"); };
-  rec.onend   = ()=>{ recording = false; mic.classList.remove("rec"); };
-  rec.onerror = (e)=>{ recording = false; mic.classList.remove("rec");
+  rec.onstart = ()=>{ _mic.e("start"); recording = true; mic.classList.add("rec"); };
+  rec.onend   = ()=>{ _mic.e("end"); _mic.done(field.value || ""); recording = false; mic.classList.remove("rec"); };
+  rec.onerror = (e)=>{ _mic.e("err", e && e.error); _mic.done("(error)"); recording = false; mic.classList.remove("rec");
     if(e && e.error === "not-allowed") toast("Allow microphone access to dictate"); };
   rec.onresult = (e)=>{
     // Rebuild from the cumulative results each time with the same joiner the
@@ -10741,6 +10795,7 @@ function hoWireMic(field, mic, SR){
       ? joinResults(e.results, false)
       : Array.from(e.results).map(r=>r[0].transcript).join(" ");
     field.value = (base + full).replace(/\s{2,}/g, " ");
+    _mic.e("res", full.slice(0,32));
     if(field.id === "hoFTitle"){ const addB = document.getElementById("hoFAdd"); if(addB) addB.disabled = !field.value.trim(); }
   };
 }
@@ -11057,14 +11112,17 @@ function pgStartMic(){
   try{ if(typeof stopMic==="function") stopMic(); }catch(e){}   // free the shared recogniser
   pgRec = new SR();
   pgRec.lang = "en-CA"; pgRec.interimResults = true; pgRec.continuous = true; pgRec.maxAlternatives = 1;
+  const _mic = micLog("planogram");
   pgRec.onresult = ev=>{
     const all = (typeof joinResults==="function") ? joinResults(ev.results, false)
               : Array.from(ev.results).map(r=>r[0].transcript).join(" ");
     const inp = document.getElementById("pgSheetInput");
     inp.value = all; pgOnType(all);
+    _mic.e("res", all.slice(0,32));
   };
-  pgRec.onend = ()=>{ if(pgMicLive) pgStopMic(); };
-  try{ pgRec.start(); pgMicLive = true; document.getElementById("pgMic").classList.add("live"); }catch(e){}
+  pgRec.onend = ()=>{ _mic.e(pgMicLive ? "end/live" : "end"); _mic.done((document.getElementById("pgSheetInput")||{}).value || ""); if(pgMicLive) pgStopMic(); };
+  pgRec.onerror = ev=>{ _mic.e("err", ev.error); };
+  try{ pgRec.start(); _mic.e("start"); pgMicLive = true; document.getElementById("pgMic").classList.add("live"); }catch(e){}
 }
 function pgStopMic(){ pgMicLive = false; const m=document.getElementById("pgMic"); if(m) m.classList.remove("live"); if(pgRec){ try{ pgRec.stop(); }catch(e){} pgRec = null; } }
 

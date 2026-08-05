@@ -10,7 +10,7 @@
    went on serving the first index.html it ever saw — every update invisible
    until you cleared site data. The comment next to the fetch handler said the
    shell "barely changes", which was wrong the day it was written. */
-const CACHE = "catcaddy-v88-2026-08-04";
+const CACHE = "catcaddy-v89-2026-08-04";
 const SHELL = [
   "./",
   "./index.html",
@@ -55,19 +55,27 @@ self.addEventListener("fetch", e=>{
     );
     return;
   }
-  // The app itself: network first, cache as the fallback. It changes often, and
-  // a stale copy is worse than a slow one — you'd be looking at last week's
-  // build with no way to tell. The cache is still there for the walk-in with no
-  // bars; it just stops being the first answer.
+  // The app itself: stale-while-revalidate. Serve the cached shell instantly so
+  // launch stays as fast as a cache-first build, AND fetch a fresh copy in the
+  // background to seed the cache for next launch. Net effect: the newest build
+  // lands one launch later than network-first would, with zero launch-time wait.
+  // If there's no cache yet (first-ever open or a clean install), fall through to
+  // the network and index.html. This branch is code only — your DB rides the
+  // Apps Script branch above and stays network-first / live.
   if(url.origin === location.origin){
     e.respondWith(
-      fetch(req).then(r=>{
-        if(r.ok){
-          const copy = r.clone();
-          caches.open(CACHE).then(c=>c.put(req, copy));
-        }
-        return r;
-      }).catch(()=> caches.match(req).then(hit=> hit || caches.match("./index.html")))
+      caches.match(req).then(hit=>{
+        const fresh = fetch(req).then(r=>{
+          if(r.ok){
+            const copy = r.clone();
+            caches.open(CACHE).then(c=>c.put(req, copy));
+          }
+          return r;
+        }).catch(()=> hit || caches.match("./index.html"));
+        // Cached copy wins instantly when present; the network refresh still runs
+        // to seed next launch. No cache yet → wait on the network.
+        return hit || fresh;
+      })
     );
     return;
   }

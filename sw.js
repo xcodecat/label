@@ -10,7 +10,7 @@
    went on serving the first index.html it ever saw — every update invisible
    until you cleared site data. The comment next to the fetch handler said the
    shell "barely changes", which was wrong the day it was written. */
-const CACHE = "catcaddy-v92-2026-08-05";
+const CACHE = "catcaddy-v93-2026-08-05";
 const SHELL = [
   "./",
   "./index.html",
@@ -55,14 +55,42 @@ self.addEventListener("fetch", e=>{
     );
     return;
   }
-  // The app itself: stale-while-revalidate. Serve the cached shell instantly so
-  // launch stays as fast as a cache-first build, AND fetch a fresh copy in the
-  // background to seed the cache for next launch. Net effect: the newest build
-  // lands one launch later than network-first would, with zero launch-time wait.
-  // If there's no cache yet (first-ever open or a clean install), fall through to
-  // the network and index.html. This branch is code only — your DB rides the
-  // Apps Script branch above and stays network-first / live.
+  // The app DOCUMENT (index.html / navigations): NETWORK-FIRST, so every online
+  // launch runs the newest build instead of last launch's cached copy.
+  //  - {cache:"reload"} bypasses the browser + GitHub-Pages HTTP cache, so a
+  //    stale index.html can never be handed back.
+  //  - a 3s timeout guards the walk-in: if the signal is slow or half-dead we
+  //    stop waiting and serve the cached shell, so launch never stalls.
+  //  - offline (fetch fails) falls back to the cached shell as well.
+  //  - on success we refresh the cached copy so the offline fallback is current
+  //    next time. Everything else same-origin (icons/images) stays cache-first
+  //    for an instant launch. Your DB still rides the Apps Script branch above.
   if(url.origin === location.origin){
+    const isDoc = req.mode === "navigate"
+               || url.pathname.endsWith("/")
+               || url.pathname.endsWith("index.html");
+    if(isDoc){
+      e.respondWith((async ()=>{
+        const fromCache = ()=> caches.match(req)
+          .then(h=> h || caches.match("./index.html"))
+          .then(h=> h || caches.match("./"));
+        const net = fetch(req.url, { cache: "reload" }).then(r=>{
+          if(r && r.ok){
+            const copy = r.clone();
+            caches.open(CACHE).then(c=> c.put("./index.html", copy));
+          }
+          return r;
+        });
+        net.catch(()=>{});   // keep it alive to seed the cache even if we time out
+        try{
+          const timeout = new Promise((_, rej)=> setTimeout(()=> rej(new Error("slow")), 3000));
+          return await Promise.race([net, timeout]);
+        }catch(_){
+          return (await fromCache()) || net;   // slow/offline → cached shell
+        }
+      })());
+      return;
+    }
     e.respondWith(
       caches.match(req).then(hit=>{
         const fresh = fetch(req).then(r=>{
@@ -72,8 +100,6 @@ self.addEventListener("fetch", e=>{
           }
           return r;
         }).catch(()=> hit || caches.match("./index.html"));
-        // Cached copy wins instantly when present; the network refresh still runs
-        // to seed next launch. No cache yet → wait on the network.
         return hit || fresh;
       })
     );

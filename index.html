@@ -1552,7 +1552,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=90">
+  <link rel="manifest" href="./manifest.json?v=91">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4020,6 +4020,94 @@ const CAT_NO   = "./cat_no_obvious_headshake.gif";     // wrong password: head s
 const CAT_YAY  = "./cat_smile_instant.gif";            // correct password: cat smiles
 const CAT_NO_MS  = 1000;   // one loop of the quicker shake
 const CAT_YAY_MS = 2600;   // let the smile linger before opening the app
+
+/* ---- login greeting: a short, personal one-liner in place of "Welcome" ----
+   Baked in on purpose (no network fetch -- the lock screen has to work in a dead
+   walk-in). Picked fresh on every unlock, skipping the last one so it never
+   repeats back-to-back. Mostly upbeat non-produce lines; a produce pun turns up
+   about one time in five. {n} is swapped for the name set under Settings -> Me;
+   before a name is set, a name-less line is used. */
+const GREET_GENERAL = [
+  "Welcome back, {n} \u2014 the place runs better when you're here.",
+  "There he is. {n}, ready to make it look easy.",
+  "Morning, {n}. Today doesn't stand a chance.",
+  "{n}'s here \u2014 officially the best part of the shift.",
+  "Look who showed up to save the day. Hey, {n}.",
+  "{n}, the legend, has entered the building.",
+  "Loading {n}'s greatness\u2026 done. Let's go.",
+  "Warning: dangerously competent person detected. Hi, {n}.",
+  "{n} has logged in. Somewhere, a spreadsheet just got nervous.",
+  "Ah, {n} \u2014 the reason the schedule makes sense.",
+  "Clock in, {n}. The store's been holding its breath.",
+  "{n}, if hard work were a person, it'd ask YOU for tips.",
+  "Breaking news: {n} is here and everything's fine now.",
+  "{n}, your future self already thanked you for showing up.",
+  "{n} online. Productivity levels: suspiciously high.",
+  "Careful, {n} \u2014 you make this look too easy.",
+  "The bat-signal worked. {n} has arrived.",
+  "Somebody call the paper \u2014 {n} showed up on time. (Close enough.)",
+  "Plot twist: {n} makes Mondays look good.",
+  "{n} has entered. Confidence: 10/10. Coffee: pending.",
+  "Let's do this, {n}. The aisles won't know what hit 'em.",
+  "You showed up, {n}. That's already a win.",
+  "Deep breath, {n}. You've handled worse before lunch.",
+  "{n}, go be the reason someone smiles today.",
+  "Morning, {n}. Big day, bigger you.",
+  "Suit up, {n}. Greatness has a shift today.",
+  "Go get 'em, {n}.",
+  "Let's roll, {n}.",
+  "{n}, today's yours.",
+  "You've got this, {n}.",
+  "Shine on, {n}.",
+  "Make it count, {n}.",
+  "{n}, absolute legend.",
+  "{n}, born ready.",
+  "Easy work, {n}.",
+  "Let's make magic, {n}.",
+  "{n}, unstoppable as ever.",
+  "Crush it, {n}.",
+  "{n}, the MVP is in.",
+  "Good vibes only, {n}.",
+  "{n}, main character energy.",
+  "Greatness incoming, {n}.",
+  "Locked in, {n}. Let's go.",
+  "{n}, today likes you.",
+  "Proud of you, {n}. Now go.",
+  "Smooth sailing today, {n}."
+];
+const GREET_PRODUCE = [
+  "{n}'s here. Lettuce begin.",
+  "Rise and shine, {n} \u2014 you're one in a melon.",
+  "{n}, you're the top banana today.",
+  "Romaine calm, everyone \u2014 {n} has arrived.",
+  "Orange you glad it's you again, {n}?",
+  "{n}, you've got this. Yes you carrot.",
+  "Back at it, {n}. Let's make today a-peeling.",
+  "{n}, you're kind of a big dill.",
+  "{n}, you're berry good at this.",
+  "Go be the freshest thing in the store, {n}."
+];
+const GREET_NONAME = [
+  "You're in \u2014 let's get fresh.",
+  "Welcome back \u2014 good to see you.",
+  "You're in. Let's make it a good one."
+];
+const KEY_GREET_LAST = "label_greet_last_v1";
+function pickGreeting(){
+  let name = "";
+  try{ name = (localStorage.getItem(KEY_ME_NAME) || "").trim(); }catch(e){}
+  if(!name){
+    const p = GREET_NONAME;
+    return p[Math.floor(Math.random() * p.length)];
+  }
+  const pool = (Math.random() < 0.2) ? GREET_PRODUCE : GREET_GENERAL;
+  let last = "";
+  try{ last = localStorage.getItem(KEY_GREET_LAST) || ""; }catch(e){}
+  let line = pool[Math.floor(Math.random() * pool.length)];
+  for(let i = 0; i < 5 && line === last; i++) line = pool[Math.floor(Math.random() * pool.length)];
+  try{ localStorage.setItem(KEY_GREET_LAST, line); }catch(e){}
+  return line.replace(/\{n\}/g, name);
+}
 const RING_C = 452.4;      // 2·π·72 — the ring circumference
 // Vibration can't set amplitude, so "stronger" = longer pulses. Kept clearly
 // distinct: success is short-short-LONG (rising, positive); wrong is three
@@ -4175,7 +4263,7 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
       localStorage.setItem(KEY_UNLOCK, p);
       rememberPassword(p);
       input.value = "";
-      sub.textContent = "Welcome";
+      sub.textContent = pickGreeting();
       ringC.style.strokeWidth = "7";
       catReact("yay");                                 // 1) cat smiles first
       await lockDelay(450);
@@ -5684,7 +5772,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v90";
+const APP_VERSION = "v91";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is

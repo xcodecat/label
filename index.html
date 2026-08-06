@@ -21,6 +21,7 @@
     --ok:#4CAF7D;
     --muted:#8A939C;
     --line:#343B42;
+    --deck:#22DD77;
     --mono:'IBM Plex Mono','Courier New',monospace;
     --sans:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
   }
@@ -36,6 +37,7 @@
     --ok:#2E7D52;
     --muted:#6B665A;
     --line:#CFCABB;
+    --deck:#12A150;
   }
   body.light .modal{background:#FFFDF6}
   body.light .label-card{background:#FFFDF6}
@@ -1115,6 +1117,7 @@
   #mUnitSeg button{flex:1;min-width:0;padding:12px 0;font-size:14px}
   #fabSync{display:none}
   .cat-nm .own{display:inline-block;font-size:9px;background:var(--laser);color:#fff;padding:2px 5px;border-radius:4px;margin-left:6px;vertical-align:middle;font-weight:700;letter-spacing:.02em}
+  .cat-nm .deck{display:inline-block;font-size:9px;background:var(--deck);color:#0c1a10;padding:2px 5px;border-radius:4px;margin-left:5px;vertical-align:middle;font-weight:800;letter-spacing:.02em}
   .cat-hint{font-family:var(--mono);font-size:9px;color:var(--ok);letter-spacing:0;margin-left:6px}
   /* Add-search grouping: carried up top, catalogue-only collapsed & muted below */
   .cat-rowtop{display:flex;align-items:center;gap:8px}
@@ -1552,7 +1555,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=93">
+  <link rel="manifest" href="./manifest.json?v=94">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2846,6 +2849,126 @@ const PRODUCT_CATALOG_RAW = [
 ["20080137003","Blueberries Pint","411117554032","12","1x340.000G","",1],
 ];
 const STORE_ITEMS = [
+  /* --- 5 Deck items (salads, dips, dressings, drinks) — separate shelf, store-carried --- */
+  {t:"bc",k:"062287212118",b:"",n:'Renée\'s Sweet Onion Vinaigrette',w:"350mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"062287212064",b:"",n:'Renée\'s Spring Herb & Garlic Vinaigrette',w:"350mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"062287212033",b:"",n:'Renée\'s Greek Feta Vinaigrette',w:"350mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"062287212156",b:"",n:'Renée\'s Balsamic Vinaigrette',w:"350mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"062287212125",b:"",n:'Renée\'s Honey Dijon Vinaigrette',w:"350mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383209636",b:"",n:'President\'s Choice Apple Cider Vinaigrette',w:"350mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383209643",b:"",n:'President\'s Choice Balsamic Vinaigrette',w:"350mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383209681",b:"",n:'President\'s Choice Spring Herb Vinaigrette',w:"350mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"800293151102",b:"",n:'Peeled Garlic',w:"250g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060556000060",b:"",n:'Belleisle Coleslaw',w:"227g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"030223041979",b:"",n:'Taylor Farms Dill Pickle Chopped Salad Kit',w:"333g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383023195",b:"",n:'President\'s Choice Southwest Salad Kit',w:"369g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383023188",b:"",n:'President\'s Choice Loads of Garlic Caesar Salad Kit',w:"319g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383004842",b:"",n:'President\'s Choice Caesar Salad Kit',w:"282g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383222673",b:"",n:'President\'s Choice Coleslaw',w:"397g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"888048300418",b:"",n:'Folia Lettuce Crunchy Greens',w:"113g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383222727",b:"",n:'President\'s Choice Baby Spinach',w:"142g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383222741",b:"",n:'President\'s Choice Spring Mix',w:"142g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383991555",b:"",n:'President\'s Choice Organics Field Greens Salad Mix',w:"142g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383001841",b:"",n:'President\'s Choice Sweet Baby Lettuces',w:"142g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383991579",b:"",n:'President\'s Choice Organics Baby Spinach',w:"142g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383222697",b:"",n:'President\'s Choice Romaine Salad',w:"255g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383004910",b:"",n:'President\'s Choice Blue Menu Caesar Salad Kit',w:"282g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383023171",b:"",n:'President\'s Choice Chopped Bacon Caesar Kit',w:"326g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383023119",b:"",n:'President\'s Choice Chopped Caesar Kit',w:"298g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"030223060383",b:"",n:'Taylor Farms Maple Bourbon Bacon Chopped Kit',w:"315g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"030223063230",b:"",n:'Taylor Farms Pizzeria Crunch Kit',w:"292g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"030223060093",b:"",n:'Taylor Farms Buffalo Ranch Kit',w:"383g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"888048000776",b:"",n:'Fresh Attitude Spring Mix Single Kit',w:"143g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383885854",b:"",n:'President\'s Choice Green Beans',w:"340g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383846916",b:"",n:'President\'s Choice Broccoli Slaw',w:"340g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383174903",b:"",n:'President\'s Choice Kale Slaw',w:"340g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383199845",b:"",n:'President\'s Choice Ready Veggie Kale Blend',w:"340g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"062287112074",b:"",n:'Renée\'s Mighty Caesar Dressing',w:"355mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"062287112111",b:"",n:'Renée\'s Light Poppy Seed Dressing',w:"355mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"062287052097",b:"",n:'Renée\'s Classic Ranch Dressing',w:"355mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"062287112029",b:"",n:'Renée\'s Blue Cheese Dressing',w:"355mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"062287112012",b:"",n:'Renée\'s Greek Feta Dressing',w:"355mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"062287112098",b:"",n:'Renée\'s Light Caesar Dressing',w:"355mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"062287112067",b:"",n:'Renée\'s Caesar Dressing',w:"355mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"071464309510",b:"",n:'Bolthouse Farms Amazing Mango Smoothie',w:"946mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"071464302511",b:"",n:'Bolthouse Farms C-Boost Smoothie',w:"946mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"071464240608",b:"",n:'Bolthouse Farms Green Goodness Smoothie',w:"946mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"071464316549",b:"",n:'Bolthouse Farms Green Goodness Fruit Juice',w:"1.54L",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"9350271002083",b:"",n:'Remedy Organic Kombucha Mango Passion',w:"700mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"9350271001864",b:"",n:'Remedy Organic Kombucha Peach',w:"700mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"9350271000225",b:"",n:'Remedy Organic Kombucha Raspberry Lemon',w:"700mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383106003",b:"",n:'President\'s Choice Chicken Skewers Halal',w:"300g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383004170",b:"",n:'President\'s Choice Organics Rose Spring Mix',w:"142g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383001810",b:"",n:'President\'s Choice Arugula',w:"142g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"888048300425",b:"",n:'Folia Lettuce Crispy Bouquet',w:"113g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383846886",b:"",n:'President\'s Choice Broccoli Florets',w:"340g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383164362",b:"",n:'President\'s Choice Organics Broccoli Florets',w:"283g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"062287077502",b:"",n:'Renée\'s Mighty Caesar Dressing',w:"750mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"062287067503",b:"",n:'Renée\'s Light Caesar Dressing',w:"750mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"062287097500",b:"",n:'Renée\'s Caesar Dressing',w:"750mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383209698",b:"",n:'President\'s Choice Caesar Dressing',w:"730mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383209612",b:"",n:'President\'s Choice Ranch Dressing',w:"355mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383209582",b:"",n:'President\'s Choice Loads of Garlic Caesar Dressing',w:"355mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383209605",b:"",n:'President\'s Choice Caesar Dressing',w:"355mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"071464301514",b:"",n:'Bolthouse Farms Blue Goodness',w:"946mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"071464270605",b:"",n:'Bolthouse Farms Strawberry Banana Smoothie',w:"946mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"071464280604",b:"",n:'Bolthouse Farms Berry Boost',w:"946mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"071464200602",b:"",n:'Bolthouse Farms Carrot Juice',w:"946mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"071464312541",b:"",n:'Bolthouse Farms Carrot Juice',w:"1.54L",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"9350271000164",b:"",n:'Remedy Organic Kombucha Ginger Lemon',w:"700mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"9350271002601",b:"",n:'Remedy Organic Kombucha Wildberry',w:"700mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"9350271005442",b:"",n:'Remedy Organic Kombucha Black Cherry',w:"700mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383106201",b:"",n:'President\'s Choice Shawarma Chicken Strips Halal',w:"300g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383196318",b:"",n:'President\'s Choice Organics Arugula Spinach',w:"142g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383991548",b:"",n:'President\'s Choice Organics Baby Arugula',w:"142g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383001827",b:"",n:'President\'s Choice Baby Arugula Spinach Blend',w:"142g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383001889",b:"",n:'President\'s Choice Mixed Greens',w:"340g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383064280",b:"",n:'President\'s Choice Chopped Lemon Tahini Crunch Kit',w:"285g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383023126",b:"",n:'President\'s Choice Chopped Chipotle Kit',w:"340g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383023157",b:"",n:'President\'s Choice Chopped Sesame Wonton Kit',w:"347g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383105402",b:"",n:'President\'s Choice Chopped Big Smash Kit',w:"303g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"030223061403",b:"",n:'Taylor Farms Green Goddess Chopped Kit',w:"328g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"030223063261",b:"",n:'Taylor Farms Jalapeño Popper Chopped Kit',w:"305g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"030223041726",b:"",n:'Taylor Farms Caesar Chopped Kit',w:"316g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"030223060079",b:"",n:'Taylor Farms Thai Chili Mango Kit',w:"319g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383004941",b:"",n:'President\'s Choice Sweet Kale Salad Kit',w:"340g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"045388800149",b:"",n:'Spinach',w:"283g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"077661111482",b:"",n:'Litehouse Caramel Dip',w:"340g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"077661175521",b:"",n:'Litehouse Chocolate Dip',w:"227g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"077661171783",b:"",n:'Litehouse Cream Cheese Dip',w:"227g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"077661113080",b:"",n:'Litehouse Caramel Snack Pack',w:"340g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"077661125120",b:"",n:'Litehouse Homestyle Ranch',w:"591mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"077661123522",b:"",n:'Litehouse Chunky Blue Cheese',w:"591mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"077661123539",b:"",n:'Litehouse Caesar',w:"591mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"071464017163",b:"",n:'Bolthouse Farms Daily Greens',w:"946mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"071464017101",b:"",n:'Bolthouse Farms Red Goodness',w:"946mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"071464300517",b:"",n:'Bolthouse Farms Mocha Cappuccino',w:"946mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"071464280406",b:"",n:'Bolthouse Farms Berry Boost',w:"450mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"071464270407",b:"",n:'Bolthouse Farms Strawberry Banana Smoothie',w:"450mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"071464240400",b:"",n:'Bolthouse Farms Green Goodness Smoothie',w:"450mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383829438",b:"",n:'President\'s Choice Organics Baby Spinach',w:"312g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383829421",b:"",n:'President\'s Choice Organics Field Greens',w:"312g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383196332",b:"",n:'President\'s Choice Organics Spring Spinach',w:"312g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383222734",b:"",n:'President\'s Choice 50/50 Blend',w:"283g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383222758",b:"",n:'President\'s Choice Baby Spinach',w:"312g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383222666",b:"",n:'President\'s Choice Spring Mix',w:"312g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"888048300821",b:"",n:'Folia Crispy Bouquet',w:"227g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"888048300814",b:"",n:'Folia Crunchy Greens',w:"227g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383021047",b:"",n:'President\'s Choice Sweet Kale Salad Kit',w:"680g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"045388800101",b:"",n:'Spinach',w:"1.13kg",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"",b:"",n:'Chopped Kale',w:"230g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060556002279",b:"",n:'Cooking Spinach',w:"227g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383039202",b:"",n:'President\'s Choice Broccoli Florets',w:"907g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"616112369586",b:"",n:'Wholly Guacamole Roasted Style Bowl',w:"213g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"070200588738",b:"",n:'Marzetti Spinach Parmesan Dip',w:"340g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"070200588424",b:"",n:'Marzetti Caramel Dip',w:"340g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"070200588462",b:"",n:'Marzetti Lite Ranch Dip',w:"340g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"070200588400",b:"",n:'Marzetti Ranch Dip',w:"340g",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"060383037529",b:"",n:'President\'s Choice Apple Cider',w:"3L",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"",b:"",n:'President\'s Choice Mulled Apple Cider',w:"3L",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"824150701484",b:"",n:'POM Wonderful Pomegranate Juice',w:"1.4L",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"824150701163",b:"",n:'POM Wonderful Pomegranate Juice',w:"473mL",u:"ea",o:"",c:"",d:1},
+  {t:"bc",k:"071464324520",b:"",n:'Bolthouse Farms Pomegranate Juice',w:"1.54L",u:"ea",o:"",c:"",d:1},
 {t:"bc",k:"060383851712",b:"",n:"Apple Cortland",w:"4lb",u:"ea",o:"Canada",c:""},
 {t:"bc",k:"060383851750",b:"",n:"Apple Empire Bag",w:"",u:"ea",o:"Canada",c:""},
 {t:"bc",k:"060383851880",b:"",n:"Apple McIntosh",w:"4lb",u:"ea",o:"Canada",c:""},
@@ -3084,6 +3207,7 @@ const KEY_DBAT  = "label_dbat_v1";
 function dbPluMap(){ try{ return JSON.parse(localStorage.getItem(KEY_DBPLU) || "{}"); }catch(e){ return {}; } }
 function dbBcMap(){ try{ return JSON.parse(localStorage.getItem(KEY_DBBC) || "{}"); }catch(e){ return {}; } }
 let dbStoreCodes = new Set();   // barcodes the Sheet marks Store=YES
+let dbDeckCodes  = new Set();   // barcodes the Sheet marks Deck=YES (5 Deck shelf)
 /* A Sheet "Store" cell overrides the baked-in store badge: YES turns it on,
    NO turns it off, blank leaves the built-in default alone. */
 function storeVal(v){ v=String(v==null?"":v).trim().toLowerCase();
@@ -3096,8 +3220,9 @@ function applyStoreOverrides(){
   for(const code in pm){ const sv=storeVal(pm[code].store); if(sv===null) continue;
     PLU.forEach(e=>{ if(String(e.plu)===String(code) && e.own!==sv){ e.own=sv; changed=true; } }); }
   if(changed) savePlu(PLU.slice());
-  const bm = dbBcMap(); dbStoreCodes = new Set();
-  for(const code in bm){ if(storeVal(bm[code].store)===true) dbStoreCodes.add(String(code)); }
+  const bm = dbBcMap(); dbStoreCodes = new Set(); dbDeckCodes = new Set();
+  for(const code in bm){ if(storeVal(bm[code].store)===true) dbStoreCodes.add(String(code));
+    if(storeVal(bm[code].deck)===true) dbDeckCodes.add(String(code)); }
 }
 function dbHitForPlu(plu){ return dbPluMap()[String(plu||"").replace(/\D/g,"")] || null; }
 function dbHitForCode(code){ return dbBcMap()[String(code||"").replace(/\D/g,"")] || null; }
@@ -4028,69 +4153,38 @@ const CAT_YAY_MS = 2600;   // let the smile linger before opening the app
    about one time in five. {n} is swapped for the name set under Settings -> Me;
    before a name is set, a name-less line is used. */
 const GREET_GENERAL = [
-  "Welcome back, {n} \u2014 the place runs better when you're here.",
-  "There he is. {n}, ready to make it look easy.",
-  "Morning, {n}. Today doesn't stand a chance.",
-  "{n}'s here \u2014 officially the best part of the shift.",
-  "Look who showed up to save the day. Hey, {n}.",
-  "{n}, the legend, has entered the building.",
-  "Loading {n}'s greatness\u2026 done. Let's go.",
-  "Warning: dangerously competent person detected. Hi, {n}.",
-  "{n} has logged in. Somewhere, a spreadsheet just got nervous.",
-  "Ah, {n} \u2014 the reason the schedule makes sense.",
-  "Clock in, {n}. The store's been holding its breath.",
-  "{n}, if hard work were a person, it'd ask YOU for tips.",
-  "Breaking news: {n} is here and everything's fine now.",
-  "{n}, your future self already thanked you for showing up.",
-  "{n} online. Productivity levels: suspiciously high.",
-  "Careful, {n} \u2014 you make this look too easy.",
-  "The bat-signal worked. {n} has arrived.",
-  "Somebody call the paper \u2014 {n} showed up on time. (Close enough.)",
-  "Plot twist: {n} makes Mondays look good.",
-  "{n} has entered. Confidence: 10/10. Coffee: pending.",
-  "Let's do this, {n}. The aisles won't know what hit 'em.",
-  "You showed up, {n}. That's already a win.",
-  "Deep breath, {n}. You've handled worse before lunch.",
-  "{n}, go be the reason someone smiles today.",
-  "Morning, {n}. Big day, bigger you.",
-  "Suit up, {n}. Greatness has a shift today.",
-  "Go get 'em, {n}.",
-  "Let's roll, {n}.",
-  "{n}, today's yours.",
-  "You've got this, {n}.",
-  "Shine on, {n}.",
-  "Make it count, {n}.",
-  "{n}, absolute legend.",
-  "{n}, born ready.",
-  "Easy work, {n}.",
-  "Let's make magic, {n}.",
-  "{n}, unstoppable as ever.",
-  "Crush it, {n}.",
-  "{n}, the MVP is in.",
-  "Good vibes only, {n}.",
-  "{n}, main character energy.",
-  "Greatness incoming, {n}.",
-  "Locked in, {n}. Let's go.",
-  "{n}, today likes you.",
-  "Proud of you, {n}. Now go.",
-  "Smooth sailing today, {n}."
-];
-const GREET_PRODUCE = [
-  "{n}'s here. Lettuce begin.",
-  "Rise and shine, {n} \u2014 you're one in a melon.",
-  "{n}, you're the top banana today.",
-  "Romaine calm, everyone \u2014 {n} has arrived.",
-  "Orange you glad it's you again, {n}?",
-  "{n}, you've got this. Yes you carrot.",
-  "Back at it, {n}. Let's make today a-peeling.",
-  "{n}, you're kind of a big dill.",
-  "{n}, you're berry good at this.",
-  "Go be the freshest thing in the store, {n}."
+  "Hey {n}. Good to see you.",
+  "There you are, {n}. Glad you're here.",
+  "Welcome back, {n}.",
+  "Deep breath. You've got this.",
+  "Go easy on yourself today, {n}.",
+  "Proud of you for showing up.",
+  "One thing at a time \u2014 you've got it.",
+  "Good to have you back, {n}.",
+  "Hope today's a kind one.",
+  "You showed up. That already counts.",
+  "Take care of yourself out there, {n}.",
+  "Steady as you go.",
+  "{n}, you're doing better than you think.",
+  "Whatever today brings, you can handle it.",
+  "Nice to see you, {n}.",
+  "Easy does it today.",
+  "Hope you slept alright, {n}.",
+  "Look who it is. Hey, {n}.",
+  "Hope something good finds you today.",
+  "Here's to a smooth one.",
+  "Glad you're here, {n}.",
+  "You've got everything you need today."
 ];
 const GREET_NONAME = [
-  "You're in \u2014 let's get fresh.",
-  "Welcome back \u2014 good to see you.",
-  "You're in. Let's make it a good one."
+  "Hey there. Good to see you.",
+  "There you are. Glad you're here.",
+  "Deep breath. You've got this.",
+  "Hope today's a kind one.",
+  "Take it one thing at a time.",
+  "Good to have you back.",
+  "You showed up. That already counts.",
+  "Here's to a smooth one."
 ];
 const KEY_GREET_LAST = "label_greet_last_v1";
 function pickGreeting(){
@@ -4100,7 +4194,7 @@ function pickGreeting(){
     const p = GREET_NONAME;
     return p[Math.floor(Math.random() * p.length)];
   }
-  const pool = (Math.random() < 0.2) ? GREET_PRODUCE : GREET_GENERAL;
+  const pool = GREET_GENERAL;
   let last = "";
   try{ last = localStorage.getItem(KEY_GREET_LAST) || ""; }catch(e){}
   let line = pool[Math.floor(Math.random() * pool.length)];
@@ -4483,7 +4577,7 @@ async function pullDb(){
   const d = await callProxy({ action:"getDb" });
   if(d && d.ok){
     const pMap = {}; (d.plu || []).forEach(r=>{ if(r.plu) pMap[r.plu] = { name:r.name, brand:r.brand, packWt:r.packWt, origin:r.origin, unit:r.unit, store:r.store }; });
-    const bMap = {}; (d.barcodes || []).forEach(r=>{ if(r.code) bMap[r.code] = { name:r.name, brand:r.brand, packWt:r.packWt, origin:r.origin, unit:r.unit, pack:r.pack, size:r.size, store:r.store }; });
+    const bMap = {}; (d.barcodes || []).forEach(r=>{ if(r.code) bMap[r.code] = { name:r.name, brand:r.brand, packWt:r.packWt, origin:r.origin, unit:r.unit, pack:r.pack, size:r.size, store:r.store, deck:r.deck }; });
     localStorage.setItem(KEY_DBPLU, JSON.stringify(pMap));
     localStorage.setItem(KEY_DBBC, JSON.stringify(bMap));
     localStorage.setItem(KEY_DBAT, d.at || new Date().toISOString());
@@ -4845,19 +4939,19 @@ function searchEntries(q){
   for(const code in bm){ const c = bm[code];
     if(hit(c.name, c.brand, code, "")) push({ name:c.name||"", code:String(code), plu:"",
       brand:c.brand||"", packWt:c.packWt||"", pack:c.pack||"", size:c.size||"", unit:c.unit||"",
-      store:storeVal(c.store)===true }); }
+      store:storeVal(c.store)===true, deck:storeVal(c.deck)===true }); }
   // hardcoded store barcodes (offline source of truth)
   if(typeof STORE_ITEMS !== "undefined") STORE_ITEMS.forEach(it=>{
     if(it.t !== "bc") return;
     if(hit(it.n, it.b, it.k, "")) push({ name:it.n, code:String(it.k), plu:"",
-      brand:it.b||"", packWt:it.w||"", pack:"", size:"", unit:it.u||"ea", store:true });
+      brand:it.b||"", packWt:it.w||"", pack:"", size:"", unit:it.u||"ea", store:true, deck:!!it.d });
   });
   // built-in barcode catalogue
   if(typeof CATALOG !== "undefined") CATALOG.forEach(c=>{
     if(c && c.name && hit(c.name, c.brand, c.code, c.plu))
       push({ name:c.name, code:String(c.code||""), plu:c.plu||"", brand:c.brand||"",
              packWt:wtFrom(c), pack:c.pack||"", size:c.size||"", unit:c.unit||"",
-             store:dbStoreCodes.has(String(c.code||"")) });
+             store:dbStoreCodes.has(String(c.code||"")), deck:dbDeckCodes.has(String(c.code||"")) });
   });
   // Sheet PLU DB
   const pm = dbPluMap();
@@ -4899,6 +4993,7 @@ function pluBoxes(plu, mine){
 function catRow2(o, dim){
   const pw = o.packWt ? '<span class="nm-bdg pack">'+esc(cleanWt(o.packWt))+'</span>' : "";
   const badge = o.store ? '<span class="own">store</span>' : "";
+  const dbadge = o.deck ? '<span class="deck">5 DECK</span>' : "";
   const nm = nmNameHtml((o.brand?o.brand+" ":"")+o.name);
   // muted catalogue rows get an explicit + (the whole row still opens the form too)
   const plus = dim
@@ -4909,7 +5004,7 @@ function catRow2(o, dim){
   const codesRight = (!o.code && o.plu) ? pluBoxes(o.plu, !!o.store) : "";
   const bcBelow = o.code ? '<div class="cat-bcimg"><svg class="cat-bc" data-code="'+esc(o.code)+'"></svg></div>' : "";
   return '<div class="cat-row2 tappable'+(dim?' dim':'')+'" onclick="openEntry('+o._i+')">'
-    + '<div class="cat-rowtop"><div class="cat-nm">'+nm+badge+pw+'</div>'+codesRight+plus+'</div>'
+    + '<div class="cat-rowtop"><div class="cat-nm">'+nm+badge+dbadge+pw+'</div>'+codesRight+plus+'</div>'
     + bcBelow + '</div>';
 }
 function catFindHtml(q){
@@ -5845,7 +5940,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v93";
+const APP_VERSION = "v94";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -7496,7 +7591,7 @@ document.getElementById("btnSyncStore").addEventListener("click", async ()=>{
   if(typeof STORE_ITEMS === "undefined") return;
   s.textContent = "Syncing store items…";
   const items = STORE_ITEMS.map(it => it.t === "bc"
-    ? { kind:"bc",  row:{ barcode:it.k, brand:it.b, name:it.n, packWt:(it.w||"").toUpperCase(), unit:it.u, origin:it.o, store:"YES", caseCount:it.c } }
+    ? { kind:"bc",  row:{ barcode:it.k, brand:it.b, name:it.n, packWt:(it.w||"").toUpperCase(), unit:it.u, origin:it.o, store:"YES", deck:(it.d?"YES":""), caseCount:it.c } }
     : { kind:"plu", row:{ plu:it.k,     brand:it.b, name:it.n, packWt:(it.w||"").toUpperCase(), unit:it.u, origin:it.o, store:"YES", caseCount:it.c } });
   try{
     const d = await callProxy({ action:"dbBulkUpsert", items });

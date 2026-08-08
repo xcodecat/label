@@ -816,13 +816,12 @@
   .wtab{flex:1;background:#0b0d0f;border:1px solid var(--line);color:var(--muted);
     font-family:var(--sans);font-size:12px;font-weight:600;padding:10px 6px;
     border-radius:9px 9px 0 0;cursor:pointer;transition:background .15s,color .15s}
-  .wtab.on,.wtab.active{background:var(--surface);color:var(--paper);
-    border-top:2px solid var(--laser);border-bottom-color:var(--surface);position:relative;z-index:3}
+  .wtab.on,.wtab.active{background:var(--laser);color:#fff;border-color:var(--laser);position:relative;z-index:3}
   .wtab.ghost{border-style:dashed;opacity:.75}
-  #weekTabs .wtab.active{border-top-color:var(--laser)}
-  /* each list keeps its own colour on the active tab's top edge */
-  .wtab.active[data-list="flashfood"]{border-top-color:var(--ok)}
-  .wtab.active[data-list="loop"]{border-top-color:var(--laser)}
+  #weekTabs .wtab.active{background:var(--laser);border-color:var(--laser);color:#fff}
+  /* each list keeps its own colour on the active tab */
+  .wtab.active[data-list="flashfood"]{background:var(--ok);border-color:var(--ok);color:#0d1a12}
+  .wtab.active[data-list="loop"]{background:var(--laser);border-color:var(--laser);color:#fff}
   .tabpanel{background:var(--surface);border:1px solid var(--line);border-radius:0 0 10px 10px;
     margin-top:-1px;position:relative;z-index:1;padding:12px}
   .tabpanel > :first-child{margin-top:0}
@@ -1577,7 +1576,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=99">
+  <link rel="manifest" href="./manifest.json?v=100">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -5990,7 +5989,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v99";
+const APP_VERSION = "v100";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -7152,7 +7151,7 @@ function bcMatches(name){
     });
   }
   const seen = new Set(), out = [];
-  for(const e of ents){ if(seen.has(e.code)) continue; seen.add(e.code); out.push(e); if(out.length>=8) break; }
+  for(const e of ents){ const key = String(e.code||"").replace(/^0+/,""); if(seen.has(key)) continue; seen.add(key); out.push(e); if(out.length>=8) break; }
   return out;
 }
 function strictBarcodeMatches(name){ return bcMatches(name); }

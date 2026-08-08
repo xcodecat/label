@@ -790,7 +790,7 @@
     border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px}
 
   /* sticky bar on the Sales tab */
-  .sticky-bar{position:sticky;top:47px;z-index:15;background:var(--ink);
+  .sticky-bar{position:sticky;top:var(--hdr,47px);z-index:15;background:var(--ink);
     padding:12px 0 8px;margin-top:-4px}
   .sales-head{display:flex;gap:8px;align-items:center;display:flex;gap:10px;align-items:center;margin-bottom:10px}
   .sales-head .sbox{min-width:0}
@@ -816,12 +816,13 @@
   .wtab{flex:1;background:#0b0d0f;border:1px solid var(--line);color:var(--muted);
     font-family:var(--sans);font-size:12px;font-weight:600;padding:10px 6px;
     border-radius:9px 9px 0 0;cursor:pointer;transition:background .15s,color .15s}
-  .wtab.on,.wtab.active{background:var(--laser);color:#fff;border-color:var(--laser);position:relative;z-index:3}
+  .wtab.on,.wtab.active{background:var(--surface);color:var(--laser);border-color:var(--line);
+    border-top:3px solid var(--laser);border-bottom-color:var(--surface);font-weight:700;position:relative;z-index:3}
   .wtab.ghost{border-style:dashed;opacity:.75}
-  #weekTabs .wtab.active{background:var(--laser);border-color:var(--laser);color:#fff}
-  /* each list keeps its own colour on the active tab */
-  .wtab.active[data-list="flashfood"]{background:var(--ok);border-color:var(--ok);color:#0d1a12}
-  .wtab.active[data-list="loop"]{background:var(--laser);border-color:var(--laser);color:#fff}
+  #weekTabs .wtab.active{color:var(--laser);border-top-color:var(--laser)}
+  /* each list keeps its own colour: red Loop / green Flashfood */
+  .wtab.active[data-list="flashfood"]{color:var(--ok);border-top-color:var(--ok)}
+  .wtab.active[data-list="loop"]{color:var(--laser);border-top-color:var(--laser)}
   .tabpanel{background:var(--surface);border:1px solid var(--line);border-radius:0 0 10px 10px;
     margin-top:-1px;position:relative;z-index:1;padding:12px}
   .tabpanel > :first-child{margin-top:0}
@@ -1576,7 +1577,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=100">
+  <link rel="manifest" href="./manifest.json?v=101">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4529,6 +4530,14 @@ document.getElementById("lockPass").addEventListener("input", ()=>{
     document.documentElement.style.setProperty("--kb", kb + "px"); };
   vv.addEventListener("resize", setKb); vv.addEventListener("scroll", setKb); setKb();
 })();
+/* Pin the tab bars just below the ACTUAL header height (varies with status icons
+   and iOS safe-area insets); a hard 47px can tuck them under the header. */
+(function(){
+  const hdr = document.querySelector("header"); if(!hdr) return;
+  const setHdr = ()=> document.documentElement.style.setProperty("--hdr", hdr.offsetHeight + "px");
+  setHdr(); window.addEventListener("resize", setHdr);
+  if(window.ResizeObserver){ try{ new ResizeObserver(setHdr).observe(hdr); }catch(e){} }
+})();
 
 /* ---- who is asking ----
    The app link is public and that's fine: the deployed files hold no secret and
@@ -4974,6 +4983,14 @@ function wtFrom(c){
 // the Sheet's Barcode DB and PLU DB. Matches on brand + name (so "PCO mushroom"
 // works) or on the raw code / PLU number.
 let _searchEnts = [];
+let _storeBcNorm = null;
+function storeBcNorm(){
+  if(!_storeBcNorm){
+    _storeBcNorm = new Set((typeof STORE_ITEMS !== "undefined" ? STORE_ITEMS : [])
+      .filter(x => x.t === "bc" && x.k).map(x => String(x.k).replace(/^0+/, "")));
+  }
+  return _storeBcNorm;
+}
 function searchEntries(q){
   const out = [], seen = new Set();
   const push = (o)=>{
@@ -4983,9 +5000,11 @@ function searchEntries(q){
   const hit = (name, brand, code, plu)=>
     matchItem(name, brand, q) ||
     (code && String(code).includes(q)) || (plu && String(plu).includes(q));
-  // Sheet Barcode DB first — your data / corrections win over the baked lists.
+  // Barcode DB: the app's built-in list is the source of truth, so a Sheet row
+  // whose barcode duplicates a built-in one (leading zeros ignored) is skipped.
   const bm = dbBcMap();
   for(const code in bm){ const c = bm[code];
+    if(storeBcNorm().has(String(code).replace(/^0+/, ""))) continue;   // built-in wins
     if(hit(c.name, c.brand, code, "")) push({ name:c.name||"", code:String(code), plu:"",
       brand:c.brand||"", packWt:c.packWt||"", pack:c.pack||"", size:c.size||"", unit:c.unit||"",
       store:storeVal(c.store)===true, deck:storeVal(c.deck)===true }); }
@@ -5989,7 +6008,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v100";
+const APP_VERSION = "v101";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is

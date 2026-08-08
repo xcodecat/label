@@ -806,16 +806,27 @@
   .icon-btn.spin svg{animation:spin 1s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
 
-  .wtabs{display:flex;gap:8px;margin-bottom:12px}
+  /* Connected tabs: the active tab shares the panel's fill and fuses into it;
+     inactive tabs sit back, darker and detached, inside a recessed well. */
+  .tabwell{margin-top:8px;padding:10px;border-radius:12px;background:#0f1113;
+    box-shadow:inset 0 2px 8px rgba(0,0,0,.45)}
+  .wtabs{display:flex;gap:4px;margin-bottom:0;position:relative;z-index:2}
   .wtabs:empty{display:none}
-  .wtab{flex:1;background:var(--surface);border:1px solid var(--line);color:var(--muted);
-    font-family:var(--sans);font-size:12px;font-weight:600;padding:9px 6px;border-radius:9px;cursor:pointer}
-  .wtab.on,.wtab.active{background:var(--laser);border-color:var(--laser);color:#fff}
+  .wtab{flex:1;background:#0b0d0f;border:1px solid var(--line);color:var(--muted);
+    font-family:var(--sans);font-size:12px;font-weight:600;padding:10px 6px;
+    border-radius:9px 9px 0 0;cursor:pointer;transition:background .15s,color .15s}
+  .wtab.on,.wtab.active{background:var(--surface);color:var(--paper);
+    border-top:2px solid var(--laser);border-bottom-color:var(--surface);position:relative;z-index:3}
   .wtab.ghost{border-style:dashed;opacity:.75}
-  #weekTabs .wtab.active{background:var(--laser);border-color:var(--laser);color:#fff}
-  /* each list keeps its own colour, same as the dot beside its heading */
-  .wtab.active[data-list="flashfood"]{background:var(--ok);border-color:var(--ok);color:#0d1a12}
-  .wtab.active[data-list="loop"]{background:var(--laser);border-color:var(--laser);color:#fff}
+  #weekTabs .wtab.active{border-top-color:var(--laser)}
+  /* each list keeps its own colour on the active tab's top edge */
+  .wtab.active[data-list="flashfood"]{border-top-color:var(--ok)}
+  .wtab.active[data-list="loop"]{border-top-color:var(--laser)}
+  .tabpanel{background:var(--surface);border:1px solid var(--line);border-radius:0 0 10px 10px;
+    margin-top:-1px;position:relative;z-index:1;padding:12px}
+  .tabpanel > :first-child{margin-top:0}
+  /* Save = commit (green); Clear stays the danger ghost */
+  .btn.save-green{background:var(--ok);border-color:var(--ok);color:#0d1a12}
   .scrapfind{width:100%;display:flex;align-items:center;justify-content:center;gap:7px;
     background:var(--surface);border:1px solid var(--line);color:var(--paper);
     font-family:var(--sans);font-size:12px;font-weight:600;padding:9px 6px;border-radius:9px;
@@ -1565,7 +1576,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=97">
+  <link rel="manifest" href="./manifest.json?v=98">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1779,33 +1790,39 @@
           <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         </button>
       </div>
-      <div class="wtabs" id="weekTabs"></div>
-      <div class="progress" id="saleProgress"><i id="saleBar"></i></div>
     </div>
-    <div class="sale-meta" id="saleMeta"></div>
-    <div class="sale-grid" id="saleGrid"></div>
+    <div class="tabwell">
+      <div class="wtabs" id="weekTabs"></div>
+      <div class="tabpanel">
+        <div class="progress" id="saleProgress"><i id="saleBar"></i></div>
+        <div class="sale-meta" id="saleMeta"></div>
+        <div class="sale-grid" id="saleGrid"></div>
+      </div>
+    </div>
   </section>
 
   <!-- ============ LOOP / FLASHFOOD VIEW ============ -->
   <section id="view-scrap" class="view">
-    <div class="sticky-bar">
+    <div class="tabwell">
       <div class="wtabs" id="listTabs">
         <button class="wtab active" data-list="loop">Loop</button>
         <button class="wtab" data-list="flashfood">Flashfood</button>
       </div>
-    </div>
-    <div class="heard hidden" id="heard"></div>
-    <div class="tbl" id="tblActive"></div>
-    <!-- the + sits under the list because that's where the new line appears -->
-    <button class="addrow" id="btnScrapRow" aria-label="Add a line">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-           stroke-linecap="round" aria-hidden="true">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Add a line
-    </button>
-    <div class="btn-row btn-row-clear">
-      <button class="btn btn-ghost danger" id="btnScrapClear">Clear all</button>
-      <button class="btn btn-primary" id="btnScrapSave">Save all</button>
+      <div class="tabpanel">
+        <div class="heard hidden" id="heard"></div>
+        <div class="tbl" id="tblActive"></div>
+        <!-- the + sits under the list because that's where the new line appears -->
+        <button class="addrow" id="btnScrapRow" aria-label="Add a line">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add a line
+        </button>
+        <div class="btn-row btn-row-clear">
+          <button class="btn btn-ghost danger" id="btnScrapClear">Clear all</button>
+          <button class="btn btn-primary save-green" id="btnScrapSave">Save all</button>
+        </div>
+      </div>
     </div>
     <div id="savedWrap"></div>
     <button class="sync-fab" id="btnScrapSync" aria-label="Sync saved lists to the Sheet">
@@ -1828,10 +1845,14 @@
       <div class="sales-head">
         <input id="ordSearch" placeholder="Was it shorted? Search an item…" autocomplete="off">
       </div>
-      <div class="wtabs" id="ordTabs"></div>
     </div>
-    <div id="ordVerdict"></div>
-    <div id="ordBody"></div>
+    <div class="tabwell">
+      <div class="wtabs" id="ordTabs"></div>
+      <div class="tabpanel">
+        <div id="ordVerdict"></div>
+        <div id="ordBody"></div>
+      </div>
+    </div>
     <button class="mic-fab shoot" id="btnOrdAdd" aria-label="Add a page">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -5972,7 +5993,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v97";
+const APP_VERSION = "v98";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is

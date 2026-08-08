@@ -1577,7 +1577,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=101">
+  <link rel="manifest" href="./manifest.json?v=103">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4078,6 +4078,11 @@ async function pwHash(pass){
 async function rememberPassword(pass){
   try{ localStorage.setItem(KEY_PWHASH, await pwHash(pass)); }catch(e){}
 }
+function forgetPassword(){
+  // Drop the offline key AND the remembered password so a revoked phone can't
+  // keep opening — used when the Sheet rejects the device while online.
+  try{ localStorage.removeItem(KEY_PWHASH); localStorage.removeItem(KEY_UNLOCK); }catch(e){}
+}
 async function passwordMatchesCache(pass){
   const h = localStorage.getItem(KEY_PWHASH);
   if(!h) return false;
@@ -4356,16 +4361,22 @@ async function tryUnlock(pass){
     return { ok:false, code:"BADPASS" };
   }
   try{
+    const dev = deviceInfo();
     const r = await fetch(url, {
       method:"POST",
       headers:{ "Content-Type":"text/plain;charset=utf-8" },
-      // not callProxy: the lock is checked before the device gate, so an
-      // unapproved phone can still get in and ask to be approved
-      body: JSON.stringify({ action:"unlock", password:pass })
+      // Send the device identity so the Sheet gates login on approval; an
+      // unapproved phone comes back code:"PENDING" and stays locked. The password
+      // is only cached (for offline) on ok, so a pending phone can't open offline.
+      body: JSON.stringify({ action:"unlock", password:pass,
+        secret:secret(), deviceId:dev.id, deviceName:dev.name })
     });
     const d = await r.json();
     // A password confirmed by the Sheet becomes the offline key.
     if(d && d.ok && pass) rememberPassword(pass);
+    // Revoked or never-approved, confirmed online: drop the cached key so the
+    // phone can't keep opening offline either — unticking now locks it back out.
+    else if(d && d.code === "PENDING") forgetPassword();
     return d;
   }catch(e){
     // The connection dropped mid-check. Fall back to the cache rather than fail.
@@ -4471,6 +4482,7 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
     } else {
       const msg = d && d.code === "BADPASS" ? "That's not it — try again."
                 : d && d.code === "OFFLINE" ? "No signal, and this phone hasn't unlocked here before. Connect once."
+                : d && d.code === "PENDING" ? "This phone isn't approved yet — ask Faisal to tick it in the Devices sheet, then try again."
                 : ((d && d.error) || "Couldn't check.");
       catReact("nope");                                // quick shake, matched to the buzz
       if(navigator.vibrate) navigator.vibrate(VIB_NO);
@@ -6008,7 +6020,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v101";
+const APP_VERSION = "v103";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is

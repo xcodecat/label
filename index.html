@@ -240,14 +240,17 @@
     margin:0 0 6px}
   .lock-name .w1{font-weight:800;color:var(--paper)}
   .lock-name .w2{font-weight:300;color:var(--laser)}
-  .lock-sub{color:var(--muted);font-size:12px;margin:0 0 3px}
+  .lock-sub{color:var(--muted);font-size:15px;font-style:italic;margin:0 0 3px}
   .lock-hint{color:var(--muted);font-size:10px;margin:0 0 20px;opacity:.7}
   /* the personalised one-liner now sits on its own italic line at the very
      bottom of the lock screen; margin-top:auto pushes it down the flex column. */
-  .lock-greet{margin-top:auto;font-family:var(--sans);font-style:italic;font-weight:500;
-    font-size:15px;line-height:1.45;color:var(--paper-dim);max-width:280px;padding-top:16px}
+  .lock-greet{position:fixed;left:0;right:0;bottom:calc(var(--kb,0px) + 18px);margin:0 auto;
+    padding:0 24px;text-align:center;font-family:var(--sans);font-style:italic;font-weight:500;
+    font-size:15px;line-height:1.45;color:var(--muted);max-width:320px;
+    transition:color .3s ease, bottom .2s ease}
+  .lock-greet.wrong{color:var(--laser)}
+  .lock-greet:empty{display:none}
   .lock-sub:empty{display:none}
-  .lock.checking .lock-greet{visibility:hidden;opacity:0;transition:opacity .25s}
   .lock input{width:100%;max-width:280px;background:var(--surface-2);
     border:1px solid var(--line);border-radius:9px;padding:14px;color:var(--paper);
     font-size:16px;font-family:var(--sans);text-align:center;margin-bottom:12px}
@@ -1564,7 +1567,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=95">
+  <link rel="manifest" href="./manifest.json?v=96">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4131,15 +4134,19 @@ async function openApp(){
   document.body.style.overflow = "";
 }
 
-function showLock(msg, bad){
+function showLock(msg, bad, keepGreet){
   const l = document.getElementById("lockScreen");
   l.classList.remove("hidden", "checking", "spinning", "big");
   setCatSrc(CAT_IDLE);          // clear any lingering shake/smile back to calm
   resetLockFx();                // clear the ring + line morph
   // Top status line stays empty at rest (collapses); the personal one-liner
-  // lives at the bottom now, set once per show.
+  // lives at the bottom now. keepGreet lets the wrong-password line survive.
   document.getElementById("lockSub").textContent = "";
-  document.getElementById("lockGreet").textContent = pickGreeting();
+  if(!keepGreet){
+    const g = document.getElementById("lockGreet");
+    g.classList.remove("wrong");
+    g.textContent = pickGreeting();
+  }
   document.getElementById("appWrap").classList.add("hidden-until-open");
   document.body.style.overflow = "hidden";
   const n = document.getElementById("lockNote");
@@ -4198,21 +4205,21 @@ const GREET_NONAME = [
   "Here's to a smooth one."
 ];
 const KEY_GREET_LAST = "label_greet_last_v1";
-function pickGreeting(){
-  let name = "";
-  try{ name = (meName() || "").trim(); }catch(e){}
-  if(!name){
-    const p = GREET_NONAME;
-    return p[Math.floor(Math.random() * p.length)];
-  }
-  const pool = GREET_GENERAL;
-  let last = "";
-  try{ last = localStorage.getItem(KEY_GREET_LAST) || ""; }catch(e){}
-  let line = pool[Math.floor(Math.random() * pool.length)];
-  for(let i = 0; i < 5 && line === last; i++) line = pool[Math.floor(Math.random() * pool.length)];
-  try{ localStorage.setItem(KEY_GREET_LAST, line); }catch(e){}
-  return line.replace(/\{n\}/g, name);
+// Once ANY lock-screen line has used the name this session, later lines drop it —
+// hearing your own name every single line gets grating. Resets on each load.
+let _greetNameShown = false;
+function pickLine(pool, key){
+  let name = ""; try{ name = (meName() || "").trim(); }catch(e){}
+  const plain = pool.filter(l => l.indexOf("{n}") < 0);
+  const usable = (!name || _greetNameShown) ? (plain.length ? plain : pool) : pool;
+  let last = _lastLine[key] || "";
+  let line = usable[Math.floor(Math.random() * usable.length)];
+  for(let i = 0; i < 6 && usable.length > 1 && line === last; i++) line = usable[Math.floor(Math.random() * usable.length)];
+  _lastLine[key] = line;
+  if(name && line.indexOf("{n}") >= 0) _greetNameShown = true;
+  return line.replace(/\{n\}/g, name || "you");
 }
+function pickGreeting(){ return pickLine(GREET_GENERAL, "greet"); }
 
 /* ---- other rotating lock-screen lines ---------------------------------
    boot (app opening), typing (while the password is entered) and wrong
@@ -4435,7 +4442,7 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
       localStorage.setItem(KEY_UNLOCK, p);
       rememberPassword(p);
       input.value = "";
-      sub.textContent = pickGreeting();
+      { const g = document.getElementById("lockGreet"); g.classList.remove("wrong"); g.textContent = pickGreeting(); }
       ringC.style.strokeWidth = "7";
       catReact("yay");                                 // 1) cat smiles first
       await lockDelay(450);
@@ -4448,7 +4455,6 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
       const msg = d && d.code === "BADPASS" ? "That's not it — try again."
                 : d && d.code === "OFFLINE" ? "No signal, and this phone hasn't unlocked here before. Connect once."
                 : ((d && d.error) || "Couldn't check.");
-      sub.textContent = rotLine(WRONG_LINES, "wrong");
       catReact("nope");                                // quick shake, matched to the buzz
       if(navigator.vibrate) navigator.vibrate(VIB_NO);
       await lockDelay(CAT_NO_MS);
@@ -4470,7 +4476,15 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
       lineAsBox(ib2);
       await lockDelay(320);
       document.getElementById("lockLine").style.opacity = "0";
-      showLock(msg, true);
+      if(d && d.code === "BADPASS"){
+        showLock("", true, true);                    // reset the form, keep the one-liner slot, no note
+        const wl = pickLine(WRONG_LINES, "wrong");
+        const g = document.getElementById("lockGreet");
+        g.classList.remove("wrong"); g.textContent = wl;                 // shown in the normal grey first
+        setTimeout(()=>{ g.classList.add("wrong"); g.textContent = wl + " \u2014 try again"; }, 550);
+      } else {
+        showLock(msg, true);                          // offline / other: keep the informative note
+      }
       input.focus(); input.select();
       btn.disabled = false; btn.textContent = "Open";
     }
@@ -4491,6 +4505,14 @@ document.getElementById("lockPass").addEventListener("input", ()=>{
   if(l.classList.contains("checking") || l.classList.contains("big")) return;
   /* one-liner is a static personal greeting at the bottom now — no typing rotation */
 });
+/* Keep the bottom one-liner above the on-screen keyboard: track the visual
+   viewport and expose the keyboard height as --kb. */
+(function(){
+  const vv = window.visualViewport; if(!vv) return;
+  const setKb = ()=>{ const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    document.documentElement.style.setProperty("--kb", kb + "px"); };
+  vv.addEventListener("resize", setKb); vv.addEventListener("scroll", setKb); setKb();
+})();
 
 /* ---- who is asking ----
    The app link is public and that's fine: the deployed files hold no secret and
@@ -5951,7 +5973,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v95";
+const APP_VERSION = "v96";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is

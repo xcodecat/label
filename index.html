@@ -245,7 +245,7 @@
   /* the personalised one-liner now sits on its own italic line at the very
      bottom of the lock screen; margin-top:auto pushes it down the flex column. */
   .lock-greet{margin-top:auto;margin-bottom:calc(var(--kb,0px) + 18px);text-align:center;
-    font-family:var(--sans);font-style:italic;font-weight:500;font-size:15px;line-height:1.45;
+    font-family:var(--sans);font-style:normal;font-weight:400;font-size:16px;line-height:1.45;
     color:var(--muted);max-width:320px;transition:margin-bottom .2s ease}
   .lock-greet:empty{display:none}
   .lock-sub:empty{display:none}
@@ -1577,7 +1577,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=103">
+  <link rel="manifest" href="./manifest.json?v=104">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4192,28 +4192,44 @@ const CAT_YAY_MS = 2600;   // let the smile linger before opening the app
    about one time in five. {n} is swapped for the name set under Settings -> Me;
    before a name is set, a name-less line is used. */
 const GREET_GENERAL = [
-  "Hey {n}. Good to see you.",
-  "There you are, {n}. Glad you're here.",
-  "Welcome back, {n}.",
-  "Deep breath. You've got this.",
-  "Go easy on yourself today, {n}.",
-  "Proud of you for showing up.",
-  "One thing at a time \u2014 you've got it.",
-  "Good to have you back, {n}.",
-  "Hope today's a kind one.",
-  "You showed up. That already counts.",
-  "Take care of yourself out there, {n}.",
-  "Steady as you go.",
-  "{n}, you're doing better than you think.",
-  "Whatever today brings, you can handle it.",
-  "Nice to see you, {n}.",
-  "Easy does it today.",
-  "Hope you slept alright, {n}.",
-  "Look who it is. Hey, {n}.",
-  "Hope something good finds you today.",
-  "Here's to a smooth one.",
-  "Glad you're here, {n}.",
-  "You've got everything you need today."
+  "Look who's ready to make things happen.",
+  "Your energy makes today brighter.",
+  "The day just got better\u2014you're here.",
+  "You were made to do wonderful things.",
+  "Your potential looks good on you.",
+  "You've already got the spark\u2014let's put it to work.",
+  "Never forget\u2014you're one of a kind.",
+  "Welcome back, superstar.",
+  "You make being yourself look wonderful.",
+  "Your energy has a way of brightening everything around you.",
+  "There's something unforgettable about the way you shine.",
+  "You carry a little sunshine wherever life takes you.",
+  "Your heart is one of your greatest strengths.",
+  "The world is brighter with someone like you in it.",
+  "You have a beautiful way of making life feel lighter.",
+  "You're a rare kind of wonderful.",
+  "Your sparkle is entirely your own.",
+  "You're proof that kindness and strength belong together.",
+  "You have the kind of glow that comes from within.",
+  "Never underestimate how special you are.",
+  "You're effortlessly one of a kind.",
+  "Your warmth is its own kind of magic.",
+  "You have a beautiful soul\u2014don't ever forget it.",
+  "You make ordinary moments feel a little more special.",
+  "The best thing about you is that there's only one of you.",
+  "You wear your uniqueness beautifully.",
+  "You're a lovely reminder that the world is full of good things.",
+  "There's a quiet kind of magic in you.",
+  "You deserve all the kindness you give to others.",
+  "Your good energy speaks for itself.",
+  "You have a way of making the world feel softer.",
+  "You're more remarkable than you give yourself credit for.",
+  "Your light is impossible to imitate.",
+  "Being exactly who you are suits you perfectly.",
+  "You're a whole lot of wonderful in one person.",
+  "There's something genuinely lovely about you.",
+  "You have a heart worth celebrating.",
+  "You're someone the world is lucky to have."
 ];
 const GREET_NONAME = [
   "Hey there. Good to see you.",
@@ -4532,7 +4548,9 @@ let _typeN = 0;
 document.getElementById("lockPass").addEventListener("input", ()=>{
   const l = document.getElementById("lockScreen");
   if(l.classList.contains("checking") || l.classList.contains("big")) return;
-  /* one-liner is a static personal greeting at the bottom now — no typing rotation */
+  const g = document.getElementById("lockGreet");
+  if(!document.getElementById("lockPass").value){ g.classList.remove("wrong"); g.textContent = pickGreeting(); return; }
+  if((++_typeN % 3) === 0) g.textContent = rotLine(TYPING_LINES, "typing");   // playful line while typing
 });
 /* Keep the bottom one-liner above the on-screen keyboard: track the visual
    viewport and expose the keyboard height as --kb. */
@@ -5371,7 +5389,7 @@ let weeks = [], salesTs = 0, activeWeek = 0;
 try{
   const s = JSON.parse(localStorage.getItem(KEY_SALES) || "{}");
   weeks = s.weeks || []; salesTs = s.ts || 0;
-  { let i = weeks.findIndex(w=>w.primary); if(i<0) i = weeks.findIndex(w=>w.current); activeWeek = Math.max(0, i); }
+  activeWeek = defaultWeekIndex();
 }catch(e){}
 
 document.getElementById("saleSearch").addEventListener("input", renderSales);
@@ -5388,6 +5406,21 @@ function nextFlyerDay(){
     : d.toLocaleDateString(undefined, { weekday:"long", month:"short", day:"numeric" });
 }
 
+function defaultWeekIndex(){
+  // "This week" = the flyer whose run dates contain today. Flipp flips its own
+  // primary flag to NEXT week the moment that flyer posts early, so trust dates.
+  const today = new Date(); today.setHours(0,0,0,0);
+  const parse = s => { const x = String(s).slice(0,10).split("-"); return new Date(+x[0], (+x[1])-1, +x[2]); };
+  for(let i=0;i<weeks.length;i++){
+    const w = weeks[i];
+    if(w && w.from && w.to){
+      const a = parse(w.from), b = parse(w.to);
+      if(!isNaN(a) && !isNaN(b) && today >= a && today <= b) return i;
+    }
+  }
+  let i = weeks.findIndex(w=>w.primary); if(i<0) i = weeks.findIndex(w=>w.current);
+  return Math.max(0, i);
+}
 function currentWeekItems(){
   return (weeks[activeWeek] && weeks[activeWeek].items) || [];
 }
@@ -5477,7 +5510,7 @@ async function refreshSales(){
     if(!d || !d.ok) throw new Error((d && d.error) || "no reply");
     weeks = d.weeks || [];
     salesTs = Date.now();
-    { let i = weeks.findIndex(w=>w.primary); if(i<0) i = weeks.findIndex(w=>w.current); activeWeek = Math.max(0, i); }
+    activeWeek = defaultWeekIndex();
     try{
       localStorage.setItem(KEY_SALES, JSON.stringify({ weeks: weeks, ts: salesTs }));
     }catch(e){ toast("Loaded, but too big to cache"); }
@@ -6020,7 +6053,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v103";
+const APP_VERSION = "v104";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is

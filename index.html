@@ -1577,7 +1577,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=105">
+  <link rel="manifest" href="./manifest.json?v=106">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1597,6 +1597,8 @@
   <p class="lock-sub" id="lockSub">Warming up the engine…</p>
   <p class="lock-hint" id="lockHint">Locks itself after 30 minutes.</p>
   <div class="lock-form">
+    <input id="lockName" placeholder="Name this phone" autocomplete="off"
+           autocapitalize="words" autocorrect="off" style="display:none">
     <input id="lockPass" type="password" placeholder="Password" autocomplete="current-password"
            enterkeyhint="go" autocapitalize="off" autocorrect="off">
     <button class="btn btn-primary" id="lockGo">Open</button>
@@ -3557,7 +3559,7 @@ function showView(name){
     if(proxyUrl() && navigator.onLine) checkAccess();
   }
   if(name==="settings"){
-    document.getElementById("scriptUrl").value = localStorage.getItem(KEY_URL)||"";
+    document.getElementById("scriptUrl").value = localStorage.getItem(KEY_URL) || BAKED_PROXY_URL;
     const _md = document.getElementById("micDbgToggle"); if(_md) _md.checked = micDbgOn();
   }
 }
@@ -4041,7 +4043,12 @@ document.getElementById("fRescan").addEventListener("click", ()=>{
           3) search Superstore by that name for price + promo
    Everything goes through the Apps Script proxy, because the phone's browser
    is not allowed to fetch atlanticsuperstore.ca directly.                    */
-function proxyUrl(){ return localStorage.getItem(KEY_URL) || ""; }
+// Baked-in Sheet endpoint. A fresh phone can reach the backend immediately —
+// no per-device paste — so it can register itself and be ticked in Devices.
+// A value saved in Settings (KEY_URL) overrides this, so you can still point a
+// single phone elsewhere or move the whole fleet by editing this one line.
+const BAKED_PROXY_URL = "https://script.google.com/macros/s/AKfycbwAbD1dFCfRbuW6E4C1jJyKo5xHDi8_lcGC5x1S2wci3WxI0XUM-mts850CzK7WIvGq/exec";
+function proxyUrl(){ return localStorage.getItem(KEY_URL) || BAKED_PROXY_URL; }
 
 /* ============================================================
  *  APP LOCK
@@ -4173,6 +4180,15 @@ function showLock(msg, bad, keepGreet){
   const n = document.getElementById("lockNote");
   n.textContent = msg || "";
   n.classList.toggle("bad", !!bad);
+  // First run on this phone (never unlocked here) → let them name the phone so
+  // the row you tick in Devices is recognizable. After the first success the
+  // hash exists and the field stays hidden.
+  const firstRun = !localStorage.getItem(KEY_PWHASH);
+  const nameEl = document.getElementById("lockName");
+  if(nameEl){
+    nameEl.style.display = firstRun ? "" : "none";
+    if(firstRun && !nameEl.value){ try{ nameEl.value = deviceInfo().name || ""; }catch(e){} }
+  }
   setTimeout(()=>document.getElementById("lockPass").focus(), 60);
 }
 
@@ -4418,10 +4434,10 @@ async function bootLock(){
     return showLock("No signal — connect once to unlock this phone.");
   }
   if(!proxyUrl()){
-    // Nothing to check against yet. Opening is the only option that isn't a
-    // dead end — the password lives on the script, and you need Settings to
-    // reach the script. The app is empty until it's pointed at a Sheet anyway.
-    return openApp();
+    // With the URL baked in this is effectively unreachable. But if the baked
+    // constant is ever blanked, LOCK rather than open — a missing endpoint must
+    // never mean "let everyone in", which was the old fresh-install hole.
+    return showLock("");
   }
   try{
     const d = await tryUnlock(remembered || "");
@@ -4445,6 +4461,12 @@ async function bootLock(){
 document.getElementById("lockGo").addEventListener("click", async ()=>{
   const p = document.getElementById("lockPass").value;
   if(!p) return;
+  // First contact: fold the typed phone name into the device identity BEFORE we
+  // call unlock, so the PENDING row that lands in Devices carries it.
+  if(!localStorage.getItem(KEY_PWHASH)){
+    const nm = (document.getElementById("lockName").value || "").trim();
+    if(nm) setDeviceName(nm);
+  }
   const lock = document.getElementById("lockScreen");
   const btn  = document.getElementById("lockGo");
   const sub  = document.getElementById("lockSub");
@@ -6053,7 +6075,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v105";
+const APP_VERSION = "v106";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is

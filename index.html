@@ -179,7 +179,10 @@
   .clr.on{display:flex}
   .clr:active{background:var(--paper)}
   .search-wrap input, .sea-wrap input{padding-right:32px}
-  .sbox input{flex:1;padding-right:50px!important;transition:border-color .25s,box-shadow .25s}
+  .sbox input{flex:1;padding-right:40px!important;transition:border-color .25s,box-shadow .25s}
+  /* the two boxes with a mic carry ✕ + divider + mic on the right, so text clips
+     further in; the others only have a ✕ and don't need the extra room */
+  #search,#prodSearch{padding-right:80px!important}
   /* a brief glow says "start typing here" without stealing the screen */
   .sbox input.armed{border-color:var(--laser);box-shadow:0 0 0 3px rgba(214,64,44,.16)}
   /* :not(.clr) matters. ".sbox button" is one class heavier than ".clr", so it
@@ -258,8 +261,11 @@
      bottom of the lock screen; margin-top:auto pushes it down the flex column. */
   .lock-greet{margin-top:auto;margin-bottom:calc(var(--kb,0px) + 18px);text-align:center;
     font-family:var(--sans);font-style:normal;font-weight:400;font-size:14px;line-height:1.45;
-    color:var(--muted);max-width:320px;transition:margin-bottom .2s ease}
-  .lock-greet:empty{display:none}
+    color:var(--muted);max-width:320px;transition:margin-bottom .2s ease;
+    min-height:1.45em}
+  /* keep the line's space reserved even when empty — toggling display made the
+     boxes jump as the typing quip came and went */
+  .lock-greet:empty{visibility:hidden}
   .lock-sub:empty{display:none}
   .lock input{width:100%;max-width:280px;background:var(--surface-2);
     border:1px solid var(--line);border-radius:9px;padding:14px;color:var(--paper);
@@ -1178,16 +1184,15 @@
   .store-check input:checked ~ .store-box svg{opacity:1}
   .store-check input:focus-visible ~ .store-box{box-shadow:0 0 0 3px rgba(232,68,46,.3)}
   .store-lbl{font-weight:600;letter-spacing:.01em}
-  /* inline variant beside "Sold by": compact, and coloured like the rest of the
-     form — border matches the inputs (--line, not the louder --muted), label
-     matches the field labels — so it stops looking like a different component. */
-  .soldby-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
-  .soldby-head > label{margin:0}
-  .store-check.store-inline{padding:0;margin:0;width:auto;gap:8px}
-  .store-check.store-inline .store-box{width:20px;height:20px;border-radius:6px;border:2px solid var(--line)}
-  .store-check.store-inline .store-box svg{width:13px;height:13px}
-  .store-check.store-inline .store-lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;
-    color:var(--muted);font-weight:600}
+  /* Store as a segment sitting on the EA/kg row: same height (qty-row stretches),
+     coloured like .useg — bordered when off, laser-filled when on — so the three
+     read as one uniform control instead of a separate widget. */
+  .store-seg{position:relative;display:flex;align-items:center;justify-content:center;flex:none;
+    min-width:82px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:var(--ink);
+    color:var(--muted);font-family:var(--sans);font-size:13px;font-weight:700;letter-spacing:.02em;
+    cursor:pointer;user-select:none}
+  .store-seg input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+  .store-seg.on{background:var(--laser);border-color:var(--laser);color:#fff}
   .rk-tr{position:fixed;inset:0;z-index:80;background:var(--ink);display:none;flex-direction:column;
     padding:calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom))}
   .rk-tr.open{display:flex}
@@ -1599,7 +1604,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=108">
+  <link rel="manifest" href="./manifest.json?v=109">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2586,14 +2591,7 @@
       <div class="plu-drop hidden" id="mPluDrop"></div>
     </div>
     <div class="field">
-      <div class="soldby-head">
-        <label>Sold by</label>
-        <label class="store-check store-inline" for="mStore">
-          <input type="checkbox" id="mStore">
-          <span class="store-box"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-11"/></svg></span>
-          <span class="store-lbl">Store</span>
-        </label>
-      </div>
+      <label>Sold by</label>
       <label id="mQtyLabel" style="display:none"></label>
       <div class="qty-row">
         <span style="display:none">
@@ -2601,10 +2599,14 @@
           <input id="mQty" type="number" inputmode="numeric" value="1" min="0">
           <button type="button" class="qty-btn" id="mQtyPlus">+</button>
         </span>
-        <div class="useg" id="mUnitSeg" role="group" aria-label="Counted per each or by weight" style="display:flex;width:100%;">
+        <div class="useg" id="mUnitSeg" role="group" aria-label="Counted per each or by weight" style="display:flex;flex:1;">
           <button type="button" class="on" data-u="each" aria-label="Per each" title="Per each" style="flex:1;">EA</button>
           <button type="button" id="mUKG" data-u="kg" aria-label="By weight" title="By weight" style="flex:1;">kg</button>
         </div>
+        <label class="store-seg" id="mStoreSeg" for="mStore">
+          <input type="checkbox" id="mStore">
+          <span class="store-lbl">Store</span>
+        </label>
       </div>
     </div>
     <div class="field">
@@ -3560,7 +3562,10 @@ function showView(name){
   if(name==="handoff"){ hoMarkSeen(); renderHandoff(); hoPull(); hoStartPoll(); hoMaybePrompt(); renderHoIcon(); }
   if(name==="planogram"){ renderPlanogram(); pgPull(); pgStartPoll(); }
   if(name==="product"){
-    renderProduct();
+    // renderProduct scans the whole catalogue and lays out up to 80 cards; doing
+    // that synchronously here made the tap hang before the tab even painted.
+    // Paint the tab now, fill the list on the next frame — feels instant.
+    requestAnimationFrame(()=>renderProduct());
     // Land in the search box — looking something up is what this tab is for,
     // and the magnifier that used to do this is gone.
     const b = document.getElementById("prodSearch");
@@ -4877,6 +4882,11 @@ function resumeAfterForm(){
    Add list, typing genuinely did nothing. What's wanted is a LOOKUP: ask the
    whole 2,290-entry database (plus anything you've scanned) and just show the
    answer. Nothing here saves anything. */
+function syncStoreSeg(){
+  const s=document.getElementById("mStoreSeg"), i=document.getElementById("mStore");
+  if(s && i) s.classList.toggle("on", i.checked);
+}
+document.getElementById("mStore").addEventListener("change", syncStoreSeg);
 document.getElementById("search").addEventListener("input", renderList);
 
 /* The whole-database lookup lives in INFO now, not Add.
@@ -5065,6 +5075,7 @@ function wtFrom(c){
 // the Sheet's Barcode DB and PLU DB. Matches on brand + name (so "PCO mushroom"
 // works) or on the raw code / PLU number.
 let _searchEnts = [];
+let _idleProdHits = null, _idleProdSig = -1;
 let _storeBcNorm = null;
 function storeBcNorm(){
   if(!_storeBcNorm){
@@ -5215,7 +5226,7 @@ function openManualPrefilled(c){
   setManualUnit(unit() === "kg");
   document.getElementById("mPluDrop").classList.add("hidden");
   document.getElementById("mSave").textContent = "Save changes";
-  { const st=document.getElementById("mStore"); if(st) st.checked = !!(c && c.store && c.store !== "NO"); }
+  { const st=document.getElementById("mStore"); if(st){ st.checked = !!(c && c.store && c.store !== "NO"); syncStoreSeg(); } }
   if(c){
     const set=(id,v)=>{ const el=document.getElementById(id); if(el && v!=null && v!=="") el.value=v; };
     set("mName", c.name); set("mCode", c.code); set("mPlu", c.plu);
@@ -6105,7 +6116,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v108";
+const APP_VERSION = "v109";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -9811,12 +9822,19 @@ function renderProduct(){
       hits.push({ name: nm, plu: e.plu, own: e.own });
     });
   } else {
-    // idle: show what's actually written up, so the tab isn't a blank wall
-    hits = Object.keys(CARD_SEED).map(k=>{
-      const f = pluSearch(k)[0];
-      return f ? { name: f.name.replace(/\s*\(Organic\)\s*$/i,""), plu: f.plu, own: f.own }
-               : { name: k, plu: "", own: false };
-    });
+    // idle: show what's actually written up, so the tab isn't a blank wall.
+    // Cached — rebuilding this scanned the whole PLU list on every open. The
+    // PLU count is a cheap signature: it changes on import/edit, so the cache
+    // refreshes exactly when it needs to.
+    if(!_idleProdHits || _idleProdSig !== PLU.length){
+      _idleProdHits = Object.keys(CARD_SEED).map(k=>{
+        const f = pluSearch(k)[0];
+        return f ? { name: f.name.replace(/\s*\(Organic\)\s*$/i,""), plu: f.plu, own: f.own }
+                 : { name: k, plu: "", own: false };
+      });
+      _idleProdSig = PLU.length;
+    }
+    hits = _idleProdHits;
   }
 
   hits = hits.slice(0, 80);
@@ -10305,7 +10323,7 @@ function addClearButton(id){
 
   // sits left of the mic where there is one, so they never overlap
   const mic = host.querySelector("button:not(.clr)");
-  if(mic) b.style.right = "44px";
+  if(mic) b.style.right = "58px";   // sits left of the divider + mic, no overlap
 
   const sync = ()=>b.classList.toggle("on", !!input.value);
   input.addEventListener("input", sync);

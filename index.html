@@ -1577,7 +1577,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=106">
+  <link rel="manifest" href="./manifest.json?v=107">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1597,7 +1597,7 @@
   <p class="lock-sub" id="lockSub">Warming up the engine…</p>
   <p class="lock-hint" id="lockHint">Locks itself after 30 minutes.</p>
   <div class="lock-form">
-    <input id="lockName" placeholder="Name this phone" autocomplete="off"
+    <input id="lockName" placeholder="username" autocomplete="off"
            autocapitalize="words" autocorrect="off" style="display:none">
     <input id="lockPass" type="password" placeholder="Password" autocomplete="current-password"
            enterkeyhint="go" autocapitalize="off" autocorrect="off">
@@ -4186,8 +4186,7 @@ function showLock(msg, bad, keepGreet){
   const firstRun = !localStorage.getItem(KEY_PWHASH);
   const nameEl = document.getElementById("lockName");
   if(nameEl){
-    nameEl.style.display = firstRun ? "" : "none";
-    if(firstRun && !nameEl.value){ try{ nameEl.value = deviceInfo().name || ""; }catch(e){} }
+    nameEl.style.display = firstRun ? "" : "none";   // left empty on purpose; placeholder reads "username"
   }
   setTimeout(()=>document.getElementById("lockPass").focus(), 60);
 }
@@ -4454,7 +4453,7 @@ async function bootLock(){
   }catch(e){
     if(remembered && !stale) return openApp();   // script unreachable: don't strand them
     if(remembered) return showLock("");
-    showLock("Couldn't reach the script to check.");
+    showLock("Couldn't connect. Try again.");
   }
 }
 
@@ -4519,9 +4518,9 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
       setTimeout(openApp, CAT_YAY_MS);
     } else {
       const msg = d && d.code === "BADPASS" ? "That's not it — try again."
-                : d && d.code === "OFFLINE" ? "No signal, and this phone hasn't unlocked here before. Connect once."
-                : d && d.code === "PENDING" ? "This phone isn't approved yet — ask Faisal to tick it in the Devices sheet, then try again."
-                : ((d && d.error) || "Couldn't check.");
+                : d && d.code === "OFFLINE" ? "No signal — connect once to set up this phone."
+                : d && d.code === "PENDING" ? "This phone isn't approved yet."
+                : "Couldn't check. Try again.";
       catReact("nope");                                // quick shake, matched to the buzz
       if(navigator.vibrate) navigator.vibrate(VIB_NO);
       await lockDelay(CAT_NO_MS);
@@ -4559,7 +4558,7 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
     ring.classList.remove("pulse");
     setCatSrc(CAT_IDLE);
     await lockDelay(200);
-    showLock("Couldn't reach the script: " + e.message, true);
+    showLock("Couldn't connect. Try again.", true);
     btn.disabled = false; btn.textContent = "Open";
   }
 });
@@ -4701,11 +4700,9 @@ async function pullDb(){
 function authMessage(err){  if(!err || !err.auth) return null;
   // Say what it means for THEM, not how it works. The mechanism is Faisal's
   // business; a borrowed phone shouldn't come with a map of the locks.
-  if(err.code === "PENDING")
-    return "This phone is waiting to be approved. Ask Faisal — your work is saved " +
-           "and will send as soon as it is.";
-  if(err.code === "SECRET") return "That passphrase isn't right — check Settings.";
-  if(err.code === "NOSECRET") return "Not set up yet. Ask Faisal.";
+  if(err.code === "PENDING") return "This phone isn't approved yet.";
+  if(err.code === "SECRET") return "That shared secret isn't right — check Settings.";
+  if(err.code === "NOSECRET") return "Not set up yet.";
   if(err.code === "NODEVICE") return "Something's off with this phone — reload the app.";
   return err.message;
 }
@@ -6075,7 +6072,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v106";
+const APP_VERSION = "v107";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6632,7 +6629,6 @@ document.getElementById("btnScrapSync").addEventListener("click", async ()=>{
     // scrap because a checkbox wasn't ticked would be unforgivable.
     const a = authMessage(err);
     toast(a || ("Sync failed: " + err.message));
-    if(a) errBanner(a);
   }
   btn.classList.remove("busy");
 });
@@ -7784,11 +7780,11 @@ async function checkAccess(){
   n.textContent = "Asking…";
   try{
     const d = await callProxy({ action:"hello" });
-    const v = (d && d.ver) ? (" Script <b>" + d.ver + "</b>.")
-      : " <b style='color:var(--laser)'>Old script deployed</b> — redeploy the Apps Script as a New version.";
-    n.innerHTML = "<b style='color:var(--ok)'>You're approved.</b> This phone can write to the Sheet." + v;
+    n.innerHTML = (d && d.write)
+      ? "<b style='color:var(--ok)'>You're approved.</b> This phone can write."
+      : "<b style='color:var(--ok)'>You're approved.</b> Read-only — enter the shared secret above to write.";
   }catch(err){
-    n.textContent = authMessage(err) || ("Couldn't reach the script: " + err.message);
+    n.textContent = authMessage(err) || "Couldn't connect. Try again.";
   }
 }
 
@@ -8529,7 +8525,6 @@ document.getElementById("clSend").addEventListener("click", async ()=>{
   }catch(err){
     const a = authMessage(err);
     toast(a || ("Couldn't send: " + err.message));
-    if(a) errBanner(a);
   }
   btn.disabled = false; btn.textContent = "Send it";
 });
@@ -10097,10 +10092,8 @@ async function doSync(quiet){
     // the moment the box is ticked. Nothing is lost waiting for permission.
     const a = authMessage(err);
     status.className = "status err";
-    status.textContent = a || ("Sync failed: " + err.message +
-      " — check the URL and that the script is deployed for “Anyone”.");
+    status.textContent = a || "Sync failed — check your connection and try again.";
     if(!quiet) toast(a ? "Not approved yet" : "Sync failed");
-    if(a) errBanner(a);
   }
   btn.disabled = false; fab.disabled = false;
 }

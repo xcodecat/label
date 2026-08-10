@@ -1577,7 +1577,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=104">
+  <link rel="manifest" href="./manifest.json?v=105">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6053,7 +6053,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v104";
+const APP_VERSION = "v105";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6217,10 +6217,12 @@ let contCount = 0;
 let finalText = "";       // every finalised word this run, rebuilt from scratch
 let committedLen = 0;     // how much of it has already become rows
 let contTimer = null;
+let silenceTimer = null;   // single-shot: stop the mic once talking stops (iOS never auto-ends)
 
 function stopMic(){
   micWanted = false;
   clearTimeout(contTimer);
+  clearTimeout(silenceTimer);
   try{ rec.stop(); }catch(e){}   // onend commits whatever is outstanding
 }
 
@@ -6249,6 +6251,10 @@ function startMic(continuous, mode){
     const all = joinResults(ev.results, false);
     const interim = all.startsWith(fin) ? all.slice(fin.length).trim() : all;
     _mic.e("res", interim || fin);
+    if(!micCont){   // single-shot: auto-stop shortly after the talking stops (fixes iOS "won't stop")
+      clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(()=>{ _mic.e("stop-timer"); try{ rec.stop(); }catch(e){} }, 1400);
+    }
     if(micCont){
       // Chrome finalises a phrase PIECE BY PIECE — "organic", then "organic
       // banana", then "organic banana 4 kilo" — so committing on every final
@@ -6321,6 +6327,7 @@ function startMic(continuous, mode){
     }
     _mic.done(heardText || finalText || "");
     clearTimeout(contTimer);
+    clearTimeout(silenceTimer);
     setMic(false);
     if(micMode === "look"){
       // look mode already put the words in the box live; just flush the tail

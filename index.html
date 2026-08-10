@@ -1188,11 +1188,11 @@
      coloured like .useg — bordered when off, laser-filled when on — so the three
      read as one uniform control instead of a separate widget. */
   .store-seg{position:relative;display:flex;align-items:center;justify-content:center;flex:none;
-    min-width:82px;padding:0 14px;border:1px solid var(--line);border-radius:8px;background:var(--ink);
-    color:var(--muted);font-family:var(--sans);font-size:13px;font-weight:700;letter-spacing:.02em;
-    cursor:pointer;user-select:none}
+    box-sizing:border-box;min-width:84px;padding:12px 16px;border:1px solid var(--line);border-radius:8px;
+    background:var(--ink);color:var(--muted);font-family:var(--sans);font-size:14px;font-weight:600;
+    letter-spacing:.02em;cursor:pointer;user-select:none}
   .store-seg input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
-  .store-seg.on{background:var(--laser);border-color:var(--laser);color:#fff}
+  .store-seg.on{background:var(--laser);border-color:var(--laser);color:#fff;font-weight:700}
   .rk-tr{position:fixed;inset:0;z-index:80;background:var(--ink);display:none;flex-direction:column;
     padding:calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom))}
   .rk-tr.open{display:flex}
@@ -1379,6 +1379,11 @@
     cursor:pointer;-webkit-tap-highlight-color:transparent}
   .ho-nav-pulse{position:absolute;inset:3px;border-radius:50%;background:var(--laser);opacity:0;z-index:0}
   .ho-nav.attn .ho-nav-pulse{animation:hnpulse 1.9s ease-out infinite}
+  /* the pulse span sits behind the opaque disc, so on its own it barely shows.
+     radiate a red ring from the disc itself (on top) — outward, then fade. */
+  .ho-nav.attn .ho-nav-disc{animation:hnradiate 1.9s ease-out infinite}
+  @keyframes hnradiate{0%{box-shadow:0 0 0 0 rgba(232,68,46,.55)}
+    70%{box-shadow:0 0 0 13px rgba(232,68,46,0)}100%{box-shadow:0 0 0 0 rgba(232,68,46,0)}}
   @keyframes hnpulse{0%{transform:scale(.7);opacity:.5}70%{transform:scale(1.3);opacity:0}100%{opacity:0}}
   .ho-nav-disc{position:absolute;inset:4px;border-radius:50%;overflow:hidden;z-index:2;
     border:1.5px solid var(--line);background:var(--surface-2)}
@@ -1412,7 +1417,7 @@
   @keyframes homicrec{0%,100%{box-shadow:0 0 0 0 rgba(232,68,46,.5)}70%{box-shadow:0 0 0 8px rgba(232,68,46,0)}}
 
   @media (prefers-reduced-motion: reduce){
-    .ho-nav-pulse,.ho-nav.wiggle,.ho-nav.pop,.ho-mic.rec{animation:none !important}
+    .ho-nav-pulse,.ho-nav.attn .ho-nav-disc,.ho-nav.wiggle,.ho-nav.pop,.ho-mic.rec{animation:none !important}
   }
 
   /* ---------- header: logo (settings gate) + kebab + overflow menu ---------- */
@@ -1604,7 +1609,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=109">
+  <link rel="manifest" href="./manifest.json?v=110">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4504,6 +4509,10 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
     const nm = (document.getElementById("lockName").value || "").trim();
     if(nm) setDeviceName(nm);
   }
+  // Blank the one-liner immediately — otherwise the previous quip (a typing line
+  // or the last wrong-password line) lingers on screen through the async unlock
+  // before the new one replaces it.
+  { const g0 = document.getElementById("lockGreet"); if(g0){ g0.classList.remove("wrong"); g0.textContent = ""; } }
   const lock = document.getElementById("lockScreen");
   const btn  = document.getElementById("lockGo");
   const sub  = document.getElementById("lockSub");
@@ -6116,7 +6125,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v109";
+const APP_VERSION = "v110";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is

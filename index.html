@@ -1609,7 +1609,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=110">
+  <link rel="manifest" href="./manifest.json?v=111">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -3564,7 +3564,7 @@ function showView(name){
   if(name==="sales"){ renderWeekTabs(); renderSales(); }
   if(name==="scrap"){ maybeResumeWip(); renderLists(); }
   if(name==="restock"){ renderRestock(); rkPull(); rkStartPoll(); }
-  if(name==="handoff"){ hoMarkSeen(); renderHandoff(); hoPull(); hoStartPoll(); hoMaybePrompt(); renderHoIcon(); }
+  if(name==="handoff"){ ensureBadgePermission(); hoMarkSeen(); renderHandoff(); hoPull(); hoStartPoll(); hoMaybePrompt(); renderHoIcon(); }
   if(name==="planogram"){ renderPlanogram(); pgPull(); pgStartPoll(); }
   if(name==="product"){
     // renderProduct scans the whole catalogue and lays out up to 80 cards; doing
@@ -4620,11 +4620,18 @@ document.getElementById("lockPass").addEventListener("input", ()=>{
   if(!document.getElementById("lockPass").value){ g.classList.remove("wrong"); g.textContent = ""; return; }
   if((++_typeN % 3) === 0) g.textContent = rotLine(TYPING_LINES, "typing");   // playful line while typing
 });
+document.getElementById("lockPass").addEventListener("focus", ()=>{
+  // Re-engaging the field starts a fresh attempt — drop any stale line (a prior
+  // wrong-password quip or leftover typing line) so nothing lingers.
+  const g = document.getElementById("lockGreet");
+  g.classList.remove("wrong"); g.textContent = "";
+});
 /* Keep the bottom one-liner above the on-screen keyboard: track the visual
    viewport and expose the keyboard height as --kb. */
 (function(){
   const vv = window.visualViewport; if(!vv) return;
-  const setKb = ()=>{ const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+  const setKb = ()=>{ const layoutH = Math.max(window.innerHeight, document.documentElement.clientHeight);
+    const kb = Math.max(0, layoutH - vv.height - vv.offsetTop);
     document.documentElement.style.setProperty("--kb", kb + "px"); };
   vv.addEventListener("resize", setKb); vv.addEventListener("scroll", setKb); setKb();
 })();
@@ -6125,7 +6132,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v110";
+const APP_VERSION = "v111";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -11024,15 +11031,36 @@ function renderHoIcon(){
     }
   }
 
-  if(attn && !hoPrevAttn) hoPop();          // pop the moment it starts demanding attention
+  if(attn && !hoPrevAttn){ hoPop(); hoWiggle(); }   // new & unseen → pop + shake at once
   hoPrevAttn = attn;
+  updateAppBadge(open, attn);                        // and light the home-screen icon badge
 }
 
+/* Home-screen app icon badge: shows the open-note count when there's something
+   unseen for this user (not their own notes). Needs an installed PWA, and on
+   iOS also notification permission (requested when they first open Handoff). */
+function updateAppBadge(open, show){
+  if(!("setAppBadge" in navigator)) return;
+  try{
+    if(show && open>0) navigator.setAppBadge(open).catch(()=>{});
+    else navigator.clearAppBadge().catch(()=>{});
+  }catch(e){}
+}
+let _hoNotifyAsked = false;
+function ensureBadgePermission(){
+  if(_hoNotifyAsked) return; _hoNotifyAsked = true;
+  try{
+    if("Notification" in window && Notification.permission === "default")
+      Notification.requestPermission().catch(()=>{});
+  }catch(e){}
+}
+
+function hoWiggle(){ const el=document.getElementById("hoNav"); if(!el) return;
+  el.classList.remove("wiggle"); void el.offsetWidth; el.classList.add("wiggle"); }
 function hoWiggleTick(){
   if(document.hidden) return;
   if(!(hoOpenCount()>0 && hoUnseen())) return;
-  const el=document.getElementById("hoNav"); if(!el) return;
-  el.classList.remove("wiggle"); void el.offsetWidth; el.classList.add("wiggle");
+  hoWiggle();
 }
 
 /* every change stamps the board, saves, redraws, and sends on its own shortly */

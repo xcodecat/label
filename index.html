@@ -1085,8 +1085,10 @@
   .rk-row.rk-claimed .rk-st{background:rgba(76,175,125,.12);border-color:rgba(76,175,125,.55)}
   .rk-st svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.6}
   .rk-copy{min-width:0}
-  .rk-copy strong{display:block;font-size:12px;font-weight:630;color:#EEEAE1;white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis}
+  .rk-line{display:flex;align-items:center;gap:6px;min-width:0}
+  .rk-line .nm-bdg{flex:none}
+  .rk-copy strong{font-size:12px;font-weight:630;color:#EEEAE1;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;min-width:0}
   .rk-meta{display:flex;align-items:center;gap:6px;margin-top:4px}
   .rk-meta span{color:#666D75;font-size:8px}
   .rk-meta .rk-qty{color:#C8C2B7;font-family:var(--mono);border:1px solid #3A4148;border-radius:20px;
@@ -1187,12 +1189,24 @@
   /* Store as a segment sitting on the EA/kg row: same height (qty-row stretches),
      coloured like .useg — bordered when off, laser-filled when on — so the three
      read as one uniform control instead of a separate widget. */
-  .store-seg{position:relative;display:flex;align-items:center;justify-content:center;flex:none;
-    box-sizing:border-box;min-width:84px;padding:12px 16px;border:1px solid var(--line);border-radius:8px;
-    background:var(--ink);color:var(--muted);font-family:var(--sans);font-size:14px;font-weight:600;
-    letter-spacing:.02em;cursor:pointer;user-select:none}
-  .store-seg input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
-  .store-seg.on{background:var(--laser);border-color:var(--laser);color:#fff;font-weight:700}
+  /* Store now reads like the other form options: its label sits on top (beside
+     "Sold by"), and the control below is a checkbox box — not the word inside a
+     button. It shares the EA/kg row so align-items:stretch matches the height. */
+  .soldby-head-row{display:flex;gap:12px;align-items:baseline}
+  .soldby-head-row .sb-lbl{flex:1;margin:0}
+  .soldby-head-row .st-lbl{flex:none;width:72px;text-align:center;margin:0}
+  .field .soldby-head-row + label + .qty-row{margin-top:5px}
+  .store-tog{position:relative;flex:none;width:72px;box-sizing:border-box;display:flex;
+    align-items:center;justify-content:center;border:1px solid var(--line);border-radius:8px;
+    background:var(--ink);cursor:pointer}
+  .store-tog input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+  .store-tog .store-box{width:22px;height:22px;border-radius:6px;border:2px solid var(--muted);
+    display:grid;place-items:center}
+  .store-tog .store-box svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:3;
+    stroke-linecap:round;stroke-linejoin:round;opacity:0}
+  .store-tog.on{background:var(--laser);border-color:var(--laser)}
+  .store-tog.on .store-box{border-color:#fff}
+  .store-tog.on .store-box svg{opacity:1}
   .rk-tr{position:fixed;inset:0;z-index:80;background:var(--ink);display:none;flex-direction:column;
     padding:calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom))}
   .rk-tr.open{display:flex}
@@ -1381,9 +1395,9 @@
   .ho-nav.attn .ho-nav-pulse{animation:hnpulse 1.9s ease-out infinite}
   /* the pulse span sits behind the opaque disc, so on its own it barely shows.
      radiate a red ring from the disc itself (on top) — outward, then fade. */
-  .ho-nav.attn .ho-nav-disc{animation:hnradiate 1.9s ease-out infinite}
-  @keyframes hnradiate{0%{box-shadow:0 0 0 0 rgba(232,68,46,.55)}
-    70%{box-shadow:0 0 0 13px rgba(232,68,46,0)}100%{box-shadow:0 0 0 0 rgba(232,68,46,0)}}
+  .ho-nav.attn .ho-nav-disc{animation:hnradiate 1.4s ease-out infinite}
+  @keyframes hnradiate{0%{box-shadow:0 0 0 0 rgba(232,68,46,.9)}
+    65%{box-shadow:0 0 0 18px rgba(232,68,46,0)}100%{box-shadow:0 0 0 0 rgba(232,68,46,0)}}
   @keyframes hnpulse{0%{transform:scale(.7);opacity:.5}70%{transform:scale(1.3);opacity:0}100%{opacity:0}}
   .ho-nav-disc{position:absolute;inset:4px;border-radius:50%;overflow:hidden;z-index:2;
     border:1.5px solid var(--line);background:var(--surface-2)}
@@ -1409,11 +1423,11 @@
   .ho-inwrap{position:relative}
   .ho-inwrap input,.ho-inwrap textarea{padding-right:48px;box-sizing:border-box;width:100%}
   .ho-inwrap.no-mic input,.ho-inwrap.no-mic textarea{padding-right:12px}
-  .ho-mic{position:absolute;right:7px;top:7px;width:34px;height:34px;border-radius:9px;
-    border:1px solid var(--line);background:var(--ink);color:var(--paper);display:grid;place-items:center;
+  .ho-mic{position:absolute;right:8px;top:8px;width:32px;height:32px;border-radius:8px;
+    border:none;background:none;color:var(--muted);display:grid;place-items:center;
     cursor:pointer;padding:0}
-  .ho-mic svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .ho-mic.rec{background:var(--laser);border-color:var(--laser);color:#fff;animation:homicrec 1.3s infinite}
+  .ho-mic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .ho-mic.rec{background:var(--laser);color:#fff;animation:homicrec 1.3s infinite}
   @keyframes homicrec{0%,100%{box-shadow:0 0 0 0 rgba(232,68,46,.5)}70%{box-shadow:0 0 0 8px rgba(232,68,46,0)}}
 
   @media (prefers-reduced-motion: reduce){
@@ -1609,7 +1623,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=111">
+  <link rel="manifest" href="./manifest.json?v=112">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2596,7 +2610,10 @@
       <div class="plu-drop hidden" id="mPluDrop"></div>
     </div>
     <div class="field">
-      <label>Sold by</label>
+      <div class="soldby-head-row">
+        <label class="sb-lbl">Sold by</label>
+        <label class="st-lbl">Store</label>
+      </div>
       <label id="mQtyLabel" style="display:none"></label>
       <div class="qty-row">
         <span style="display:none">
@@ -2608,9 +2625,9 @@
           <button type="button" class="on" data-u="each" aria-label="Per each" title="Per each" style="flex:1;">EA</button>
           <button type="button" id="mUKG" data-u="kg" aria-label="By weight" title="By weight" style="flex:1;">kg</button>
         </div>
-        <label class="store-seg" id="mStoreSeg" for="mStore">
+        <label class="store-tog" id="mStoreSeg" for="mStore" aria-label="Store item">
           <input type="checkbox" id="mStore">
-          <span class="store-lbl">Store</span>
+          <span class="store-box"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-11"/></svg></span>
         </label>
       </div>
     </div>
@@ -6132,7 +6149,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v111";
+const APP_VERSION = "v112";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10686,6 +10703,10 @@ function renderRestock(){
   rkFillSelect();
   const items = rkState.items;
   const q = ((document.getElementById("rkFind")||{}).value || "").toLowerCase().trim();
+  // Same matching engine as scrap: tokenise + stem the query, then require every
+  // token to hit a clue on the item — its name OR a tag (brand like "FM",
+  // pack like "3pk"). So "cucumber", "cucumber 3pk", "fm cucumber" all match.
+  const rkQTokens = q ? pluTokens(q).map(stem) : [];
   const me = deviceInfo().id;
 
   const claimed = items.filter(x=>x.claimId).length;
@@ -10704,7 +10725,10 @@ function renderRestock(){
   const host = document.getElementById("rkTables");
   if(host) host.innerHTML = RK_TABLES.map(t=>{
     let list = items.filter(x=>x.table===t.id);
-    if(q) list = list.filter(x=>x.name.toLowerCase().includes(q));
+    if(rkQTokens.length) list = list.filter(x=>{
+      const hay = new Set(pluTokens((x.name||"") + " " + (x.tags||[]).join(" ")).map(stem));
+      return rkQTokens.every(qt => { for(const h of hay){ if(h.startsWith(qt)) return true; } return false; });
+    });
     if(q && !list.length) return "";
     const closed = rkClosed[t.id] ? " rk-closed" : "";
     const rows = list.length
@@ -10739,7 +10763,7 @@ function rkRow(x, me){
       '</button>';
   return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+'">'+
       '<span class="rk-st">'+(x.claimId?'<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>':'')+'</span>'+
-      '<div class="rk-copy">'+nmBadgesHtml((x.tags||[]).filter(t=>nmTagKind(t)!=="pack"))+'<strong>'+esc(x.name)+'</strong>'+nmBadgesHtml((x.tags||[]).filter(t=>nmTagKind(t)==="pack"))+(meta.length?'<div class="rk-meta">'+meta.join("")+'</div>':'')+'</div>'+
+      '<div class="rk-copy"><div class="rk-line">'+nmBadgesHtml((x.tags||[]).filter(t=>nmTagKind(t)!=="pack"))+'<strong>'+esc(x.name)+'</strong>'+nmBadgesHtml((x.tags||[]).filter(t=>nmTagKind(t)==="pack"))+'</div>'+(meta.length?'<div class="rk-meta">'+meta.join("")+'</div>':'')+'</div>'+
       claimCell+
       '<button class="rk-del" onclick="rkDel(\''+x.id+'\')" aria-label="Remove"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>'+
     '</div>';

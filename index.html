@@ -1063,6 +1063,7 @@
   .rk-card.rk-dim{opacity:.42;filter:grayscale(.4)}
   .rk-tables{display:flex;flex-direction:column;gap:9px;padding-bottom:calc(74px + env(safe-area-inset-bottom))}
   .rk-row.rk-flash2{animation:rkflash2 .5s ease 2}
+  .rk-row.rk-added-lit{background:rgba(76,175,125,.14);box-shadow:inset 3px 0 0 var(--ok)}
   @keyframes rkflash2{0%,100%{background:rgba(232,68,46,0)}50%{background:rgba(232,68,46,.28)}}
   .rk-card{border:1px solid var(--line);background:var(--surface);border-radius:12px;overflow:hidden}
   .rk-card.rk-fridge{border-style:dashed}
@@ -1633,7 +1634,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=123">
+  <link rel="manifest" href="./manifest.json?v=124">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6141,7 +6142,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v123";
+const APP_VERSION = "v124";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10441,6 +10442,7 @@ function rkGuessTable(name){
 /* ---- state ---- */
 let rkState = rkLoad();
 let rkDirty = false;
+let rkJustAddedId = null, rkFlash2Id = null;
 let rkSyncing = false;
 let rkOffline = false;             // last push failed for a network reason
 let rkSyncTimer = null;            // debounces auto-sync after edits
@@ -10471,15 +10473,29 @@ function rkTouch(){
   rkDirty = true; rkSave(); renderRestock();
   rkAutoSync();                     // send it to the floor on its own, shortly
 }
+function rkDupKey(s){ return String(s||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/s\b/g,"").replace(/\s+/g," ").trim(); }
 function rkAddItem(name, table, qty, plu, tags){
   name = String(name||"").trim();
   if(!name) return null;
-  const it = { id: rkNewId(), name: rkCap(name),
-    table: RK_BY_ID[table] ? table : "fridge",
-    qty: String(qty||"").trim(), plu: String(plu||""),
-    tags: Array.isArray(tags) ? tags : [], by: rkMeName(),
+  table = RK_BY_ID[table] ? table : "fridge";
+  qty = String(qty||"").trim();
+  tags = Array.isArray(tags) ? tags : [];
+  // board-wide dedup: update the existing row instead of duplicating it
+  const dup = rkState.items.find(x => rkDupKey(x.name) === rkDupKey(name));
+  if(dup){
+    if(qty) dup.qty = qty;
+    if(plu) dup.plu = String(plu);
+    if(tags.length) dup.tags = Array.from(new Set((dup.tags||[]).concat(tags)));
+    dup.table = table;
+    rkFlash2Id = dup.id; rkJustAddedId = null;
+    rkTouch();
+    return dup;
+  }
+  const it = { id: rkNewId(), name: rkCap(name), table,
+    qty, plu: String(plu||""), tags, by: rkMeName(),
     claimId:"", claimBy:"", ts: Date.now() };
   rkState.items.push(it);
+  rkJustAddedId = it.id; rkFlash2Id = null;
   rkTouch();
   return it;
 }
@@ -10654,16 +10670,20 @@ function commitRestockSpoken(text){
   if(!heardItems.length){ if(h) h.textContent = "Didn't catch an item \u2014 try again."; return; }
   if(h) h.textContent = "";
   heardItems.forEach(it=>{
-    // ---- verbatim scrap resolution (see commitSpoken) ----
-    const resolved0 = snapSpokenName(it.heard || it.name);
-    it.name = displayName(resolved0) || it.name;
+    // Pull brand/pack OUT first so the resolver never sees or expands it — the
+    // brand lives only in a badge, never in the product name.
+    const nmH = nmNormalize(it.heard || it.name);
+    const core = nmH.core || (it.name || "");
+    const resolved0 = snapSpokenName(core);
+    let name = displayName(resolved0) || core;
     const cc = codeForName(resolved0);              // resolved0 only -> drop the DB weight
-    if(cc.code && cc.name) it.name = displayName(cc.name);   // catalogue name only for a barcode hit
-    const name = String(it.name || "").replace(/\b\w/g, c=>c.toUpperCase());
+    if(cc.code && cc.name) name = displayName(cc.name);   // catalogue name only for a barcode hit
+    // second pass catches a brand the resolver expanded ("fm" -> "farmer's market")
+    const nmN = nmNormalize(name);
+    name = rkCap(nmN.core) || rkCap(String(name||""));
     if(!name) return;
-    // ---- restock only: box count instead of weight, brand from what was said, route to a table ----
     const plu  = cc.plu || "";
-    const tags = nmNormalize(it.heard || "").tags || [];
+    const tags = Array.from(new Set((nmH.tags||[]).concat(nmN.tags||[])));
     const qty  = (it.qty && it.qty > 1) ? (it.qty + " cases") : "";
     rkPlace(name, plu, tags, it.heard, forced, qty);
   });
@@ -10679,7 +10699,7 @@ function rkPlace(name, plu, tags, heard, forced, qty){
     toastUndo("Not carried: " + name + " \u2014 skipped", ()=>{ const it = rkAddItem(name,"fridge",qty,plu,tags); if(it) rkUpgradeOnline(heard, it.id); });
     return;
   }
-  const locs = rkPromptOn() ? pgLocationsFor(name) : [];
+  const locs = pgLocationsFor(name);   // cross-check the planogram every add; ask only if it's on it
   if(locs.length){ rkShowLocPrompt(name, plu, tags, table, locs); return; }
   const it = rkAddItem(name, table, qty, plu, tags);
   if(it){ rkFlashSel(table); rkUpgradeOnline(heard, it.id); toast("Filed \u201C"+name+"\u201D \u2192 "+RK_BY_ID[table].name); }
@@ -10711,7 +10731,7 @@ function pgLocationsFor(name){
 
 /* ---- location prompt ---- */
 const KEY_RK_PROMPT = "label_rk_locprompt_v1";
-function rkPromptOn(){ return localStorage.getItem(KEY_RK_PROMPT) !== "0"; }   // default on
+function rkPromptOn(){ return localStorage.getItem(KEY_RK_PROMPT) === "1"; }   // default OFF
 function rkPromptSet(on){ try{ localStorage.setItem(KEY_RK_PROMPT, on?"1":"0"); }catch(e){} }
 let rkLocCtx = null;
 function rkShowLocPrompt(name, plu, tags, table, locs){
@@ -10814,6 +10834,16 @@ function renderRestock(){
         '<div class="rk-ilist">'+rows+'</div>'+
       '</div>';
   }).join("");
+
+  if(rkJustAddedId){
+    const _r = document.getElementById("rkrow-"+rkJustAddedId);
+    if(_r){ _r.classList.add("rk-added-lit"); requestAnimationFrame(function(){ _r.scrollIntoView({block:"center",behavior:"smooth"}); }); }
+  }
+  if(rkFlash2Id){
+    const _r = document.getElementById("rkrow-"+rkFlash2Id);
+    if(_r){ _r.classList.remove("rk-flash2"); void _r.offsetWidth; _r.classList.add("rk-flash2"); requestAnimationFrame(function(){ _r.scrollIntoView({block:"center",behavior:"smooth"}); }); }
+    rkFlash2Id = null;
+  }
 
   rkDock();
 }

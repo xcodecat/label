@@ -1061,7 +1061,9 @@
   .rk-selw.rk-sel-lit select{border-color:var(--laser);box-shadow:0 0 0 3px rgba(232,68,46,.20);
     background:rgba(232,68,46,.06)}
   .rk-card.rk-dim{opacity:.42;filter:grayscale(.4)}
-  .rk-tables{display:flex;flex-direction:column;gap:9px}
+  .rk-tables{display:flex;flex-direction:column;gap:9px;padding-bottom:calc(74px + env(safe-area-inset-bottom))}
+  .rk-row.rk-flash2{animation:rkflash2 .5s ease 2}
+  @keyframes rkflash2{0%,100%{background:rgba(232,68,46,0)}50%{background:rgba(232,68,46,.28)}}
   .rk-card{border:1px solid var(--line);background:var(--surface);border-radius:12px;overflow:hidden}
   .rk-card.rk-fridge{border-style:dashed}
   .rk-thead{display:grid;grid-template-columns:34px 1fr auto auto;align-items:center;gap:9px;
@@ -1631,7 +1633,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=122">
+  <link rel="manifest" href="./manifest.json?v=123">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2152,30 +2154,10 @@
       </button>
     </div>
 
-    <div class="rk-toolbar">
-      <div class="rk-sw">
-        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
-        <input id="rkFind" placeholder="Filter items…" autocomplete="off" oninput="renderRestock()">
-      </div>
-    </div>
-
     </div><!-- /rk-fixed -->
 
     <div class="rk-tables" id="rkTables"></div>
 
-    <div class="rk-dock" id="rkDock">
-      <div class="rk-l">
-        <span class="rk-sd"></span>
-        <div>
-          <strong id="rkDockTitle">All synced</strong>
-          <small id="rkDockSub">Nothing to send yet</small>
-        </div>
-      </div>
-      <button class="rk-syncbtn" id="rkSyncBtn" type="button" onclick="rkSync(true)">
-        <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><polyline points="21 3 21 9 15 9"/></svg>
-        Sync
-      </button>
-    </div>
   </section>
 
     <!-- ============ PLANOGRAM VIEW ============ -->
@@ -6159,7 +6141,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v122";
+const APP_VERSION = "v123";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10752,6 +10734,19 @@ function rkLocClose(){ const ov = document.getElementById("rkLoc"); if(ov) ov.cl
 
 /* Auto-select a table in the dropdown and flash it, so the worker sees the
    app\u2019s pick as they type or speak. Visual only. */
+/* The top box doubles as find: as you type, scroll to a matching item and
+   flash it twice (replaces the old filter bar). */
+function rkFindFlash(text){
+  const items = (rkState.items) || [];
+  const norm = s => String(s||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/s\b/g,"").replace(/\s+/g," ").trim();
+  const key = norm(text); if(!key) return;
+  const hit = items.find(x=>norm(x.name).indexOf(key)===0) || items.find(x=>norm(x.name).indexOf(key)>=0);
+  if(!hit) return;
+  const card = document.getElementById("rkc-"+hit.table); if(card) card.classList.remove("rk-closed");
+  const row = document.getElementById("rkrow-"+hit.id); if(!row) return;
+  row.scrollIntoView({ block:"center", behavior:"smooth" });
+  row.classList.remove("rk-flash2"); void row.offsetWidth; row.classList.add("rk-flash2");
+}
 let _rkSelFlashT = null;
 function rkFlashSel(id){
   const sel = document.getElementById("rkSel"); if(!sel || !RK_BY_ID[id]) return;
@@ -10785,7 +10780,7 @@ function renderRestock(){
     strip.innerHTML =
       '<div><strong>'+items.length+'</strong><span class="rk-lab">ITEMS</span></div>'+
       '<div><strong>'+claimed+'</strong><span class="rk-lab">CLAIMED</span></div>'+
-      '<div class="rk-sy">'+
+      '<div class="rk-sy" onclick="rkSync(true)" style="cursor:pointer" title="Tap to sync now">'+
         (rkDirty
           ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span class="rk-lab">'+(rkOffline?'Offline \u2014 will sync':'Saving\u2026')+'</span>'
           : '<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg><span class="rk-lab">'+(rkState.updatedAt?'All synced':'Nothing yet')+'</span>')+
@@ -11070,6 +11065,7 @@ document.addEventListener("visibilitychange", ()=>{
     _rkPrevT = setTimeout(function(){
       const v = _rkTin.value.trim(); if(v.length < 2) return;
       const t = rkGuessTable(v); if(t) rkFlashSel(t);
+      rkFindFlash(v);
     }, 280);
   });
   rkFillSelect();

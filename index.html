@@ -1630,7 +1630,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=119">
+  <link rel="manifest" href="./manifest.json?v=120">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6158,7 +6158,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v119";
+const APP_VERSION = "v120";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10658,24 +10658,30 @@ function rkToggle(id){
 function commitRestockSpoken(text){
   const h = document.getElementById("rkHeard");
   let t = String(text||"").trim().replace(/^(look ?up|find|search( for)?|show me|add|restock)\s+/i,"");
-  // let a spoken location win outright ("plantain on pod 1", "... case lot")
+  // spoken location wins outright ("plantain on pod 1", "... case lot")
   let forced = "";
   if(/\bpod\s*(1|one)\b/i.test(t)){ forced="pod1"; t=t.replace(/\bpod\s*(1|one)\b/ig," "); }
   else if(/\bpod\s*(2|two)\b/i.test(t)){ forced="pod2"; t=t.replace(/\bpod\s*(2|two)\b/ig," "); }
   else if(/\bend\s*caps?\b/i.test(t)){ forced="endcap"; t=t.replace(/\bend\s*caps?\b/ig," "); }
   else if(/\bcase\s*lots?\b/i.test(t)){ forced="lots"; t=t.replace(/\bcase\s*lots?\b/ig," "); }
-  t = t.replace(/\bon (the )?/ig," ").trim();
-  const _pq = rkParseQty(t); const spokenQty = _pq.qty; t = _pq.name;
-  const nm = nmNormalize(t);
-  if(!nm.core){ if(h) h.textContent = "Didn't catch an item \u2014 try again."; return; }
-  const fixed = applyWordFix(nm.core.toLowerCase()) || nm.core;   // Info-tab word repair; keep the phrase when there's no fix
-  let name = rkCap(fixed), plu = "";
-  try{ const qn = rkWordN(fixed); const hit = pluSearch(fixed).find(e => e._score >= 90 && rkWordN(rkTidy(e.name)) <= qn); if(hit){ name = rkTidy(hit.name); plu = hit.plu; } }catch(e){}
-  // Organic shows as plain text in the name (no badge). PC Organic is covered by its PCO badge.
-  const isOrg = /\borganic\b/i.test(nm.core);
-  if(isOrg && !/organic/i.test(name) && nm.tags.indexOf("PCO") < 0) name = "Organic " + name;
+  // Hear the item(s) through the scrap engine — it repairs names accurately
+  // ("apple" stays "apple", not "people"). One press can add several items.
+  const heardItems = parseSpoken(t, "loop");
+  if(!heardItems.length){ if(h) h.textContent = "Didn't catch an item \u2014 try again."; return; }
   if(h) h.textContent = "";
-  rkPlace(name, plu, nm.tags, nm.core, forced, spokenQty);
+  heardItems.forEach(sp=>{
+    const nm = nmNormalize(sp.name);
+    if(!nm.core) return;
+    let name = rkCap(nm.core), plu = "";
+    // On a match, show the catalogue's proper name; the word-count guard stops a
+    // generic word ("apple") from grabbing a variety ("Apple Eve").
+    try{ const qn = rkWordN(nm.core); const hit = pluSearch(nm.core).find(e => e._score >= 90 && rkWordN(rkTidy(e.name)) <= qn); if(hit){ name = rkTidy(hit.name); plu = hit.plu; } }catch(e){}
+    const isOrg = /\borganic\b/i.test(sp.name);
+    if(isOrg && !/organic/i.test(name) && nm.tags.indexOf("PCO") < 0) name = "Organic " + name;
+    // Restock loads in cases and never shows weight.
+    const qty = (sp.qty && sp.qty > 1) ? (sp.qty + " cases") : "";
+    rkPlace(name, plu, nm.tags, sp.heard, forced, qty);
+  });
 }
 
 /* Route the recognized product, prompting for a pod/endcap when the planogram

@@ -1001,7 +1001,7 @@
     box-shadow:0 0 0 3px rgba(76,175,125,.14)}
   .rk-strip{display:grid;grid-template-columns:auto auto 1fr;border:1px solid var(--line);
     background:var(--surface);border-radius:12px;overflow:hidden;margin-bottom:12px}
-  .rk-strip>div{padding:0 13px;min-height:50px;display:flex;flex-direction:column;
+  .rk-strip>div{padding:0 13px;min-height:42px;display:flex;flex-direction:column;
     justify-content:center;border-right:1px solid var(--line)}
   .rk-strip>div:last-child{border-right:0}
   .rk-strip strong{font-family:var(--mono);font-size:16px;line-height:1;color:var(--paper)}
@@ -1010,11 +1010,11 @@
   .rk-strip .rk-sy svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
   .rk-strip .rk-sy .rk-lab{margin:0;text-align:right;max-width:130px}
   .rk-cap{border:1px solid var(--line);background:var(--surface);border-radius:14px;
-    padding:14px;margin-bottom:14px}
+    padding:11px 12px;margin-bottom:10px}
   .rk-flab{display:block;color:var(--muted);font-family:var(--mono);font-size:8px;font-weight:700;
     letter-spacing:.11em;margin-bottom:6px}
   .rk-inwrap{position:relative}
-  .rk-tin{width:100%;height:45px;border:1px solid var(--line);background:var(--surface-2);
+  .rk-tin{width:100%;height:42px;border:1px solid var(--line);background:var(--surface-2);
     color:var(--paper);border-radius:9px;padding:0 54px 0 12px;font-size:14px;outline:0;
     font-family:var(--sans)}
   .rk-tin:focus{border-color:var(--laser);box-shadow:0 0 0 3px rgba(232,68,46,.12)}
@@ -1025,12 +1025,12 @@
   .rk-mic svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;
     stroke-linecap:round;stroke-linejoin:round}
   .rk-vfx{min-height:14px;color:var(--muted);font-size:9px;line-height:1.4;margin:6px 1px 0}
-  .rk-grid{display:grid;grid-template-columns:1.45fr 1fr;gap:9px;margin-top:11px}
+  .rk-grid{display:grid;grid-template-columns:1.45fr 1fr;gap:9px;margin-top:9px}
   .rk-selw{position:relative}
   .rk-selw span{display:block;color:var(--muted);font-family:var(--mono);font-size:8px;
     font-weight:700;letter-spacing:.11em;margin-bottom:6px}
-  .rk-selw select{width:100%;height:45px;border:1px solid var(--line);background:var(--surface-2);
-    color:var(--paper);border-radius:9px;padding:0 30px 0 11px;font-size:12px;outline:0;
+  .rk-selw select{width:100%;height:42px;border:1px solid var(--line);background:var(--surface-2);
+    color:var(--paper);border-radius:9px;padding:0 28px 0 11px;font-size:11px;outline:0;
     appearance:none;-webkit-appearance:none;font-family:var(--sans)}
   .rk-selw:after{content:"\25BE";position:absolute;right:11px;bottom:12px;color:var(--muted);
     pointer-events:none;font-size:11px}
@@ -1042,20 +1042,24 @@
   .rk-qtrig small{color:var(--muted);font-size:9px;font-weight:500}
   .rk-qwrap span{display:block;color:var(--muted);font-family:var(--mono);font-size:8px;
     font-weight:700;letter-spacing:.11em;margin-bottom:6px}
-  .rk-qwrap input{width:100%;height:45px;border:1px solid var(--line);background:var(--surface-2);
+  .rk-qwrap input{width:100%;height:42px;border:1px solid var(--line);background:var(--surface-2);
     color:var(--paper);border-radius:9px;padding:0 10px;font-size:12px;outline:0;font-family:var(--sans)}
   .rk-qwrap input:focus,.rk-selw select:focus{border-color:var(--laser)}
-  .rk-add{width:100%;height:43px;margin-top:12px;border:0;border-radius:9px;background:var(--laser);
+  .rk-add{width:100%;height:40px;margin-top:10px;border:0;border-radius:9px;background:var(--laser);
     color:#fff;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;
     justify-content:center;gap:8px;font-family:var(--sans)}
   .rk-add svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.4}
-  .rk-toolbar{display:flex;gap:8px;margin:16px 0 9px}
+  .rk-toolbar{display:flex;gap:8px;margin:10px 0 9px}
   .rk-sw{flex:1;position:relative}
   .rk-sw svg{position:absolute;left:11px;top:11px;width:17px;height:17px;stroke:var(--muted);
     fill:none;stroke-width:2}
   .rk-sw input{width:100%;height:39px;border:1px solid var(--line);background:var(--surface);
     color:var(--paper);border-radius:9px;padding:0 11px 0 36px;font-size:12px;outline:0;font-family:var(--sans)}
   .rk-sw input:focus{border-color:var(--laser)}
+  .rk-fixed{position:sticky;top:0;z-index:20;background:var(--ink);margin:0 -16px;
+    padding:6px 16px 0;border-bottom:1px solid var(--line)}
+  .rk-selw.rk-sel-lit select{border-color:var(--laser);box-shadow:0 0 0 3px rgba(232,68,46,.20);
+    background:rgba(232,68,46,.06)}
   .rk-tables{display:flex;flex-direction:column;gap:9px}
   .rk-card{border:1px solid var(--line);background:var(--surface);border-radius:12px;overflow:hidden}
   .rk-card.rk-fridge{border-style:dashed}
@@ -1065,8 +1069,8 @@
     border:1px solid var(--tc);background:color-mix(in srgb,var(--tc) 12%,transparent);
     color:var(--tc);font-family:var(--mono);font-size:12px;font-weight:800}
   .rk-ttl h2{margin:0;font-size:12px;font-weight:730;display:inline;color:var(--paper)}
-  .rk-run{border:1px solid var(--tc);color:var(--tc);font-family:var(--mono);font-size:7px;
-    font-weight:750;letter-spacing:.05em;border-radius:20px;padding:2px 6px;margin-left:7px;
+  .rk-run{color:var(--muted);font-family:var(--mono);font-size:8px;
+    font-weight:700;letter-spacing:.08em;margin-left:7px;
     vertical-align:1px}
   .rk-ttl p{color:var(--muted);margin:3px 0 0;font-size:9px;line-height:1.35}
   .rk-count{min-width:24px;height:24px;background:var(--surface-2);color:var(--muted);
@@ -1623,7 +1627,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=113">
+  <link rel="manifest" href="./manifest.json?v=115">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2111,16 +2115,16 @@
   <section id="view-restock" class="view">
     <div class="rk-head">
       <div>
-        <p class="rk-eyebrow">FLOOR · RESTOCK</p>
         <h1>Restock List</h1>
       </div>
       <div class="rk-live"><span></span>SHARED</div>
     </div>
 
+    <div class="rk-fixed">
     <div class="rk-strip" id="rkStrip"></div>
 
     <div class="rk-cap">
-      <label class="rk-flab" for="rkTin">ADD AN ITEM</label>
+      <label class="rk-flab" for="rkTin">WHAT'S MISSING?</label>
       <div class="rk-inwrap">
         <input id="rkTin" class="rk-tin" placeholder="Type an item, or tap the mic…" autocomplete="off" enterkeyhint="done">
         <button class="rk-mic" id="rkMic" type="button" aria-label="Say an item, tap to stop">
@@ -2150,6 +2154,8 @@
         <input id="rkFind" placeholder="Filter items…" autocomplete="off" oninput="renderRestock()">
       </div>
     </div>
+
+    </div><!-- /rk-fixed -->
 
     <div class="rk-tables" id="rkTables"></div>
 
@@ -6149,7 +6155,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v113";
+const APP_VERSION = "v115";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10388,15 +10394,15 @@ const KEY_RESTOCK = "label_restock_v1";
          "fridge" the auto catch-all (dashed card). */
 const RK_TABLES = [
   { id:"apple",  name:"Apple",                     run:"RUN 1", tc:"#3ecf8e", g:"A", kind:"run" },
-  { id:"berry",  name:"Berry & Banana",            run:"RUN 2", tc:"#c0417a", g:"B", kind:"run" },
-  { id:"citrus", name:"Citrus & Stone",            run:"RUN 3", tc:"#e8a13a", g:"C", kind:"run" },
-  { id:"ctp",    name:"Cucumber \u00b7 Tomato \u00b7 Potato", run:"RUN 4", tc:"#4a90d9", g:"V", kind:"run" },
-  { id:"root",   name:"Root Veg & Onions",         run:"RUN 5", tc:"#b07d3a", g:"R", kind:"run" },
-  { id:"pod1",   name:"Pod 1",                       run:"POD 1", tc:"#e0b23a", g:"1", kind:"loc" },
-  { id:"pod2",   name:"Pod 2",                       run:"POD 2", tc:"#d99a2b", g:"2", kind:"loc" },
-  { id:"endcap", name:"Endcap",                      run:"ENDS",  tc:"#c76b9c", g:"E", kind:"loc" },
-  { id:"lots",   name:"Case Lots",                  run:"LOTS",  tc:"#6b8fa3", g:"L", kind:"loc" },
-  { id:"fridge", name:"Refrigerated Shelf",         run:"OTHER", tc:"#8c7cf0", g:"\u2744", kind:"fridge" }
+  { id:"berry",  name:"Berry & Banana",            run:"RUN 2", tc:"#E85AA0", g:"B", kind:"run" },
+  { id:"citrus", name:"Citrus & Stone",            run:"RUN 3", tc:"#F0912B", g:"C", kind:"run" },
+  { id:"ctp",    name:"Cucumber \u00b7 Tomato \u00b7 Potato", run:"RUN 4", tc:"#4A90D9", g:"T", kind:"run" },
+  { id:"root",   name:"Root Veg & Onions",         run:"RUN 5", tc:"#B5793E", g:"R", kind:"run" },
+  { id:"pod1",   name:"Pod 1",                       run:"POD 1", tc:"#E7C338", g:"1", kind:"loc" },
+  { id:"pod2",   name:"Pod 2",                       run:"POD 2", tc:"#A9CC3E", g:"2", kind:"loc" },
+  { id:"endcap", name:"Endcap",                      run:"ENDS",  tc:"#C264E0", g:"E", kind:"loc" },
+  { id:"lots",   name:"Case Lots",                  run:"LOTS",  tc:"#2FC0C0", g:"L", kind:"loc" },
+  { id:"fridge", name:"Wet Case",         run:"OTHER", tc:"#8c7cf0", g:"\u2744", kind:"fridge" }
 ];
 const RK_BY_ID = {}; RK_TABLES.forEach(t=>RK_BY_ID[t.id]=t);
 
@@ -10433,6 +10439,17 @@ function tableFor(name, plu){
   for(const [k,id] of RK_EXACT){ if(s.includes(k)) return id; }
   for(const [id,keys] of RK_ROUTE){ if(keys.some(k=>s.includes(k))) return id; }
   return "fridge";
+}
+/* Like tableFor but returns "" instead of the fridge fallback, so the live
+   typing preview only moves the dropdown on a confident hit. */
+function rkGuessTable(name){
+  const taught = rkRoutes()[rkRouteKey(name, "")];
+  if(taught === "none") return "";
+  if(taught && taught !== "carry") return taught;
+  const s = String(name||"").toLowerCase();
+  for(const [k,id] of RK_EXACT){ if(s.includes(k)) return id; }
+  for(const [id,keys] of RK_ROUTE){ if(keys.some(k=>s.includes(k))) return id; }
+  return "";
 }
 
 /* ---- state ---- */
@@ -10497,12 +10514,13 @@ function nmNormalize(raw){
   NM_BRANDS.forEach(b=>{ const before=s; s=s.replace(b.re," "); if(s!==before && brands.indexOf(b.tag)<0) brands.push(b.tag); });
   const packs = [];
   s = s.replace(/\b(\d{1,2})[\s-]*(?:packs?|pk|p\s*k)\b/ig,(m,n)=>{ const t=n+"pk"; if(packs.indexOf(t)<0)packs.push(t); return " "; });
+  s = s.replace(/\b(\d{1,2})[\s-]*(?:counts?|cts?|ct)\b/ig,(m,n)=>{ const t=n+"ct"; if(packs.indexOf(t)<0)packs.push(t); return " "; });
   const core = s.replace(/\s{2,}/g," ").trim();
   const tags = brands.concat(packs);
   if(!core && !tags.length) return { core: String(raw||"").trim(), tags: [] };
   return { core, tags };
 }
-function nmTagKind(t){ return /pk$/i.test(t) ? "pack" : (/^org$/i.test(t) ? "org" : "brand"); }
+function nmTagKind(t){ return /(pk|ct)$/i.test(t) ? "pack" : (/^org$/i.test(t) ? "org" : "brand"); }
 function nmShort(raw){
   const nm = nmNormalize(raw);
   const brand = nm.tags.filter(t=>nmTagKind(t)==="brand");
@@ -10577,7 +10595,7 @@ function rkAddManual(){
   if(it){
     nameEl.value = ""; qtyEl.value = "";
     document.getElementById("rkHeard").textContent = "";
-    toast("Added to " + RK_BY_ID[it.table].name);
+    toast("Added to " + RK_BY_ID[it.table].name); rkFlashSel(it.table);
     nameEl.focus();
   }
 }
@@ -10642,7 +10660,7 @@ function rkPlace(name, plu, tags, heard, forced){
   const locs = rkPromptOn() ? pgLocationsFor(name) : [];
   if(locs.length){ rkShowLocPrompt(name, plu, tags, table, locs); return; }
   const it = rkAddItem(name, table, "", plu, tags);
-  if(it){ rkUpgradeOnline(heard, it.id); toast("Filed \u201C"+name+"\u201D \u2192 "+RK_BY_ID[table].name); }
+  if(it){ rkFlashSel(table); rkUpgradeOnline(heard, it.id); toast("Filed \u201C"+name+"\u201D \u2192 "+RK_BY_ID[table].name); }
 }
 function rkPlaceAt(name, plu, tags, ids){
   ids.forEach(id=>rkAddItem(name, id, "", plu, tags));
@@ -10691,11 +10709,22 @@ function rkLocPick(i){
 }
 function rkLocClose(){ const ov = document.getElementById("rkLoc"); if(ov) ov.classList.remove("open"); rkLocCtx = null; }
 
+/* Auto-select a table in the dropdown and flash it, so the worker sees the
+   app\u2019s pick as they type or speak. Visual only. */
+let _rkSelFlashT = null;
+function rkFlashSel(id){
+  const sel = document.getElementById("rkSel"); if(!sel || !RK_BY_ID[id]) return;
+  sel.value = id;
+  const w = sel.closest(".rk-selw"); if(!w) return;
+  w.classList.add("rk-sel-lit");
+  clearTimeout(_rkSelFlashT);
+  _rkSelFlashT = setTimeout(function(){ w.classList.remove("rk-sel-lit"); }, 2200);
+}
 /* ---- manual-add dropdown ---- all eight, so Pods/Case Lots are reachable ---- */
 function rkFillSelect(){
   const sel = document.getElementById("rkSel");
   if(!sel || sel.options.length) return;
-  sel.innerHTML = RK_TABLES.map(t=>'<option value="'+t.id+'">'+esc(t.name)+' \u00b7 '+esc(t.run)+'</option>').join("");
+  sel.innerHTML = RK_TABLES.map(t=>'<option value="'+t.id+'">'+esc(t.name)+'</option>').join("");
 }
 
 /* ---- render ---- */
@@ -10969,6 +10998,14 @@ document.addEventListener("visibilitychange", ()=>{
   const _rkTin = document.getElementById("rkTin");
   if(_rkTin) _rkTin.addEventListener("keydown", e=>{
     if(e.key === "Enter"){ e.preventDefault(); rkAddManual(); }
+  });
+  let _rkPrevT = null;
+  if(_rkTin) _rkTin.addEventListener("input", function(){
+    clearTimeout(_rkPrevT);
+    _rkPrevT = setTimeout(function(){
+      const v = _rkTin.value.trim(); if(v.length < 2) return;
+      const t = rkGuessTable(v); if(t) rkFlashSel(t);
+    }, 280);
   });
   rkFillSelect();
 }

@@ -1630,7 +1630,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=117">
+  <link rel="manifest" href="./manifest.json?v=118">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6158,7 +6158,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v117";
+const APP_VERSION = "v118";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10561,10 +10561,17 @@ function nmNameHtml(name){
 }
 
 /* Snap a heard name to the catalogue after stripping brand/pack noise. */
+function rkWordN(s){ return String(s||"").toLowerCase().replace(/\([^)]*\)/g," ").replace(/[^a-z ]/g," ").split(/\s+/).filter(Boolean).length; }
 function rkResolve(heard){
   const nm = nmNormalize(heard);
   let name = rkCap(nm.core), plu = "";
-  try{ const r = pluSearch(nm.core); if(r.length && r[0]._score >= 90){ name = rkTidy(r[0].name); plu = r[0].plu; } }catch(e){}
+  try{
+    const qn = rkWordN(nm.core);
+    // Only snap when the spoken phrase is as specific as the catalogue name;
+    // stops a generic word ("apple") grabbing a variety ("Apple Eve").
+    const hit = pluSearch(nm.core).find(e => e._score >= 90 && rkWordN(rkTidy(e.name)) <= qn);
+    if(hit){ name = rkTidy(hit.name); plu = hit.plu; }
+  }catch(e){}
   return { name, plu, tags: nm.tags };
 }
 /* Refine against the Sheet's full PLU + Barcode DB; silent + best-effort. */
@@ -10575,8 +10582,9 @@ async function rkUpgradeOnline(heard, id){
     const d = await callProxy({ action:"pluLookup", q });
     if(!d || !d.ok || !Array.isArray(d.matches) || !d.matches.length) return;
     const cand = d.matches.map(m=>({ plu: m.plu || m.code || "", name: m.name, own: true }));
-    const best = pluSearchIn(q, cand)[0];
-    if(!best || best._score < 90) return;
+    const qn = rkWordN(q);
+    const best = pluSearchIn(q, cand).find(e => e._score >= 90 && rkWordN(rkTidy(e.name)) <= qn);
+    if(!best) return;
     const it = rkState.items.find(x=>x.id===id); if(!it) return;
     const name = rkTidy(best.name);
     const table = tableFor(name, best.plu);
@@ -10805,10 +10813,11 @@ function rkRow(x, me){
   const qtyChip = x.qty
     ? '<span class="rk-qty" onclick="rkEditQty(\''+x.id+'\')">'+esc(x.qty)+'</span>'
     : '<button class="rk-qty-add" onclick="rkEditQty(\''+x.id+'\')">qty</button>';
-  const chips = '<div class="rk-chips">'+ qtyChip
+  const chips = '<div class="rk-chips">'
+    + brandTags.map(t=>'<span class="nm-bdg brand">'+esc(rkBrandAbbr(t))+'</span>').join("")
     + packTags.map(t=>'<span class="nm-bdg pack">'+esc(t)+'</span>').join("")
     + orgTags.map(t=>'<span class="nm-bdg org">'+esc(t)+'</span>').join("")
-    + brandTags.map(t=>'<span class="nm-bdg brand">'+esc(rkBrandAbbr(t))+'</span>').join("")
+    + qtyChip
     + '</div>';
   const claimCell = other
     ? '<div class="rk-owner" onclick="rkClaim(\''+x.id+'\')" title="Tap to take over"><b>'+esc(rkInitials(x.claimBy))+'</b><small>'+esc(x.claimBy)+'</small></div>'

@@ -1060,6 +1060,7 @@
     padding:6px 16px 0;border-bottom:1px solid var(--line)}
   .rk-selw.rk-sel-lit select{border-color:var(--laser);box-shadow:0 0 0 3px rgba(232,68,46,.20);
     background:rgba(232,68,46,.06)}
+  .rk-card.rk-dim{opacity:.42;filter:grayscale(.4)}
   .rk-tables{display:flex;flex-direction:column;gap:9px}
   .rk-card{border:1px solid var(--line);background:var(--surface);border-radius:12px;overflow:hidden}
   .rk-card.rk-fridge{border-style:dashed}
@@ -1630,7 +1631,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=120">
+  <link rel="manifest" href="./manifest.json?v=121">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6158,7 +6159,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v120";
+const APP_VERSION = "v121";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10664,23 +10665,27 @@ function commitRestockSpoken(text){
   else if(/\bpod\s*(2|two)\b/i.test(t)){ forced="pod2"; t=t.replace(/\bpod\s*(2|two)\b/ig," "); }
   else if(/\bend\s*caps?\b/i.test(t)){ forced="endcap"; t=t.replace(/\bend\s*caps?\b/ig," "); }
   else if(/\bcase\s*lots?\b/i.test(t)){ forced="lots"; t=t.replace(/\bcase\s*lots?\b/ig," "); }
-  // Hear the item(s) through the scrap engine — it repairs names accurately
-  // ("apple" stays "apple", not "people"). One press can add several items.
+  // Resolve exactly like the scrap tab: parse, snap the heard name, then read the
+  // catalogue's proper name + PLU (snapSpokenName -> displayName -> codeForName).
+  // Restock drops the DB weight and files by the box count instead.
   const heardItems = parseSpoken(t, "loop");
   if(!heardItems.length){ if(h) h.textContent = "Didn't catch an item \u2014 try again."; return; }
   if(h) h.textContent = "";
   heardItems.forEach(sp=>{
-    const nm = nmNormalize(sp.name);
-    if(!nm.core) return;
-    let name = rkCap(nm.core), plu = "";
-    // On a match, show the catalogue's proper name; the word-count guard stops a
-    // generic word ("apple") from grabbing a variety ("Apple Eve").
-    try{ const qn = rkWordN(nm.core); const hit = pluSearch(nm.core).find(e => e._score >= 90 && rkWordN(rkTidy(e.name)) <= qn); if(hit){ name = rkTidy(hit.name); plu = hit.plu; } }catch(e){}
-    const isOrg = /\borganic\b/i.test(sp.name);
-    if(isOrg && !/organic/i.test(name) && nm.tags.indexOf("PCO") < 0) name = "Organic " + name;
-    // Restock loads in cases and never shows weight.
-    const qty = (sp.qty && sp.qty > 1) ? (sp.qty + " cases") : "";
-    rkPlace(name, plu, nm.tags, sp.heard, forced, qty);
+    const resolved0 = snapSpokenName(sp.heard || sp.name);
+    let name = displayName(resolved0) || sp.name, plu = "";
+    const cc = codeForName(resolved0);              // resolved0 only -> weight ignored
+    if(cc.plu){ plu = cc.plu; if(cc.name) name = displayName(cc.name); }
+    else if(cc.code && cc.name){ name = displayName(cc.name); }
+    name = String(name||"").replace(/\b\w/g, c=>c.toUpperCase());
+    const nmF = nmNormalize(name), nmH = nmNormalize(sp.heard || "");
+    const tags = Array.from(new Set((nmF.tags||[]).concat(nmH.tags||[])));
+    name = rkCap(nmF.core) || name;
+    if(!name) return;
+    const isOrg = /\borganic\b/i.test(sp.heard || "");
+    if(isOrg && !/organic/i.test(name) && tags.indexOf("PCO") < 0) name = "Organic " + name;
+    const qty = (sp.qty && sp.qty > 1) ? (sp.qty + " cases") : "";   // box count, never weight
+    rkPlace(name, plu, tags, sp.heard, forced, qty);
   });
 }
 
@@ -10790,7 +10795,8 @@ function renderRestock(){
   }
 
   const host = document.getElementById("rkTables");
-  if(host) host.innerHTML = RK_TABLES.map(t=>{
+  const _rkOrder = RK_TABLES.slice().sort((a,b)=>{ const ea=items.filter(x=>x.table===a.id).length===0, eb=items.filter(x=>x.table===b.id).length===0; return ea===eb?0:(ea?1:-1); });
+  if(host) host.innerHTML = _rkOrder.map(t=>{
     let list = items.filter(x=>x.table===t.id);
     if(rkQTokens.length) list = list.filter(x=>{
       const hay = new Set(pluTokens((x.name||"") + " " + (x.tags||[]).join(" ")).map(stem));
@@ -10798,13 +10804,14 @@ function renderRestock(){
     });
     if(q && !list.length) return "";
     const closed = rkClosed[t.id] ? " rk-closed" : "";
+    const dim = list.length ? "" : " rk-dim";
     const rows = list.length
       ? list.map(x=>rkRow(x, me)).join("")
       : '<div class="rk-empty"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>Nothing on this table</div>';
     const sub = t.kind==="loc" ? "File by hand"
               : t.kind==="fridge" ? "Auto catch-all \u00b7 wet case, herbs, mushrooms\u2026"
               : "Auto-filed by voice";
-    return '<div class="rk-card'+(t.kind==="fridge"?" rk-fridge":"")+closed+'" id="rkc-'+t.id+'" style="--tc:'+t.tc+'">'+
+    return '<div class="rk-card'+(t.kind==="fridge"?" rk-fridge":"")+closed+dim+'" id="rkc-'+t.id+'" style="--tc:'+t.tc+'">'+
         '<div class="rk-thead" onclick="rkToggle(\''+t.id+'\')">'+
           '<span class="rk-mark">'+esc(t.g)+'</span>'+
           '<div class="rk-ttl"><h2>'+esc(t.name)+'</h2><span class="rk-run">'+esc(t.run)+'</span><p>'+sub+'</p></div>'+

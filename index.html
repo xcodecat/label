@@ -1630,7 +1630,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=118">
+  <link rel="manifest" href="./manifest.json?v=119">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6158,7 +6158,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v118";
+const APP_VERSION = "v119";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10562,6 +10562,20 @@ function nmNameHtml(name){
 
 /* Snap a heard name to the catalogue after stripping brand/pack noise. */
 function rkWordN(s){ return String(s||"").toLowerCase().replace(/\([^)]*\)/g," ").replace(/[^a-z ]/g," ").split(/\s+/).filter(Boolean).length; }
+const RK_NUMW = {one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,dozen:12,a:1,an:1,couple:2};
+/* Pull a leading/embedded quantity ("2 cases", "two boxes", or a bare number)
+   out of a spoken/typed phrase. Restock loads in cases, so a bare count -> cases. */
+function rkParseQty(text){
+  let t = " " + String(text||"").trim() + " ";
+  let qty = "";
+  const UNIT = "cartons?|boxes?|cases?|bags?|flats?|crates?|bunch(?:es)?|packs?|pk|each|ea|kgs?|lbs?|dozen";
+  const NUM = Object.keys(RK_NUMW).join("|");
+  let m = t.match(new RegExp("\\b(\\d+|"+NUM+")\\s+("+UNIT+")\\b","i"));
+  if(m){ const raw=m[1].toLowerCase(); const n=/^\d+$/.test(raw)?raw:String(RK_NUMW[raw]||1); qty=n+" "+m[2].toLowerCase(); t=t.replace(m[0]," "); }
+  else { m = t.match(new RegExp("^\\s*(\\d+|"+NUM+")\\s+(?=[a-z])","i")); if(m){ const raw=m[1].toLowerCase(); const n=/^\d+$/.test(raw)?raw:String(RK_NUMW[raw]||1); qty=n+" cases"; t=t.replace(m[0]," "); } }
+  t = t.replace(/\bof\b/ig," ").replace(/\s+/g," ").trim();
+  return { name: t, qty: qty };
+}
 function rkResolve(heard){
   const nm = nmNormalize(heard);
   let name = rkCap(nm.core), plu = "";
@@ -10600,12 +10614,16 @@ function rkAddManual(){
   const nameEl = document.getElementById("rkTin");
   const qtyEl  = document.getElementById("rkQty");
   const selEl  = document.getElementById("rkSel");
-  const name = nameEl.value.trim();
-  if(!name){ nameEl.focus(); return; }
-  const it = rkAddItem(name, selEl.value, qtyEl.value);
+  const raw = nameEl.value.trim();
+  if(!raw){ nameEl.focus(); return; }
+  const pq = rkParseQty(raw);
+  const nm = nmNormalize(pq.name);
+  const name = rkCap(nm.core) || rkCap(pq.name);
+  const qty = qtyEl.value.trim() || pq.qty;
+  const it = rkAddItem(name, selEl.value, qty, "", nm.tags);
   if(it){
     nameEl.value = ""; qtyEl.value = "";
-    document.getElementById("rkHeard").textContent = "";
+    const h = document.getElementById("rkHeard"); if(h) h.textContent = "";
     toast("Added to " + RK_BY_ID[it.table].name); rkFlashSel(it.table);
     nameEl.focus();
   }
@@ -10647,34 +10665,37 @@ function commitRestockSpoken(text){
   else if(/\bend\s*caps?\b/i.test(t)){ forced="endcap"; t=t.replace(/\bend\s*caps?\b/ig," "); }
   else if(/\bcase\s*lots?\b/i.test(t)){ forced="lots"; t=t.replace(/\bcase\s*lots?\b/ig," "); }
   t = t.replace(/\bon (the )?/ig," ").trim();
+  const _pq = rkParseQty(t); const spokenQty = _pq.qty; t = _pq.name;
   const nm = nmNormalize(t);
   if(!nm.core){ if(h) h.textContent = "Didn't catch an item \u2014 try again."; return; }
   const fixed = applyWordFix(nm.core.toLowerCase()) || nm.core;   // Info-tab word repair; keep the phrase when there's no fix
   let name = rkCap(fixed), plu = "";
-  try{ const r = pluSearch(fixed); if(r.length && r[0]._score >= 90){ name = rkTidy(r[0].name); plu = r[0].plu; } }catch(e){}
+  try{ const qn = rkWordN(fixed); const hit = pluSearch(fixed).find(e => e._score >= 90 && rkWordN(rkTidy(e.name)) <= qn); if(hit){ name = rkTidy(hit.name); plu = hit.plu; } }catch(e){}
   // Organic shows as plain text in the name (no badge). PC Organic is covered by its PCO badge.
   const isOrg = /\borganic\b/i.test(nm.core);
   if(isOrg && !/organic/i.test(name) && nm.tags.indexOf("PCO") < 0) name = "Organic " + name;
   if(h) h.textContent = "";
-  rkPlace(name, plu, nm.tags, nm.core, forced);
+  rkPlace(name, plu, nm.tags, nm.core, forced, spokenQty);
 }
 
 /* Route the recognized product, prompting for a pod/endcap when the planogram
    says it lives in two places. */
-function rkPlace(name, plu, tags, heard, forced){
-  if(forced){ rkPlaceAt(name, plu, tags, [forced]); return; }
+function rkPlace(name, plu, tags, heard, forced, qty){
+  qty = qty || "";
+  if(forced){ rkPlaceAt(name, plu, tags, [forced], qty); return; }
   const table = tableFor(name, plu);
   if(table === "none"){
-    toastUndo("Not carried: " + name + " \u2014 skipped", ()=>{ const it = rkAddItem(name,"fridge","",plu,tags); if(it) rkUpgradeOnline(heard, it.id); });
+    toastUndo("Not carried: " + name + " \u2014 skipped", ()=>{ const it = rkAddItem(name,"fridge",qty,plu,tags); if(it) rkUpgradeOnline(heard, it.id); });
     return;
   }
   const locs = rkPromptOn() ? pgLocationsFor(name) : [];
   if(locs.length){ rkShowLocPrompt(name, plu, tags, table, locs); return; }
-  const it = rkAddItem(name, table, "", plu, tags);
+  const it = rkAddItem(name, table, qty, plu, tags);
   if(it){ rkFlashSel(table); rkUpgradeOnline(heard, it.id); toast("Filed \u201C"+name+"\u201D \u2192 "+RK_BY_ID[table].name); }
 }
-function rkPlaceAt(name, plu, tags, ids){
-  ids.forEach(id=>rkAddItem(name, id, "", plu, tags));
+function rkPlaceAt(name, plu, tags, ids, qty){
+  qty = qty || "";
+  ids.forEach(id=>rkAddItem(name, id, qty, plu, tags));
   toast("Filed \u201C"+name+"\u201D \u2192 "+ids.map(id=>RK_BY_ID[id]?RK_BY_ID[id].name:id).join(" + "));
 }
 

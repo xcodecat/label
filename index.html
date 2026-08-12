@@ -1079,9 +1079,9 @@
   .rk-caret{color:var(--muted);font-size:10px;transition:transform .15s;width:12px;text-align:center}
   .rk-card.rk-closed .rk-caret{transform:rotate(-90deg)}
   .rk-card.rk-closed .rk-ilist{display:none}
-  .rk-ilist{padding-left:44px}
-  .rk-row{display:grid;grid-template-columns:18px minmax(0,1fr) auto auto;align-items:center;
-    gap:8px;min-height:56px;padding:8px 10px 8px 0;border-bottom:1px solid var(--line)}
+  .rk-ilist{padding-left:14px}
+  .rk-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;
+    gap:8px;min-height:50px;padding:7px 10px 7px 0;border-bottom:1px solid var(--line)}
   .rk-row:last-child{border-bottom:0}
   .rk-row.rk-claimed{background:rgba(76,175,125,.05)}
   .rk-st{width:17px;height:17px;border:1px solid #424950;border-radius:50%;display:grid;
@@ -1093,10 +1093,13 @@
   .rk-line .nm-bdg{flex:none}
   .rk-copy strong{font-size:12px;font-weight:630;color:#EEEAE1;white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis;min-width:0}
-  .rk-meta{display:flex;align-items:center;gap:6px;margin-top:4px}
-  .rk-meta span{color:#666D75;font-size:8px}
-  .rk-meta .rk-qty{color:#C8C2B7;font-family:var(--mono);border:1px solid #3A4148;border-radius:20px;
-    padding:2px 6px;font-size:8px}
+  .rk-chips{display:flex;align-items:center;gap:6px;flex:none}
+  .rk-qty{color:#C8C2B7;font-family:var(--mono);font-size:10px;border:1px solid #3A4148;border-radius:20px;
+    padding:4px 9px;white-space:nowrap;cursor:pointer}
+  .rk-qty:active{border-color:var(--laser);color:#fff}
+  .rk-qty-add{color:#5E656D;font-family:var(--mono);font-size:9px;border:1px dashed #333B42;border-radius:20px;
+    padding:4px 8px;cursor:pointer;background:none}
+  .rk-row.rk-editing{background:rgba(232,68,46,.10);box-shadow:inset 3px 0 0 var(--laser)}
   .rk-claim{min-width:50px;height:28px;border:1px solid #444B52;border-radius:7px;background:none;
     color:#B1B7BD;font-size:9px;font-weight:720;cursor:pointer;display:inline-flex;
     align-items:center;justify-content:center;gap:3px;padding:0 8px;font-family:var(--sans)}
@@ -1627,7 +1630,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=116">
+  <link rel="manifest" href="./manifest.json?v=117">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6155,7 +6158,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v116";
+const APP_VERSION = "v117";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10742,7 +10745,7 @@ function renderRestock(){
   const strip = document.getElementById("rkStrip");
   if(strip){
     strip.innerHTML =
-      '<div><strong>'+items.length+'</strong><span class="rk-lab">ON THE LIST</span></div>'+
+      '<div><strong>'+items.length+'</strong><span class="rk-lab">ITEMS</span></div>'+
       '<div><strong>'+claimed+'</strong><span class="rk-lab">CLAIMED</span></div>'+
       '<div class="rk-sy">'+
         (rkDirty
@@ -10779,21 +10782,42 @@ function renderRestock(){
 
   rkDock();
 }
+let rkEditId = null;
+function rkBrandAbbr(t){ const s = String(t||"").replace(/[^A-Za-z0-9]/g,""); return s.slice(0,3).toUpperCase(); }
+/* Tapping a qty pill sends the worker back up to the fixed card with the item
+   prefilled, so they adjust the case count there (Pass B updates on Add). */
+function rkEditQty(id){
+  const it = (rkState.items||[]).find(x=>x.id===id); if(!it) return;
+  const tin = document.getElementById("rkTin"); if(tin) tin.value = it.name;
+  const sel = document.getElementById("rkSel"); if(sel && it.table) sel.value = it.table;
+  const qin = document.getElementById("rkQty"); if(qin) qin.value = it.qty || "";
+  rkEditId = id;
+  window.scrollTo({ top:0, behavior:"smooth" });
+  setTimeout(function(){ if(qin){ qin.focus(); if(qin.select) qin.select(); } }, 380);
+}
 function rkRow(x, me){
   const mine = x.claimId && x.claimId===me;
   const other = x.claimId && !mine;
-  const meta = [];
-  if(x.qty) meta.push('<span class="rk-qty">'+esc(x.qty)+'</span>');
-  if(x.by)  meta.push('<span>'+esc(x.by)+'</span>');
+  const tags = x.tags || [];
+  const packTags  = tags.filter(t=>nmTagKind(t)==="pack");
+  const orgTags   = tags.filter(t=>nmTagKind(t)==="org");
+  const brandTags = tags.filter(t=>nmTagKind(t)==="brand");
+  const qtyChip = x.qty
+    ? '<span class="rk-qty" onclick="rkEditQty(\''+x.id+'\')">'+esc(x.qty)+'</span>'
+    : '<button class="rk-qty-add" onclick="rkEditQty(\''+x.id+'\')">qty</button>';
+  const chips = '<div class="rk-chips">'+ qtyChip
+    + packTags.map(t=>'<span class="nm-bdg pack">'+esc(t)+'</span>').join("")
+    + orgTags.map(t=>'<span class="nm-bdg org">'+esc(t)+'</span>').join("")
+    + brandTags.map(t=>'<span class="nm-bdg brand">'+esc(rkBrandAbbr(t))+'</span>').join("")
+    + '</div>';
   const claimCell = other
     ? '<div class="rk-owner" onclick="rkClaim(\''+x.id+'\')" title="Tap to take over"><b>'+esc(rkInitials(x.claimBy))+'</b><small>'+esc(x.claimBy)+'</small></div>'
     : '<button class="rk-claim'+(mine?' rk-mine':'')+'" onclick="rkClaim(\''+x.id+'\')">'+
         (mine ? '<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>Mine' : 'Claim')+
       '</button>';
-  return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+'">'+
-      '<span class="rk-st">'+(x.claimId?'<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>':'')+'</span>'+
-      '<div class="rk-copy"><div class="rk-line">'+nmBadgesHtml((x.tags||[]).filter(t=>nmTagKind(t)!=="pack"))+'<strong>'+esc(x.name)+'</strong>'+nmBadgesHtml((x.tags||[]).filter(t=>nmTagKind(t)==="pack"))+'</div>'+(meta.length?'<div class="rk-meta">'+meta.join("")+'</div>':'')+'</div>'+
-      claimCell+
+  return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+(rkEditId===x.id?' rk-editing':'')+'" id="rkrow-'+x.id+'">'+
+      '<div class="rk-copy"><strong>'+esc(x.name)+'</strong></div>'+
+      chips + claimCell +
       '<button class="rk-del" onclick="rkDel(\''+x.id+'\')" aria-label="Remove"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>'+
     '</div>';
 }

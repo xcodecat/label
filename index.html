@@ -1631,7 +1631,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=121">
+  <link rel="manifest" href="./manifest.json?v=122">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6159,7 +6159,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v121";
+const APP_VERSION = "v122";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10671,21 +10671,19 @@ function commitRestockSpoken(text){
   const heardItems = parseSpoken(t, "loop");
   if(!heardItems.length){ if(h) h.textContent = "Didn't catch an item \u2014 try again."; return; }
   if(h) h.textContent = "";
-  heardItems.forEach(sp=>{
-    const resolved0 = snapSpokenName(sp.heard || sp.name);
-    let name = displayName(resolved0) || sp.name, plu = "";
-    const cc = codeForName(resolved0);              // resolved0 only -> weight ignored
-    if(cc.plu){ plu = cc.plu; if(cc.name) name = displayName(cc.name); }
-    else if(cc.code && cc.name){ name = displayName(cc.name); }
-    name = String(name||"").replace(/\b\w/g, c=>c.toUpperCase());
-    const nmF = nmNormalize(name), nmH = nmNormalize(sp.heard || "");
-    const tags = Array.from(new Set((nmF.tags||[]).concat(nmH.tags||[])));
-    name = rkCap(nmF.core) || name;
+  heardItems.forEach(it=>{
+    // ---- verbatim scrap resolution (see commitSpoken) ----
+    const resolved0 = snapSpokenName(it.heard || it.name);
+    it.name = displayName(resolved0) || it.name;
+    const cc = codeForName(resolved0);              // resolved0 only -> drop the DB weight
+    if(cc.code && cc.name) it.name = displayName(cc.name);   // catalogue name only for a barcode hit
+    const name = String(it.name || "").replace(/\b\w/g, c=>c.toUpperCase());
     if(!name) return;
-    const isOrg = /\borganic\b/i.test(sp.heard || "");
-    if(isOrg && !/organic/i.test(name) && tags.indexOf("PCO") < 0) name = "Organic " + name;
-    const qty = (sp.qty && sp.qty > 1) ? (sp.qty + " cases") : "";   // box count, never weight
-    rkPlace(name, plu, tags, sp.heard, forced, qty);
+    // ---- restock only: box count instead of weight, brand from what was said, route to a table ----
+    const plu  = cc.plu || "";
+    const tags = nmNormalize(it.heard || "").tags || [];
+    const qty  = (it.qty && it.qty > 1) ? (it.qty + " cases") : "";
+    rkPlace(name, plu, tags, it.heard, forced, qty);
   });
 }
 

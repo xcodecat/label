@@ -1056,7 +1056,7 @@
   .rk-sw input{width:100%;height:39px;border:1px solid var(--line);background:var(--surface);
     color:var(--paper);border-radius:9px;padding:0 11px 0 36px;font-size:12px;outline:0;font-family:var(--sans)}
   .rk-sw input:focus{border-color:var(--laser)}
-  .rk-fixed{position:sticky;top:0;z-index:20;background:var(--ink);margin:0 -16px;
+  .rk-fixed{position:sticky;top:var(--hdr,47px);z-index:15;background:var(--ink);margin:0 -16px;
     padding:6px 16px 0;border-bottom:1px solid var(--line)}
   .rk-selw.rk-sel-lit select{border-color:var(--laser);box-shadow:0 0 0 3px rgba(232,68,46,.20);
     background:rgba(232,68,46,.06)}
@@ -1627,7 +1627,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=115">
+  <link rel="manifest" href="./manifest.json?v=116">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6155,7 +6155,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v115";
+const APP_VERSION = "v116";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is

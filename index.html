@@ -989,7 +989,80 @@
   .sections button.on{background:var(--laser);color:#fff}
 
   /* ---------- restock list ---------- */
-  #view-restock{padding-bottom:138px}
+  #view-restock{padding-bottom:0}
+  #view-restock .rk-tables{padding-bottom:calc(150px + env(safe-area-inset-bottom))}
+  /* ---------- restock redesign: FAB stack + unrolling add-bar ---------- */
+  .rk-hiddensel{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none}
+  .rk-fabwrap{position:fixed;left:16px;right:16px;bottom:calc(66px + env(safe-area-inset-bottom));
+    z-index:45;display:flex;flex-direction:column;align-items:flex-end;gap:12px;pointer-events:none}
+  .rk-fabwrap>*{pointer-events:auto}
+  .rk-micfab{width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;background:var(--laser);
+    color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;
+    transition:transform .12s,background .15s}
+  .rk-micfab svg{width:24px;height:24px}
+  .rk-micfab:active{transform:scale(.94)}
+  .rk-micfab.live{background:var(--ok);color:#0d1a12}
+  .rk-micfab.live svg{animation:rkmicpulse 1s ease-in-out infinite}
+  @keyframes rkmicpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
+  .rk-addbar{align-self:flex-end;height:56px;width:56px;border-radius:28px;background:var(--surface);
+    border:1px solid var(--line);box-shadow:0 6px 18px rgba(0,0,0,.42);display:flex;align-items:center;
+    overflow:hidden;position:relative;
+    transition:width .34s cubic-bezier(.22,.61,.36,1),border-radius .34s,border-color .2s}
+  .rk-addbar.open{width:100%;border-radius:16px;border-color:var(--laser)}
+  .rk-addbar.rk-offline{border-color:#E0A43B;box-shadow:0 0 0 2px rgba(224,164,59,.25),0 6px 18px rgba(0,0,0,.42)}
+  .rk-abcount{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:22px;font-weight:800;color:var(--paper);opacity:.09;
+    pointer-events:none;letter-spacing:.03em}
+  .rk-addbar.open .rk-abcount{display:flex}
+  .rk-addbar.rk-offline .rk-abcount{color:#E0A43B;opacity:.14}
+  .rk-fab{width:56px;height:56px;flex:none;border:0;background:none;cursor:pointer;position:relative;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--paper)}
+  .rk-addbar.open .rk-fab{display:none}
+  .rk-fabmag{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
+  .rk-fab.rk-has .rk-fabmag{width:14px;height:14px;opacity:.7;margin-bottom:1px}
+  .rk-fabcount{font-family:var(--mono);font-size:12px;font-weight:700;line-height:1;color:var(--paper)}
+  .rk-addbar.rk-offline .rk-fabcount{color:#E0A43B}
+  .rk-abinner{display:none;align-items:center;width:100%;height:100%;padding:0 8px 0 4px;
+    position:relative;z-index:1}
+  .rk-addbar.open .rk-abinner{display:flex}
+  .rk-plus{flex:none;width:46px;height:46px;border-radius:12px;border:0;background:none;cursor:pointer;
+    display:grid;place-items:center;color:var(--laser);position:relative}
+  .rk-plusicon{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:2.4}
+  .rk-plusglyph{display:none;font-family:var(--mono);font-size:15px;font-weight:800}
+  .rk-plus.rk-pin .rk-plusicon{display:none}
+  .rk-plus.rk-pin .rk-plusglyph{display:block}
+  #rkTin::placeholder{color:var(--muted)}
+  .rk-qghost{flex:none;width:52px;height:100%;border:0;background:none;color:var(--paper);
+    text-align:right;font-size:14px;font-family:var(--mono);outline:0;padding-right:2px}
+  .rk-qghost::placeholder{color:#5a6068;font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.04em}
+  .rk-scrim{position:fixed;inset:0;z-index:44;display:none}
+  .rk-scrim.show{display:block}
+  .rk-heard{position:fixed;right:16px;bottom:calc(196px + env(safe-area-inset-bottom));z-index:46;
+    max-width:calc(100% - 32px);font-size:11px;color:var(--muted);font-family:var(--mono);
+    background:rgba(20,23,26,.92);border:1px solid var(--line);border-radius:9px;padding:6px 9px;display:none}
+  .rk-heard.show{display:block}
+  .rk-tsheet{position:fixed;right:16px;bottom:calc(132px + env(safe-area-inset-bottom));z-index:60;
+    width:min(320px,calc(100% - 32px));background:var(--surface);border:1px solid var(--line);
+    border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.55);display:none}
+  .rk-tsheet.show{display:block;animation:rkpop .16s ease}
+  @keyframes rkpop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  .rk-tsheet-h{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--muted);
+    padding:11px 14px 7px;border-bottom:1px solid var(--line)}
+  .rk-tsheet-list{max-height:44vh;overflow-y:auto}
+  .rk-topt{display:flex;align-items:center;gap:11px;padding:11px 14px;cursor:pointer;
+    border-bottom:1px solid rgba(52,59,66,.5)}
+  .rk-topt:last-child{border-bottom:0}
+  .rk-topt:active{background:var(--surface-2)}
+  .rk-topt.sel{background:rgba(232,68,46,.08)}
+  .rk-topt .tg{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;flex:none;
+    border:1px solid var(--tc);background:color-mix(in srgb,var(--tc) 14%,transparent);color:var(--tc);
+    font-family:var(--mono);font-size:12px;font-weight:800}
+  .rk-topt.auto .tg{border-color:var(--muted);color:var(--muted);background:var(--surface-2)}
+  .rk-topt .tn{font-size:13px;color:var(--paper);font-weight:600}
+  .rk-topt .tr{font-family:var(--mono);font-size:8px;color:var(--muted);letter-spacing:.06em;margin-top:2px}
+  .rk-topt .tick{margin-left:auto;color:var(--laser);opacity:0}
+  .rk-topt.sel .tick{opacity:1}
+  .rk-topt .tick svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.6}
   .rk-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px}
   .rk-eyebrow{color:var(--laser);font-family:var(--mono);font-size:9px;font-weight:700;
     letter-spacing:.15em;margin:0 0 4px}
@@ -1635,7 +1708,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=125">
+  <link rel="manifest" href="./manifest.json?v=126">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2121,37 +2194,47 @@
 
   <!-- ============ RESTOCK LIST VIEW ============ -->
   <section id="view-restock" class="view">
-    <div class="rk-head">
-      <div>
-        <h1>Restock List</h1>
-      </div>
-      <div class="rk-live"><span></span>SHARED</div>
-    </div>
-
-    <div class="rk-fixed">
-    <div class="rk-cap">
-      <div class="rk-inwrap">
-        <svg class="rk-mag" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
-        <input id="rkTin" class="rk-tin" placeholder="Type or say an item…" autocomplete="off" enterkeyhint="done">
-        <span class="rk-idiv"></span>
-        <button class="rk-mic" id="rkMic" type="button" aria-label="Say an item, tap to stop">
-          <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M6 11a6 6 0 0 0 12 0"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-        </button>
-      </div>
-      <div class="rk-vfx" id="rkHeard"></div>
-      <div class="rk-grid">
-        <div class="rk-selw"><select id="rkSel"></select></div>
-        <div class="rk-qwrap"><input id="rkQty" placeholder="Qty" autocomplete="off"></div>
-        <button class="rk-add" id="rkAdd" type="button" onclick="rkAddManual()">
-          <svg viewBox="0 0 24 24"><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/></svg>Add
-        </button>
-      </div>
-      <div class="rk-strip" id="rkStrip"></div>
-    </div>
-
-    </div><!-- /rk-fixed -->
-
+    <!-- header + fixed search-card removed for maximum list visibility;
+         counts + sync now live on the FAB, add/search is the unrolling bar -->
     <div class="rk-tables" id="rkTables"></div>
+
+    <!-- floating heard-caption while the voice FAB is live -->
+    <div class="rk-heard" id="rkHeard"></div>
+
+    <!-- table picker (opens off the + inside the add-bar) -->
+    <div class="rk-tsheet" id="rkTsheet">
+      <div class="rk-tsheet-h">FILE TO WHICH TABLE?</div>
+      <div class="rk-tsheet-list" id="rkTlist"></div>
+    </div>
+
+    <!-- tap-off scrim: rolls the bar (and picker) back for max visibility -->
+    <div class="rk-scrim" id="rkScrim"></div>
+
+    <!-- hidden select keeps the existing add + routing logic intact -->
+    <select id="rkSel" class="rk-hiddensel" aria-hidden="true" tabindex="-1"></select>
+
+    <!-- FAB stack, bottom-right for thumb reach: voice on top, search below -->
+    <div class="rk-fabwrap">
+      <button class="rk-micfab" id="rkMic" type="button" aria-label="Say an item, tap to stop">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+      </button>
+
+      <div class="rk-addbar" id="rkAddbar">
+        <span class="rk-abcount" id="rkAbCount"></span>
+        <button class="rk-fab" id="rkFab" type="button" aria-label="Add or search items">
+          <svg class="rk-fabmag" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+          <span class="rk-fabcount" id="rkFabCount"></span>
+        </button>
+        <div class="rk-abinner">
+          <button class="rk-plus" id="rkPlus" type="button" aria-label="Pick a table">
+            <svg class="rk-plusicon" id="rkPlusIcon" viewBox="0 0 24 24"><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
+            <span class="rk-plusglyph" id="rkPlusGlyph"></span>
+          </button>
+          <input id="rkTin" class="rk-tin" placeholder="Type or say an item…" autocomplete="off" enterkeyhint="done">
+          <input id="rkQty" class="rk-qghost" placeholder="qty" autocomplete="off" inputmode="numeric">
+        </div>
+      </div>
+    </div>
 
   </section>
 
@@ -6136,7 +6219,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v125";
+const APP_VERSION = "v126";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6284,7 +6367,8 @@ function setMic(on){
     const b = document.getElementById("rkMic");
     if(b) b.classList.toggle("live", on);
     const h = document.getElementById("rkHeard");
-    if(h && on) h.textContent = "Listening…";
+    if(h){ if(on){ h.textContent = "Listening…"; h.classList.add("show"); }
+           else if(!h.textContent || h.textContent === "Listening…"){ h.classList.remove("show"); } }
   } else {
     micBtn.classList.toggle("on", on);
     micBtn.classList.toggle("cont", on && micCont);
@@ -6375,7 +6459,7 @@ function startMic(continuous, mode){
       heardText = fin;
       const h = document.getElementById("rkHeard");
       const live = (all || fin).trim();
-      if(h) h.textContent = live ? "\u201C" + live + "\u201D" : "Listening…";
+      if(h){ h.textContent = live ? "\u201C" + live + "\u201D" : "Listening…"; h.classList.add("show"); }
     } else {
       heardText = fin;
       heardBox.innerHTML = esc(heardText) + (interim ? ' <span class="dim">' + esc(interim) + '</span>' : "");
@@ -10612,12 +10696,16 @@ function rkAddManual(){
   const pq = rkParseQty(raw);
   const nm = nmNormalize(pq.name);
   const name = rkCap(nm.core) || rkCap(pq.name);
-  const qty = qtyEl.value.trim() || pq.qty;
-  const it = rkAddItem(name, selEl.value, qty, "", nm.tags);
+  let qty = qtyEl.value.trim() || pq.qty;
+  if(/^\d+$/.test(qty)) qty = qty + " cs";           // bare count -> cases
+  // pinned = user chose a table with the + picker; otherwise auto-route by name
+  const table = (rkPinned && selEl && RK_BY_ID[selEl.value]) ? selEl.value : tableFor(name);
+  const it = rkAddItem(name, table, qty, "", nm.tags);
   if(it){
     nameEl.value = ""; qtyEl.value = "";
-    const h = document.getElementById("rkHeard"); if(h) h.textContent = "";
-    toast("Added to " + RK_BY_ID[it.table].name); rkFlashSel(it.table);
+    const h = document.getElementById("rkHeard"); if(h){ h.textContent = ""; h.classList.remove("show"); }
+    toast("Added to " + RK_BY_ID[it.table].name);
+    rkPinned = false; if(selEl) selEl.selectedIndex = 0; rkReflectTarget();
     nameEl.focus();
   }
 }
@@ -10661,8 +10749,8 @@ function commitRestockSpoken(text){
   // catalogue's proper name + PLU (snapSpokenName -> displayName -> codeForName).
   // Restock drops the DB weight and files by the box count instead.
   const heardItems = parseSpoken(t, "loop");
-  if(!heardItems.length){ if(h) h.textContent = "Didn't catch an item \u2014 try again."; return; }
-  if(h) h.textContent = "";
+  if(!heardItems.length){ if(h){ h.textContent = "Didn't catch an item \u2014 try again."; h.classList.add("show"); setTimeout(function(){ if(h) h.classList.remove("show"); }, 1800); } return; }
+  if(h){ h.textContent = ""; h.classList.remove("show"); }
   heardItems.forEach(it=>{
     // Pull brand/pack OUT first so the resolver never sees or expands it — the
     // brand lives only in a badge, never in the product name.
@@ -10777,11 +10865,63 @@ function rkFillSelect(){
   sel.innerHTML = RK_TABLES.map(t=>'<option value="'+t.id+'">'+esc(t.name)+'</option>').join("");
 }
 
+/* ---- the add-bar (collapsed FAB <-> full-width bar) + table picker ---- */
+let rkPinned = false;   // did the user explicitly pick a table via the + picker?
+function rkReflectTarget(){
+  const plus = document.getElementById("rkPlus"); if(!plus) return;
+  const glyph = document.getElementById("rkPlusGlyph");
+  const sel = document.getElementById("rkSel");
+  const t = sel ? RK_BY_ID[sel.value] : null;
+  if(rkPinned && t){
+    plus.classList.add("rk-pin");
+    if(glyph){ glyph.textContent = t.g; glyph.style.color = t.tc; }
+    plus.style.color = t.tc;
+  } else {
+    plus.classList.remove("rk-pin");
+    plus.style.color = "";
+  }
+}
+function rkBuildTsheet(){
+  const sel = document.getElementById("rkSel");
+  const cur = sel ? sel.value : "";
+  let html = '<div class="rk-topt auto'+(!rkPinned?' sel':'')+'" data-t="" style="--tc:#8A939C">'+
+    '<span class="tg">\u25C7</span><div><div class="tn">Auto-file</div>'+
+    '<div class="tr">ROUTE BY NAME</div></div>'+
+    '<span class="tick"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span></div>';
+  RK_TABLES.forEach(function(t){
+    html += '<div class="rk-topt'+((rkPinned && cur===t.id)?' sel':'')+'" data-t="'+t.id+'" style="--tc:'+t.tc+'">'+
+      '<span class="tg">'+esc(t.g)+'</span>'+
+      '<div><div class="tn">'+esc(t.name)+'</div><div class="tr">'+esc(t.run)+'</div></div>'+
+      '<span class="tick"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span></div>';
+  });
+  const host = document.getElementById("rkTlist"); if(host) host.innerHTML = html;
+}
+function rkOpenTsheet(){ rkBuildTsheet(); const s=document.getElementById("rkTsheet"); if(s) s.classList.add("show"); const sc=document.getElementById("rkScrim"); if(sc) sc.classList.add("show"); }
+function rkCloseTsheet(){ const s=document.getElementById("rkTsheet"); if(s) s.classList.remove("show"); }
+function rkToggleTsheet(){ const s=document.getElementById("rkTsheet"); if(s && s.classList.contains("show")) rkCloseTsheet(); else rkOpenTsheet(); }
+function rkOpenBar(){
+  const bar=document.getElementById("rkAddbar"); if(bar) bar.classList.add("open");
+  const sc=document.getElementById("rkScrim"); if(sc) sc.classList.add("show");
+  const tin=document.getElementById("rkTin"); if(tin) setTimeout(function(){ tin.focus(); }, 260);
+}
+function rkCloseBar(){
+  const bar=document.getElementById("rkAddbar"); if(bar) bar.classList.remove("open");
+  const sc=document.getElementById("rkScrim"); if(sc) sc.classList.remove("show");
+  rkCloseTsheet();
+  const tin=document.getElementById("rkTin"); if(tin){ tin.value=""; tin.blur(); }
+  const q=document.getElementById("rkQty"); if(q){ q.value=""; q.blur(); }
+  const h=document.getElementById("rkHeard"); if(h) h.classList.remove("show");
+  rkPinned=false;
+  const sel=document.getElementById("rkSel"); if(sel) sel.selectedIndex=0;
+  const wasEdit = rkEditId; rkEditId=null; if(wasEdit) renderRestock();
+  rkReflectTarget();
+}
+
 /* ---- render ---- */
 function rkScrollToRow(id){
   const row = document.getElementById("rkrow-"+id); if(!row) return;
-  const fixed = document.querySelector("#view-restock .rk-fixed");
-  const stick = fixed ? fixed.getBoundingClientRect().bottom : 0;
+  const hdr = document.querySelector("header");
+  const stick = hdr ? hdr.getBoundingClientRect().bottom : 0;
   const y = window.scrollY + row.getBoundingClientRect().top - stick - 14;
   window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
 }
@@ -10796,17 +10936,12 @@ function renderRestock(){
   const me = deviceInfo().id;
 
   const claimed = items.filter(x=>x.claimId).length;
-  const strip = document.getElementById("rkStrip");
-  if(strip){
-    strip.innerHTML =
-      '<div><strong>'+items.length+'</strong><span class="rk-lab">ITEMS</span></div>'+
-      '<div><strong>'+claimed+'</strong><span class="rk-lab">CLAIMED</span></div>'+
-      '<div class="rk-sy" onclick="rkSync(true)" style="cursor:pointer" title="Tap to sync now">'+
-        (rkDirty
-          ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span class="rk-lab">'+(rkOffline?'Offline \u2014 will sync':'Saving\u2026')+'</span>'
-          : '<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg><span class="rk-lab">'+(rkState.updatedAt?'All synced':'Nothing yet')+'</span>')+
-      '</div>';
-  }
+  // counts live on the FAB (claimed/total) and faintly in the unrolled bar
+  const _rkCnt = items.length ? (claimed + "/" + items.length) : "";
+  const _fabCount = document.getElementById("rkFabCount"); if(_fabCount) _fabCount.textContent = _rkCnt;
+  const _abCount  = document.getElementById("rkAbCount");  if(_abCount)  _abCount.textContent  = _rkCnt;
+  const _rkFab = document.getElementById("rkFab"); if(_rkFab) _rkFab.classList.toggle("rk-has", items.length > 0);
+  const _rkAddbar = document.getElementById("rkAddbar"); if(_rkAddbar) _rkAddbar.classList.toggle("rk-offline", !!(rkOffline && rkDirty));
 
   const host = document.getElementById("rkTables");
   const _rkOrder = RK_TABLES.slice().sort((a,b)=>{ const ea=items.filter(x=>x.table===a.id).length===0, eb=items.filter(x=>x.table===b.id).length===0; return ea===eb?0:(ea?1:-1); });
@@ -10858,12 +10993,14 @@ function rkBrandAbbr(t){ const s = String(t||"").replace(/[^A-Za-z0-9]/g,""); re
    prefilled, so they adjust the case count there (Pass B updates on Add). */
 function rkEditQty(id){
   const it = (rkState.items||[]).find(x=>x.id===id); if(!it) return;
+  rkOpenBar();
   const tin = document.getElementById("rkTin"); if(tin) tin.value = it.name;
   const sel = document.getElementById("rkSel"); if(sel && it.table) sel.value = it.table;
+  rkPinned = true; rkReflectTarget();
   const qin = document.getElementById("rkQty"); if(qin) qin.value = it.qty || "";
   rkEditId = id;
-  window.scrollTo({ top:0, behavior:"smooth" });
-  setTimeout(function(){ if(qin){ qin.focus(); if(qin.select) qin.select(); } }, 380);
+  renderRestock();
+  setTimeout(function(){ if(qin){ qin.focus(); if(qin.select) qin.select(); } }, 360);
 }
 function rkRow(x, me){
   const mine = x.claimId && x.claimId===me;
@@ -11088,22 +11225,48 @@ document.addEventListener("visibilitychange", ()=>{
   if(v && v.classList.contains("active")){ if(rkDirty) rkSync(false); else rkPull(); }
 });
 
-/* Enter in the item box files it, same as tapping Add. */
+/* Enter files the item (item box + qty box). Typing previews the routed table.
+   The FAB unrolls into the bar; tapping off rolls it back for max visibility. */
 {
   const _rkTin = document.getElementById("rkTin");
-  if(_rkTin) _rkTin.addEventListener("keydown", e=>{
+  const _rkQty = document.getElementById("rkQty");
+  const _rkCommit = function(e){
     if(e.key === "Enter"){ e.preventDefault(); rkAddManual(); }
-  });
+    else if(e.key === "Escape"){ rkCloseBar(); }
+  };
+  if(_rkTin) _rkTin.addEventListener("keydown", _rkCommit);
+  if(_rkQty) _rkQty.addEventListener("keydown", _rkCommit);
   let _rkPrevT = null;
   if(_rkTin) _rkTin.addEventListener("input", function(){
     clearTimeout(_rkPrevT);
     _rkPrevT = setTimeout(function(){
       const v = _rkTin.value.trim(); if(v.length < 2) return;
-      const t = rkGuessTable(v); if(t) rkFlashSel(t);
+      if(!rkPinned){ const t = rkGuessTable(v); const s = document.getElementById("rkSel"); if(t && s) s.value = t; }
       rkFindFlash(v);
     }, 280);
   });
   rkFillSelect();
+  rkReflectTarget();
+
+  const _fab = document.getElementById("rkFab");
+  if(_fab) _fab.addEventListener("click", function(){ rkOpenBar(); });
+  const _plus = document.getElementById("rkPlus");
+  if(_plus) _plus.addEventListener("click", function(e){ e.stopPropagation(); rkToggleTsheet(); });
+  const _scrim = document.getElementById("rkScrim");
+  if(_scrim) _scrim.addEventListener("click", function(){
+    const ts = document.getElementById("rkTsheet");
+    if(ts && ts.classList.contains("show")) rkCloseTsheet(); else rkCloseBar();
+  });
+  const _tlist = document.getElementById("rkTlist");
+  if(_tlist) _tlist.addEventListener("click", function(e){
+    const opt = e.target.closest(".rk-topt"); if(!opt) return;
+    const id = opt.getAttribute("data-t");
+    const s = document.getElementById("rkSel");
+    if(id){ rkPinned = true; if(s) s.value = id; }
+    else { rkPinned = false; }
+    rkReflectTarget(); rkCloseTsheet();
+    const tin = document.getElementById("rkTin"); if(tin) tin.focus();
+  });
 }
 
 /* ============================================================

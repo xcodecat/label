@@ -1000,7 +1000,7 @@
   .rk-live span{width:6px;height:6px;border-radius:50%;background:var(--ok);
     box-shadow:0 0 0 3px rgba(76,175,125,.14)}
   .rk-strip{display:grid;grid-template-columns:auto auto 1fr;border:1px solid var(--line);
-    background:var(--surface);border-radius:12px;overflow:hidden;margin-bottom:12px}
+    background:var(--surface);border-radius:12px;overflow:hidden;margin-top:9px}
   .rk-strip>div{padding:0 13px;min-height:42px;display:flex;flex-direction:column;
     justify-content:center;border-right:1px solid var(--line)}
   .rk-strip>div:last-child{border-right:0}
@@ -1013,27 +1013,28 @@
     padding:11px 12px;margin-bottom:10px}
   .rk-flab{display:block;color:var(--muted);font-family:var(--mono);font-size:8px;font-weight:700;
     letter-spacing:.11em;margin-bottom:6px}
-  .rk-inwrap{position:relative}
-  .rk-tin{width:100%;height:42px;border:1px solid var(--line);background:var(--surface-2);
-    color:var(--paper);border-radius:9px;padding:0 54px 0 12px;font-size:14px;outline:0;
-    font-family:var(--sans)}
-  .rk-tin:focus{border-color:var(--laser);box-shadow:0 0 0 3px rgba(232,68,46,.12)}
-  .rk-mic{position:absolute;top:5px;right:5px;width:35px;height:35px;border-radius:8px;
-    border:1px solid rgba(232,68,46,.42);background:rgba(232,68,46,.10);color:var(--laser);
-    cursor:pointer;display:grid;place-items:center}
+  .rk-inwrap{position:relative;display:flex;align-items:center;height:44px;border:1px solid var(--line);
+    background:var(--surface-2);border-radius:9px;overflow:hidden}
+  .rk-inwrap:focus-within{border-color:var(--laser);box-shadow:0 0 0 3px rgba(232,68,46,.12)}
+  .rk-mag{width:17px;height:17px;margin:0 8px 0 11px;stroke:var(--muted);fill:none;stroke-width:2;flex:none}
+  .rk-idiv{width:1px;height:22px;background:var(--line);flex:none}
+  .rk-tin{flex:1;height:100%;border:0;background:none;
+    color:var(--paper);font-size:14px;outline:0;font-family:var(--sans)}
+  .rk-mic{width:44px;height:44px;border:0;background:none;color:var(--laser);
+    cursor:pointer;display:grid;place-items:center;flex:none}
   .rk-mic.live{background:var(--laser);color:#fff}
   .rk-mic svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.8;
     stroke-linecap:round;stroke-linejoin:round}
   .rk-vfx{min-height:14px;color:var(--muted);font-size:9px;line-height:1.4;margin:6px 1px 0}
-  .rk-grid{display:grid;grid-template-columns:1.45fr 1fr;gap:9px;margin-top:9px}
+  .rk-grid{display:grid;grid-template-columns:1.35fr .8fr auto;gap:8px;margin-top:9px}
   .rk-selw{position:relative}
   .rk-selw span{display:block;color:var(--muted);font-family:var(--mono);font-size:8px;
     font-weight:700;letter-spacing:.11em;margin-bottom:6px}
-  .rk-selw select{width:100%;height:42px;border:1px solid var(--line);background:var(--surface-2);
-    color:var(--paper);border-radius:9px;padding:0 28px 0 11px;font-size:11px;outline:0;
+  .rk-selw select{width:100%;height:40px;border:1px solid var(--line);background:var(--surface-2);
+    color:var(--paper);border-radius:9px;padding:0 24px 0 11px;font-size:11px;outline:0;
     appearance:none;-webkit-appearance:none;font-family:var(--sans)}
-  .rk-selw:after{content:"\25BE";position:absolute;right:11px;bottom:12px;color:var(--muted);
-    pointer-events:none;font-size:11px}
+  .rk-selw:after{content:"\25BE";position:absolute;right:9px;top:14px;color:var(--muted);
+    pointer-events:none;font-size:10px}
   .rk-qtrig{height:45px;align-self:end;border:1px dashed #424950;border-radius:9px;background:none;
     color:var(--paper);cursor:pointer;display:grid;grid-template-columns:auto 1fr;
     grid-template-rows:1fr 1fr;column-gap:7px;align-items:center;padding:5px 10px;
@@ -1042,13 +1043,13 @@
   .rk-qtrig small{color:var(--muted);font-size:9px;font-weight:500}
   .rk-qwrap span{display:block;color:var(--muted);font-family:var(--mono);font-size:8px;
     font-weight:700;letter-spacing:.11em;margin-bottom:6px}
-  .rk-qwrap input{width:100%;height:42px;border:1px solid var(--line);background:var(--surface-2);
-    color:var(--paper);border-radius:9px;padding:0 10px;font-size:12px;outline:0;font-family:var(--sans)}
+  .rk-qwrap input{width:100%;height:40px;border:1px solid var(--line);background:var(--surface-2);
+    color:var(--paper);border-radius:9px;padding:0 8px;font-size:12px;outline:0;font-family:var(--sans);text-align:center}
   .rk-qwrap input:focus,.rk-selw select:focus{border-color:var(--laser)}
-  .rk-add{width:100%;height:40px;margin-top:10px;border:0;border-radius:9px;background:var(--laser);
-    color:#fff;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;
-    justify-content:center;gap:8px;font-family:var(--sans)}
-  .rk-add svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.4}
+  .rk-add{height:40px;padding:0 12px;border:0;border-radius:9px;background:var(--laser);
+    color:#fff;font-size:12px;font-weight:800;cursor:pointer;display:flex;align-items:center;
+    justify-content:center;gap:5px;white-space:nowrap;font-family:var(--sans)}
+  .rk-add svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.6}
   .rk-toolbar{display:flex;gap:8px;margin:10px 0 9px}
   .rk-sw{flex:1;position:relative}
   .rk-sw svg{position:absolute;left:11px;top:11px;width:17px;height:17px;stroke:var(--muted);
@@ -1062,9 +1063,9 @@
     background:rgba(232,68,46,.06)}
   .rk-card.rk-dim{opacity:.42;filter:grayscale(.4)}
   .rk-tables{display:flex;flex-direction:column;gap:9px;padding-bottom:calc(74px + env(safe-area-inset-bottom))}
-  .rk-row.rk-flash2{animation:rkflash2 .5s ease 2}
-  .rk-row.rk-added-lit{background:rgba(76,175,125,.14);box-shadow:inset 3px 0 0 var(--ok)}
-  @keyframes rkflash2{0%,100%{background:rgba(232,68,46,0)}50%{background:rgba(232,68,46,.28)}}
+  .rk-row.rk-flash2{animation:rkflash2 .55s ease 2}
+  .rk-row.rk-added-lit{background:rgba(76,175,125,.20);border-radius:9px;box-shadow:0 0 0 1px rgba(76,175,125,.5) inset}
+  @keyframes rkflash2{0%,100%{background:rgba(232,68,46,0)}50%{background:rgba(232,68,46,.24);border-radius:9px}}
   .rk-card{border:1px solid var(--line);background:var(--surface);border-radius:12px;overflow:hidden}
   .rk-card.rk-fridge{border-style:dashed}
   .rk-thead{display:grid;grid-template-columns:34px 1fr auto auto;align-items:center;gap:9px;
@@ -1103,7 +1104,7 @@
   .rk-qty:active{border-color:var(--laser);color:#fff}
   .rk-qty-add{color:#5E656D;font-family:var(--mono);font-size:9px;border:1px dashed #333B42;border-radius:20px;
     padding:4px 8px;cursor:pointer;background:none}
-  .rk-row.rk-editing{background:rgba(232,68,46,.10);box-shadow:inset 3px 0 0 var(--laser)}
+  .rk-row.rk-editing{background:rgba(232,68,46,.16);border-radius:9px;box-shadow:0 0 0 1px rgba(232,68,46,.45) inset}
   .rk-claim{min-width:50px;height:28px;border:1px solid #444B52;border-radius:7px;background:none;
     color:#B1B7BD;font-size:9px;font-weight:720;cursor:pointer;display:inline-flex;
     align-items:center;justify-content:center;gap:3px;padding:0 8px;font-family:var(--sans)}
@@ -1634,7 +1635,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=124">
+  <link rel="manifest" href="./manifest.json?v=125">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2128,31 +2129,24 @@
     </div>
 
     <div class="rk-fixed">
-    <div class="rk-strip" id="rkStrip"></div>
-
     <div class="rk-cap">
-      <label class="rk-flab" for="rkTin">WHAT'S MISSING?</label>
       <div class="rk-inwrap">
-        <input id="rkTin" class="rk-tin" placeholder="Type an item, or tap the mic…" autocomplete="off" enterkeyhint="done">
+        <svg class="rk-mag" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+        <input id="rkTin" class="rk-tin" placeholder="Type or say an item…" autocomplete="off" enterkeyhint="done">
+        <span class="rk-idiv"></span>
         <button class="rk-mic" id="rkMic" type="button" aria-label="Say an item, tap to stop">
           <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M6 11a6 6 0 0 0 12 0"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         </button>
       </div>
       <div class="rk-vfx" id="rkHeard"></div>
       <div class="rk-grid">
-        <div class="rk-selw">
-          <span>TABLE</span>
-          <select id="rkSel"></select>
-        </div>
-        <div class="rk-qwrap">
-          <span>QTY · OPTIONAL</span>
-          <input id="rkQty" placeholder="e.g. 3 or 2 kg" autocomplete="off">
-        </div>
+        <div class="rk-selw"><select id="rkSel"></select></div>
+        <div class="rk-qwrap"><input id="rkQty" placeholder="Qty" autocomplete="off"></div>
+        <button class="rk-add" id="rkAdd" type="button" onclick="rkAddManual()">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/></svg>Add
+        </button>
       </div>
-      <button class="rk-add" id="rkAdd" type="button" onclick="rkAddManual()">
-        <svg viewBox="0 0 24 24"><line x1="12" y1="6" x2="12" y2="18"/><line x1="6" y1="12" x2="18" y2="12"/></svg>
-        Add to list
-      </button>
+      <div class="rk-strip" id="rkStrip"></div>
     </div>
 
     </div><!-- /rk-fixed -->
@@ -6142,7 +6136,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v124";
+const APP_VERSION = "v125";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10442,7 +10436,7 @@ function rkGuessTable(name){
 /* ---- state ---- */
 let rkState = rkLoad();
 let rkDirty = false;
-let rkJustAddedId = null, rkFlash2Id = null;
+let rkJustAddedId = null, rkFlash2Id = null, rkScrollTargetId = null;
 let rkSyncing = false;
 let rkOffline = false;             // last push failed for a network reason
 let rkSyncTimer = null;            // debounces auto-sync after edits
@@ -10487,7 +10481,7 @@ function rkAddItem(name, table, qty, plu, tags){
     if(plu) dup.plu = String(plu);
     if(tags.length) dup.tags = Array.from(new Set((dup.tags||[]).concat(tags)));
     dup.table = table;
-    rkFlash2Id = dup.id; rkJustAddedId = null;
+    rkFlash2Id = dup.id; rkJustAddedId = null; rkScrollTargetId = dup.id;
     rkTouch();
     return dup;
   }
@@ -10495,7 +10489,7 @@ function rkAddItem(name, table, qty, plu, tags){
     qty, plu: String(plu||""), tags, by: rkMeName(),
     claimId:"", claimBy:"", ts: Date.now() };
   rkState.items.push(it);
-  rkJustAddedId = it.id; rkFlash2Id = null;
+  rkJustAddedId = it.id; rkFlash2Id = null; rkScrollTargetId = it.id;
   rkTouch();
   return it;
 }
@@ -10784,6 +10778,13 @@ function rkFillSelect(){
 }
 
 /* ---- render ---- */
+function rkScrollToRow(id){
+  const row = document.getElementById("rkrow-"+id); if(!row) return;
+  const fixed = document.querySelector("#view-restock .rk-fixed");
+  const stick = fixed ? fixed.getBoundingClientRect().bottom : 0;
+  const y = window.scrollY + row.getBoundingClientRect().top - stick - 14;
+  window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+}
 function renderRestock(){
   rkFillSelect();
   const items = rkState.items;
@@ -10837,12 +10838,16 @@ function renderRestock(){
 
   if(rkJustAddedId){
     const _r = document.getElementById("rkrow-"+rkJustAddedId);
-    if(_r){ _r.classList.add("rk-added-lit"); requestAnimationFrame(function(){ _r.scrollIntoView({block:"center",behavior:"smooth"}); }); }
+    if(_r) _r.classList.add("rk-added-lit");
   }
   if(rkFlash2Id){
     const _r = document.getElementById("rkrow-"+rkFlash2Id);
-    if(_r){ _r.classList.remove("rk-flash2"); void _r.offsetWidth; _r.classList.add("rk-flash2"); requestAnimationFrame(function(){ _r.scrollIntoView({block:"center",behavior:"smooth"}); }); }
+    if(_r){ _r.classList.remove("rk-flash2"); void _r.offsetWidth; _r.classList.add("rk-flash2"); }
     rkFlash2Id = null;
+  }
+  if(rkScrollTargetId){
+    const _t = rkScrollTargetId; rkScrollTargetId = null;   // one-shot: never re-scroll on later renders
+    requestAnimationFrame(function(){ rkScrollToRow(_t); });
   }
 
   rkDock();

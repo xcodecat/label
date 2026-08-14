@@ -1031,6 +1031,7 @@
   .rk-plusglyph{display:none;font-family:var(--mono);font-size:15px;font-weight:800}
   .rk-plus.rk-pin .rk-plusicon{display:none}
   .rk-plus.rk-pin .rk-plusglyph{display:block}
+  .rk-plus.rk-preview{opacity:.62}
   #rkTin::placeholder{color:var(--muted)}
   .rk-qghost{flex:none;width:52px;height:100%;border:0;background:none;color:var(--paper);
     text-align:right;font-size:14px;font-family:var(--mono);outline:0;padding-right:2px}
@@ -1085,7 +1086,7 @@
   .rk-strip>div{padding:0 13px;min-height:42px;display:flex;flex-direction:column;
     justify-content:center;border-right:1px solid var(--line)}
   .rk-strip>div:last-child{border-right:0}
-  .rk-strip strong{font-family:var(--mono);font-size:16px;line-height:1;color:var(--paper)}
+  .rk-strip strong{font-family:var(--mono);font-size:16px;line-height:1;color:var(--muted)}
   .rk-strip .rk-lab{color:var(--muted);font-size:9px;margin-top:4px}
   .rk-strip .rk-sy{flex-direction:row;align-items:center;justify-content:flex-end;gap:6px;color:var(--ok)}
   .rk-strip .rk-sy svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
@@ -1716,7 +1717,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=127">
+  <link rel="manifest" href="./manifest.json?v=128">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6233,7 +6234,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v127";
+const APP_VERSION = "v128";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10520,7 +10521,9 @@ function rkKeywordTable(name){
   for(const [id,keys] of RK_ROUTE){ if(keys.some(k=> rkKwRe(k).test(s))) return id; }
   return "";
 }
-function tableFor(name, plu){
+function tableFor(name, plu, tags){
+  const sp = rkSpecialTable(name, tags);
+  if(sp) return sp;                                     // fixed planogram spot
   const taught = rkRoutes()[rkRouteKey(name, plu)];
   if(taught === "none") return "none";                 // store doesn't carry it
   if(taught && taught !== "carry") return taught;      // trained to a table
@@ -10529,7 +10532,9 @@ function tableFor(name, plu){
 /* Is the routing actually confident? A taught route or a whole-word keyword
    hit is "sure". Falling through to the fridge catch-all is NOT — that's when
    voice/typed adds should stop and ask which table instead of guessing. */
-function rkTableSure(name, plu){
+function rkTableSure(name, plu, tags){
+  const sp = rkSpecialTable(name, tags);
+  if(sp) return { table:sp, sure:true };
   const taught = rkRoutes()[rkRouteKey(name, plu)];
   if(taught === "none") return { table:"none", sure:true };
   if(taught && taught !== "carry") return { table:taught, sure:true };
@@ -10588,7 +10593,7 @@ function rkAddItem(name, table, qty, plu, tags){
   qty = String(qty||"").trim();
   tags = Array.isArray(tags) ? tags : [];
   // board-wide dedup: update the existing row instead of duplicating it
-  const dup = rkState.items.find(x => rkDupKey(x.name) === rkDupKey(name));
+  const dup = rkState.items.find(x => rkDupKey(x.name) === rkDupKey(name) && rkTagKey(x.tags) === rkTagKey(tags));
   if(dup){
     if(qty) dup.qty = qty;
     if(plu) dup.plu = String(plu);
@@ -10671,6 +10676,42 @@ function rkWordN(s){ return String(s||"").toLowerCase().replace(/\([^)]*\)/g," "
 const RK_NUMW = {one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,dozen:12,a:1,an:1,couple:2};
 /* Pull a leading/embedded quantity ("2 cases", "two boxes", or a bare number)
    out of a spoken/typed phrase. Restock loads in cases, so a bare count -> cases. */
+/* Fixed planogram spots we never ask about: FM bagged carrots/onions (lb bags)
+   live on the run-5 endcap — distinct from mini carrots, carrot chips/sticks. */
+function rkSpecialTable(name, tags){
+  const n = " " + String(name||"").toLowerCase().replace(/[^a-z0-9 ]/g," ") + " ";
+  const arr = tags || [];
+  const brands = arr.filter(t=>nmTagKind(t)==="brand").map(t=>rkBrandAbbr(t).toLowerCase());
+  const packs  = arr.filter(t=>nmTagKind(t)==="pack").map(t=>String(t).toLowerCase()).join(" ");
+  const isFM   = brands.indexOf("fm") >= 0 || /\bfm\b|farmer/.test(n);
+  const hasLb  = /\d\s*lb/.test(packs) || /\d\s*lb/.test(n);
+  const carrotOnion = /\bcarrots?\b|\bonions?\b/.test(n);
+  const excluded    = /\b(mini|baby|chips?|sticks?|shred|shredded|matchstick|julienne|juice)\b/.test(n);
+  if(isFM && hasLb && carrotOnion && !excluded) return "endcap";
+  return "";
+}
+/* Identity for dedup: same produce name AND same brand + pack = the same row.
+   A different brand or pack (FM 3pk vs NNI 11pk cucumber) is a separate row. */
+function rkTagKey(tags){
+  const arr = tags || [];
+  const b = arr.filter(t=>nmTagKind(t)==="brand").map(t=>rkBrandAbbr(t).toUpperCase()).sort().join(",");
+  const p = arr.filter(t=>nmTagKind(t)==="pack").map(t=>String(t).toUpperCase()).sort().join(",");
+  return b + "|" + p;
+}
+/* Pull a restock box/case count out of a name, in any position, WITHOUT eating
+   weights (lb/kg) or pack sizes — those are already tags. "banana two boxes"
+   -> {name:"banana", qty:"2 cs"}; "carrots" -> {name:"carrots", qty:""}. */
+function rkBoxCount(text){
+  let t = " " + String(text||"").trim() + " ";
+  let n = "";
+  const UNIT = "cartons?|boxes?|cases?|flats?|crates?|cs";
+  const NUM = Object.keys(RK_NUMW).join("|");
+  let m = t.match(new RegExp("\\b(\\d+|"+NUM+")\\s+("+UNIT+")\\b","i"));
+  if(m){ const r=m[1].toLowerCase(); n=/^\d+$/.test(r)?r:String(RK_NUMW[r]||1); t=t.replace(m[0]," "); }
+  else { m = t.match(new RegExp("^\\s*(\\d+|"+NUM+")\\s+(?=[a-z])","i")); if(m){ const r=m[1].toLowerCase(); n=/^\d+$/.test(r)?r:String(RK_NUMW[r]||1); t=t.replace(m[0]," "); } }
+  t = t.replace(/\bof\b/ig," ").replace(/\s+/g," ").trim();
+  return { name: t, qty: n ? (n + " cs") : "" };
+}
 function rkParseQty(text){
   let t = " " + String(text||"").trim() + " ";
   let qty = "";
@@ -10722,21 +10763,37 @@ function rkAddManual(){
   const selEl  = document.getElementById("rkSel");
   const raw = nameEl.value.trim();
   if(!raw){ nameEl.focus(); return; }
-  const pq = rkParseQty(raw);
-  const nm = nmNormalize(pq.name);
-  const name = rkCap(nm.core) || rkCap(pq.name);
-  let qty = qtyEl.value.trim() || pq.qty;
+  const nm = nmNormalize(raw);                        // brand + weight/pack -> tags
+  const bc = rkBoxCount(nm.core || raw);              // pull "N boxes/cases" from the name
+  const name = rkCap(bc.name) || rkCap(nm.core) || rkCap(raw);
+  let qty = qtyEl.value.trim() || bc.qty;
   if(/^\d+$/.test(qty)) qty = qty + " cs";           // bare count -> cases
+  // Editing a row (tapped its qty): update THAT row's count, never re-route or ask.
+  if(rkEditId){
+    const ex = rkState.items.find(x=>x.id===rkEditId);
+    if(ex){
+      if(name) ex.name = name;
+      if(qty) ex.qty = qty;
+      if(nm.tags && nm.tags.length) ex.tags = Array.from(new Set((ex.tags||[]).concat(nm.tags)));
+      ex.ts = Date.now();
+      rkFlash2Id = ex.id; rkScrollTargetId = ex.id; rkEditId = null;
+      rkTouch();
+      nameEl.value = ""; qtyEl.value = ""; rkPinned = false; if(selEl) selEl.selectedIndex = 0; rkReflectTarget();
+      nameEl.focus();
+      return;
+    }
+    rkEditId = null;
+  }
   const pin = rkPinned && selEl && RK_BY_ID[selEl.value];
   if(!pin){
-    const sure = rkTableSure(name, "");
+    const sure = rkTableSure(name, "", nm.tags);
     if(sure.sure === false && sure.table !== "none"){   // don't guess -> ask which table
       rkAskTable({ name:name, plu:"", tags:nm.tags, qty:qty, heard:"" });
       nameEl.value = ""; qtyEl.value = "";
       return;
     }
   }
-  const table = pin ? selEl.value : tableFor(name);
+  const table = pin ? selEl.value : tableFor(name, "", nm.tags);
   const it = rkAddItem(name, table, qty, "", nm.tags);
   if(it){
     nameEl.value = ""; qtyEl.value = "";
@@ -10792,7 +10849,8 @@ function commitRestockSpoken(text){
     // Pull brand/pack OUT first so the resolver never sees or expands it — the
     // brand lives only in a badge, never in the product name.
     const nmH = nmNormalize(it.heard || it.name);
-    const core = nmH.core || (it.name || "");
+    const bc = rkBoxCount(nmH.core || (it.name || ""));   // "banana two boxes" -> qty, one row
+    const core = bc.name || nmH.core || (it.name || "");
     const resolved0 = snapSpokenName(core);
     let name = displayName(resolved0) || core;
     const cc = codeForName(resolved0);              // resolved0 only -> drop the DB weight
@@ -10807,8 +10865,8 @@ function commitRestockSpoken(text){
     if(!name) return;
     const plu  = cc.plu || "";
     const tags = Array.from(new Set((nmH.tags||[]).concat(nmN.tags||[])));
-    const qty  = (it.qty && it.qty > 1) ? (it.qty + " cases") : "";
-    try{ const _s = rkTableSure(name, plu);
+    const qty  = bc.qty || ((it.qty && it.qty > 1) ? (it.qty + " cs") : "");
+    try{ const _s = rkTableSure(name, plu, tags);
       queueError("PROBE rk | heard:"+String(it.heard||it.name||"")+" | core:"+core+" | snap:"+String(resolved0||"")+" | disp:"+String(displayName(resolved0)||"")+" | code:"+String(cc.code||"")+"/"+String(cc.name||"")+" | name:"+name+" | plu:"+plu+" | table:"+_s.table+(_s.sure?"":"/ASK")); }catch(e){}
     rkPlace(name, plu, tags, it.heard, forced, qty);
   });
@@ -10819,7 +10877,13 @@ function commitRestockSpoken(text){
 function rkPlace(name, plu, tags, heard, forced, qty){
   qty = qty || "";
   if(forced){ rkPlaceAt(name, plu, tags, [forced], qty); return; }
-  const sure = rkTableSure(name, plu);
+  const special = rkSpecialTable(name, tags);
+  if(special){                                   // fixed planogram spot -> file, never ask/prompt
+    const it = rkAddItem(name, special, qty, plu, tags);
+    if(it){ rkUpgradeOnline(heard, it.id); toast("Filed \u201C"+name+"\u201D \u2192 "+RK_BY_ID[special].name); }
+    return;
+  }
+  const sure = rkTableSure(name, plu, tags);
   if(sure.table === "none"){
     toastUndo("Not carried: " + name + " \u2014 skipped", ()=>{ const it = rkAddItem(name,"fridge",qty,plu,tags); if(it) rkUpgradeOnline(heard, it.id); });
     return;
@@ -10913,17 +10977,18 @@ function rkFillSelect(){
 /* ---- the add-bar (collapsed FAB <-> full-width bar) + table picker ---- */
 let rkPinned = false;   // did the user explicitly pick a table via the + picker?
 let rkPending = null;   // a voice/typed item staged, waiting for the user to pick a table
-function rkReflectTarget(){
+function rkReflectTarget(preview){
   const plus = document.getElementById("rkPlus"); if(!plus) return;
   const glyph = document.getElementById("rkPlusGlyph");
   const sel = document.getElementById("rkSel");
-  const t = sel ? RK_BY_ID[sel.value] : null;
-  if(rkPinned && t){
+  const t = rkPinned ? (sel ? RK_BY_ID[sel.value] : null) : (preview ? RK_BY_ID[preview] : null);
+  if(t){
     plus.classList.add("rk-pin");
+    plus.classList.toggle("rk-preview", !rkPinned);   // dimmer while it's just a guess
     if(glyph){ glyph.textContent = t.g; glyph.style.color = t.tc; }
     plus.style.color = t.tc;
   } else {
-    plus.classList.remove("rk-pin");
+    plus.classList.remove("rk-pin"); plus.classList.remove("rk-preview");
     plus.style.color = "";
   }
 }
@@ -11004,7 +11069,10 @@ function rkScrollToRow(id){
   const tb  = document.getElementById("rkTopbar");
   let top = hdr ? hdr.getBoundingClientRect().bottom : 0;
   if(tb && tb.offsetParent !== null) top += tb.getBoundingClientRect().height;   // visible in browse mode
-  const y = window.scrollY + row.getBoundingClientRect().top - top - 12;
+  const typing = document.documentElement.classList.contains("rk-typing");
+  // voice has room -> show the table header too; keyboard is tight -> just the item
+  const target = typing ? row : (row.closest(".rk-card") || row);
+  const y = window.scrollY + target.getBoundingClientRect().top - top - 12;
   window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
 }
 function renderRestock(){
@@ -11325,8 +11393,15 @@ document.addEventListener("visibilitychange", ()=>{
   if(_rkTin) _rkTin.addEventListener("input", function(){
     clearTimeout(_rkPrevT);
     _rkPrevT = setTimeout(function(){
-      const v = _rkTin.value.trim(); if(v.length < 2) return;
-      if(!rkPinned){ const t = rkGuessTable(v); const s = document.getElementById("rkSel"); if(t && s) s.value = t; }
+      const v = _rkTin.value.trim();
+      if(v.length < 2){ if(!rkPinned) rkReflectTarget(""); return; }
+      if(!rkPinned){
+        const nmv = nmNormalize(v);
+        const core = rkBoxCount(nmv.core || v).name;
+        const guess = rkSpecialTable(core, nmv.tags) || rkGuessTable(core);
+        const s = document.getElementById("rkSel"); if(guess && s) s.value = guess;
+        rkReflectTarget(guess || "");
+      }
       rkFindFlash(v);
     }, 280);
   });

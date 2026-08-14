@@ -1026,7 +1026,7 @@
     position:relative;z-index:1}
   .rk-addbar.open .rk-abinner{display:flex}
   .rk-plus{flex:none;width:46px;height:46px;border-radius:12px;border:0;background:none;cursor:pointer;
-    display:grid;place-items:center;color:var(--laser);position:relative}
+    display:grid;place-items:center;color:var(--muted);position:relative}
   .rk-plusicon{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:2.4}
   .rk-plusglyph{display:none;font-family:var(--mono);font-size:15px;font-weight:800}
   .rk-plus.rk-pin .rk-plusicon{display:none}
@@ -1063,6 +1063,14 @@
   .rk-topt .tick{margin-left:auto;color:var(--laser);opacity:0}
   .rk-topt.sel .tick{opacity:1}
   .rk-topt .tick svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.6}
+  /* ---- v127: badges under name, divider, top counters, typing mode ---- */
+  .rk-bdgs{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-top:1px}
+  .rk-bdgs .nm-bdg{margin:0}
+  .rk-idiv2{width:1px;height:24px;background:var(--line);flex:none;margin:0 6px}
+  .rk-topbar{position:sticky;top:calc(var(--hdr,47px));z-index:16;margin:0 0 9px;background:var(--ink)}
+  .rk-typing nav{display:none}
+  .rk-typing .rk-topbar{display:none !important}
+  .rk-typing .rk-fabwrap{bottom:calc(var(--kb,0px) + 10px)}
   .rk-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px}
   .rk-eyebrow{color:var(--laser);font-family:var(--mono);font-size:9px;font-weight:700;
     letter-spacing:.15em;margin:0 0 4px}
@@ -1146,7 +1154,7 @@
   .rk-mark{width:31px;height:31px;border-radius:9px;display:grid;place-items:center;
     border:1px solid var(--tc);background:color-mix(in srgb,var(--tc) 12%,transparent);
     color:var(--tc);font-family:var(--mono);font-size:12px;font-weight:800}
-  .rk-ttl h2{margin:0;font-size:12px;font-weight:730;display:inline;color:var(--paper)}
+  .rk-ttl h2{margin:0;font-size:12px;font-weight:650;display:inline;color:var(--muted)}
   .rk-run{color:var(--muted);font-family:var(--mono);font-size:8px;
     font-weight:700;letter-spacing:.08em;margin-left:7px;
     vertical-align:1px}
@@ -1157,20 +1165,20 @@
   .rk-caret{color:var(--muted);font-size:10px;transition:transform .15s;width:12px;text-align:center}
   .rk-card.rk-closed .rk-caret{transform:rotate(-90deg)}
   .rk-card.rk-closed .rk-ilist{display:none}
-  .rk-ilist{padding-left:14px}
+  .rk-ilist{padding-left:0}
   .rk-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;
-    gap:8px;min-height:50px;padding:7px 10px 7px 0;border-bottom:1px solid var(--line)}
+    gap:8px;min-height:50px;padding:7px 10px 7px 14px;border-bottom:1px solid var(--line)}
   .rk-row:last-child{border-bottom:0}
   .rk-row.rk-claimed{background:rgba(76,175,125,.05)}
   .rk-st{width:17px;height:17px;border:1px solid #424950;border-radius:50%;display:grid;
     place-items:center;color:var(--ok);flex:none}
   .rk-row.rk-claimed .rk-st{background:rgba(76,175,125,.12);border-color:rgba(76,175,125,.55)}
   .rk-st svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.6}
-  .rk-copy{min-width:0}
+  .rk-copy{min-width:0;display:flex;flex-direction:column;gap:3px}
   .rk-line{display:flex;align-items:center;gap:6px;min-width:0}
   .rk-line .nm-bdg{flex:none}
   .rk-copy strong{font-size:12px;font-weight:630;color:#EEEAE1;white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis;min-width:0}
+    overflow:hidden;text-overflow:ellipsis;min-width:0;display:block}
   .rk-chips{display:flex;align-items:center;gap:6px;flex:none}
   .rk-qty{color:#C8C2B7;font-family:var(--mono);font-size:10px;border:1px solid #3A4148;border-radius:20px;
     padding:4px 9px;white-space:nowrap;cursor:pointer}
@@ -1708,7 +1716,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=126">
+  <link rel="manifest" href="./manifest.json?v=127">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2196,6 +2204,7 @@
   <section id="view-restock" class="view">
     <!-- header + fixed search-card removed for maximum list visibility;
          counts + sync now live on the FAB, add/search is the unrolling bar -->
+    <div id="rkTopbar" class="rk-strip rk-topbar"></div>
     <div class="rk-tables" id="rkTables"></div>
 
     <!-- floating heard-caption while the voice FAB is live -->
@@ -2220,10 +2229,8 @@
       </button>
 
       <div class="rk-addbar" id="rkAddbar">
-        <span class="rk-abcount" id="rkAbCount"></span>
         <button class="rk-fab" id="rkFab" type="button" aria-label="Add or search items">
           <svg class="rk-fabmag" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
-          <span class="rk-fabcount" id="rkFabCount"></span>
         </button>
         <div class="rk-abinner">
           <button class="rk-plus" id="rkPlus" type="button" aria-label="Pick a table">
@@ -2231,6 +2238,7 @@
             <span class="rk-plusglyph" id="rkPlusGlyph"></span>
           </button>
           <input id="rkTin" class="rk-tin" placeholder="Type or say an item…" autocomplete="off" enterkeyhint="done">
+          <span class="rk-idiv2"></span>
           <input id="rkQty" class="rk-qghost" placeholder="qty" autocomplete="off" inputmode="numeric">
         </div>
       </div>
@@ -2387,6 +2395,11 @@
       <h3>Mic debug logging</h3>
       <p>Writes one compact row per mic session to the Sheet's <b>Errors</b> tab (each line starts with <b>MIC</b>) so voice problems can be traced. Users never see it. On by default.</p>
       <label class="rk-lct"><input type="checkbox" id="micDbgToggle" onchange="micDbgSet(this.checked)"> Log mic sessions to Sheet</label>
+    </div>
+    <div class="panel">
+      <h3>Restock counters</h3>
+      <p>Shows item count, claimed count and sync status across the top of the Restock board. It hides on its own while you're typing an item.</p>
+      <label class="rk-lct"><input type="checkbox" id="rkTopbarToggle" onchange="rkTopbarSet(this.checked)"> Show counters on top</label>
     </div>
     <div class="panel">
       <h3>Appearance</h3>
@@ -3682,6 +3695,7 @@ function showView(name){
   if(name==="settings"){
     document.getElementById("scriptUrl").value = localStorage.getItem(KEY_URL) || BAKED_PROXY_URL;
     const _md = document.getElementById("micDbgToggle"); if(_md) _md.checked = micDbgOn();
+    const _tb2 = document.getElementById("rkTopbarToggle"); if(_tb2) _tb2.checked = rkTopbarOn();
   }
 }
 
@@ -6219,7 +6233,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v126";
+const APP_VERSION = "v127";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6604,6 +6618,7 @@ function commitPhrase(text){
     it.name = displayName(resolved0) || it.name;
     const cc = codeForName(resolved);
     if(cc.code && cc.name) it.name = displayName(cc.name);
+    try{ queueError("PROBE scrap | heard:"+String(it.heard||it.name||"")+" | snap:"+String(resolved0||"")+" | disp:"+String(displayName(resolved0)||"")+" | code:"+String(cc.code||"")+"/"+String(cc.name||"")+" | name:"+String(it.name||"")); }catch(e){}
     const isBc = !!cc.code;
     const res = addOrMerge(it.list, newRow({
       name: it.name.replace(/\b\w/g, c=>c.toUpperCase()),
@@ -10341,6 +10356,9 @@ window.addEventListener("online", flushErrors);
 const KEY_MICDBG = "label_micdbg_v1";
 function micDbgOn(){ const v = localStorage.getItem(KEY_MICDBG); return v === null ? true : v === "1"; }
 function micDbgSet(on){ try{ localStorage.setItem(KEY_MICDBG, on ? "1" : "0"); }catch(e){} toast(on ? "Mic logging on" : "Mic logging off"); }
+const KEY_RK_TOPBAR = "label_rk_topbar_v1";
+function rkTopbarOn(){ const v = localStorage.getItem(KEY_RK_TOPBAR); return v === null ? true : v === "1"; }
+function rkTopbarSet(on){ try{ localStorage.setItem(KEY_RK_TOPBAR, on ? "1" : "0"); }catch(e){} try{ renderRestock(); }catch(e){} toast(on ? "Counters shown" : "Counters hidden"); }
 function micLog(tag){
   if(!micDbgOn()) return { e:function(){}, done:function(){} };
   const t0 = Date.now();
@@ -10495,15 +10513,28 @@ const RK_ROUTE = [
   ["ctp",    ["cucumber","cuke","tomato","tomatoes","potato","potatoes"]],
   ["fridge", ["herb","cilantro","parsley","dill","basil","mint","thyme","rosemary","sage","mushroom","pepper","radish","carrot","parsnip","rutabaga","lettuce","spinach","kale","arugula","green","celery","broccoli","cauliflower","cabbage","sprout","asparagus","zucchini","eggplant","wet"]]
 ];
+function rkKwRe(k){ return new RegExp("\\b" + k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")); }
+function rkKeywordTable(name){
+  const s = " " + String(name||"").toLowerCase() + " ";
+  for(const [k,id] of RK_EXACT){ if(rkKwRe(k).test(s)) return id; }
+  for(const [id,keys] of RK_ROUTE){ if(keys.some(k=> rkKwRe(k).test(s))) return id; }
+  return "";
+}
 function tableFor(name, plu){
   const taught = rkRoutes()[rkRouteKey(name, plu)];
   if(taught === "none") return "none";                 // store doesn't carry it
   if(taught && taught !== "carry") return taught;      // trained to a table
-  // "carry" (in store, table TBD) or unmarked -> fall through to keywords
-  const s = String(name||"").toLowerCase();
-  for(const [k,id] of RK_EXACT){ if(s.includes(k)) return id; }
-  for(const [id,keys] of RK_ROUTE){ if(keys.some(k=>s.includes(k))) return id; }
-  return "fridge";
+  return rkKeywordTable(name) || "fridge";             // word-boundary keyword match
+}
+/* Is the routing actually confident? A taught route or a whole-word keyword
+   hit is "sure". Falling through to the fridge catch-all is NOT — that's when
+   voice/typed adds should stop and ask which table instead of guessing. */
+function rkTableSure(name, plu){
+  const taught = rkRoutes()[rkRouteKey(name, plu)];
+  if(taught === "none") return { table:"none", sure:true };
+  if(taught && taught !== "carry") return { table:taught, sure:true };
+  const kw = rkKeywordTable(name);
+  return kw ? { table:kw, sure:true } : { table:"fridge", sure:false };
 }
 /* Like tableFor but returns "" instead of the fridge fallback, so the live
    typing preview only moves the dropdown on a confident hit. */
@@ -10511,10 +10542,7 @@ function rkGuessTable(name){
   const taught = rkRoutes()[rkRouteKey(name, "")];
   if(taught === "none") return "";
   if(taught && taught !== "carry") return taught;
-  const s = String(name||"").toLowerCase();
-  for(const [k,id] of RK_EXACT){ if(s.includes(k)) return id; }
-  for(const [id,keys] of RK_ROUTE){ if(keys.some(k=>s.includes(k))) return id; }
-  return "";
+  return rkKeywordTable(name);
 }
 
 /* ---- state ---- */
@@ -10556,6 +10584,7 @@ function rkAddItem(name, table, qty, plu, tags){
   name = String(name||"").trim();
   if(!name) return null;
   table = RK_BY_ID[table] ? table : "fridge";
+  rkClosed[table] = false;               // a table getting an item opens so you see it
   qty = String(qty||"").trim();
   tags = Array.isArray(tags) ? tags : [];
   // board-wide dedup: update the existing row instead of duplicating it
@@ -10698,8 +10727,16 @@ function rkAddManual(){
   const name = rkCap(nm.core) || rkCap(pq.name);
   let qty = qtyEl.value.trim() || pq.qty;
   if(/^\d+$/.test(qty)) qty = qty + " cs";           // bare count -> cases
-  // pinned = user chose a table with the + picker; otherwise auto-route by name
-  const table = (rkPinned && selEl && RK_BY_ID[selEl.value]) ? selEl.value : tableFor(name);
+  const pin = rkPinned && selEl && RK_BY_ID[selEl.value];
+  if(!pin){
+    const sure = rkTableSure(name, "");
+    if(sure.sure === false && sure.table !== "none"){   // don't guess -> ask which table
+      rkAskTable({ name:name, plu:"", tags:nm.tags, qty:qty, heard:"" });
+      nameEl.value = ""; qtyEl.value = "";
+      return;
+    }
+  }
+  const table = pin ? selEl.value : tableFor(name);
   const it = rkAddItem(name, table, qty, "", nm.tags);
   if(it){
     nameEl.value = ""; qtyEl.value = "";
@@ -10763,10 +10800,16 @@ function commitRestockSpoken(text){
     // second pass catches a brand the resolver expanded ("fm" -> "farmer's market")
     const nmN = nmNormalize(name);
     name = rkCap(nmN.core) || rkCap(String(name||""));
+    // strip a stray trailing number ("mandarin 15") — real pack/size counts were
+    // already lifted into tags by nmNormalize, so a leftover integer is noise.
+    const _ns = name.replace(/\s+\d{1,3}$/, "").trim();
+    if(_ns) name = _ns;
     if(!name) return;
     const plu  = cc.plu || "";
     const tags = Array.from(new Set((nmH.tags||[]).concat(nmN.tags||[])));
     const qty  = (it.qty && it.qty > 1) ? (it.qty + " cases") : "";
+    try{ const _s = rkTableSure(name, plu);
+      queueError("PROBE rk | heard:"+String(it.heard||it.name||"")+" | core:"+core+" | snap:"+String(resolved0||"")+" | disp:"+String(displayName(resolved0)||"")+" | code:"+String(cc.code||"")+"/"+String(cc.name||"")+" | name:"+name+" | plu:"+plu+" | table:"+_s.table+(_s.sure?"":"/ASK")); }catch(e){}
     rkPlace(name, plu, tags, it.heard, forced, qty);
   });
 }
@@ -10776,15 +10819,17 @@ function commitRestockSpoken(text){
 function rkPlace(name, plu, tags, heard, forced, qty){
   qty = qty || "";
   if(forced){ rkPlaceAt(name, plu, tags, [forced], qty); return; }
-  const table = tableFor(name, plu);
-  if(table === "none"){
+  const sure = rkTableSure(name, plu);
+  if(sure.table === "none"){
     toastUndo("Not carried: " + name + " \u2014 skipped", ()=>{ const it = rkAddItem(name,"fridge",qty,plu,tags); if(it) rkUpgradeOnline(heard, it.id); });
     return;
   }
+  if(!sure.sure){ rkAskTable({ name:name, plu:plu, tags:tags, qty:qty, heard:heard }); return; }   // unsure -> ask which table
+  const table = sure.table;
   const locs = pgLocationsFor(name);   // cross-check the planogram every add; ask only if it's on it
   if(locs.length){ rkShowLocPrompt(name, plu, tags, table, locs); return; }
   const it = rkAddItem(name, table, qty, plu, tags);
-  if(it){ rkFlashSel(table); rkUpgradeOnline(heard, it.id); toast("Filed \u201C"+name+"\u201D \u2192 "+RK_BY_ID[table].name); }
+  if(it){ rkUpgradeOnline(heard, it.id); toast("Filed \u201C"+name+"\u201D \u2192 "+RK_BY_ID[table].name); }
 }
 function rkPlaceAt(name, plu, tags, ids, qty){
   qty = qty || "";
@@ -10867,6 +10912,7 @@ function rkFillSelect(){
 
 /* ---- the add-bar (collapsed FAB <-> full-width bar) + table picker ---- */
 let rkPinned = false;   // did the user explicitly pick a table via the + picker?
+let rkPending = null;   // a voice/typed item staged, waiting for the user to pick a table
 function rkReflectTarget(){
   const plus = document.getElementById("rkPlus"); if(!plus) return;
   const glyph = document.getElementById("rkPlusGlyph");
@@ -10881,20 +10927,52 @@ function rkReflectTarget(){
     plus.style.color = "";
   }
 }
-function rkBuildTsheet(){
+function rkBuildTsheet(ask){
   const sel = document.getElementById("rkSel");
   const cur = sel ? sel.value : "";
-  let html = '<div class="rk-topt auto'+(!rkPinned?' sel':'')+'" data-t="" style="--tc:#8A939C">'+
-    '<span class="tg">\u25C7</span><div><div class="tn">Auto-file</div>'+
-    '<div class="tr">ROUTE BY NAME</div></div>'+
-    '<span class="tick"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span></div>';
+  const hdr = document.querySelector("#rkTsheet .rk-tsheet-h");
+  if(hdr) hdr.textContent = (ask && rkPending)
+    ? ("WHERE DOES \u201C" + String(rkPending.name).toUpperCase() + "\u201D GO?")
+    : "FILE TO WHICH TABLE?";
+  let html = "";
+  if(!ask){
+    html += '<div class="rk-topt auto'+(!rkPinned?' sel':'')+'" data-t="" style="--tc:#8A939C">'+
+      '<span class="tg">\u25C7</span><div><div class="tn">Auto-file</div></div>'+
+      '<span class="tick"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span></div>';
+  }
   RK_TABLES.forEach(function(t){
-    html += '<div class="rk-topt'+((rkPinned && cur===t.id)?' sel':'')+'" data-t="'+t.id+'" style="--tc:'+t.tc+'">'+
+    html += '<div class="rk-topt'+((!ask && rkPinned && cur===t.id)?' sel':'')+'" data-t="'+t.id+'" style="--tc:'+t.tc+'">'+
       '<span class="tg">'+esc(t.g)+'</span>'+
-      '<div><div class="tn">'+esc(t.name)+'</div><div class="tr">'+esc(t.run)+'</div></div>'+
+      '<div><div class="tn">'+esc(t.name)+'</div></div>'+
       '<span class="tick"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></span></div>';
   });
   const host = document.getElementById("rkTlist"); if(host) host.innerHTML = html;
+}
+/* Unsure where an item goes -> stage it and pop the picker as a question. */
+function rkAskTable(pending){
+  rkPending = pending;
+  rkBuildTsheet(true);
+  const s = document.getElementById("rkTsheet"); if(s) s.classList.add("show");
+  const sc = document.getElementById("rkScrim"); if(sc) sc.classList.add("show");
+}
+/* A picker tap: file a staged item (and remember the choice) OR pin the target. */
+function rkPickTable(id){
+  if(rkPending){
+    const p = rkPending; rkPending = null;
+    const table = RK_BY_ID[id] ? id : "fridge";
+    try{ rkRoutesSet(rkRouteKey(p.name, p.plu||""), table); }catch(e){}   // teach it for next time
+    const it = rkAddItem(p.name, table, p.qty||"", p.plu||"", p.tags||[]);
+    if(it){ toast("Filed \u201C"+p.name+"\u201D \u2192 "+RK_BY_ID[table].name); if(p.heard) rkUpgradeOnline(p.heard, it.id); }
+    rkCloseTsheet();
+    const bar = document.getElementById("rkAddbar");
+    if(!bar || !bar.classList.contains("open")){ const sc=document.getElementById("rkScrim"); if(sc) sc.classList.remove("show"); }
+    else { const tin=document.getElementById("rkTin"); if(tin) tin.focus(); }
+    return;
+  }
+  const s = document.getElementById("rkSel");
+  if(id){ rkPinned = true; if(s) s.value = id; } else { rkPinned = false; }
+  rkReflectTarget(); rkCloseTsheet();
+  const tin = document.getElementById("rkTin"); if(tin) tin.focus();
 }
 function rkOpenTsheet(){ rkBuildTsheet(); const s=document.getElementById("rkTsheet"); if(s) s.classList.add("show"); const sc=document.getElementById("rkScrim"); if(sc) sc.classList.add("show"); }
 function rkCloseTsheet(){ const s=document.getElementById("rkTsheet"); if(s) s.classList.remove("show"); }
@@ -10902,12 +10980,14 @@ function rkToggleTsheet(){ const s=document.getElementById("rkTsheet"); if(s && 
 function rkOpenBar(){
   const bar=document.getElementById("rkAddbar"); if(bar) bar.classList.add("open");
   const sc=document.getElementById("rkScrim"); if(sc) sc.classList.add("show");
+  document.documentElement.classList.add("rk-typing");   // hide sub-tabs + top counters, lift bar
   const tin=document.getElementById("rkTin"); if(tin) setTimeout(function(){ tin.focus(); }, 260);
 }
 function rkCloseBar(){
   const bar=document.getElementById("rkAddbar"); if(bar) bar.classList.remove("open");
   const sc=document.getElementById("rkScrim"); if(sc) sc.classList.remove("show");
-  rkCloseTsheet();
+  document.documentElement.classList.remove("rk-typing");
+  rkCloseTsheet(); rkPending=null;
   const tin=document.getElementById("rkTin"); if(tin){ tin.value=""; tin.blur(); }
   const q=document.getElementById("rkQty"); if(q){ q.value=""; q.blur(); }
   const h=document.getElementById("rkHeard"); if(h) h.classList.remove("show");
@@ -10921,8 +11001,10 @@ function rkCloseBar(){
 function rkScrollToRow(id){
   const row = document.getElementById("rkrow-"+id); if(!row) return;
   const hdr = document.querySelector("header");
-  const stick = hdr ? hdr.getBoundingClientRect().bottom : 0;
-  const y = window.scrollY + row.getBoundingClientRect().top - stick - 14;
+  const tb  = document.getElementById("rkTopbar");
+  let top = hdr ? hdr.getBoundingClientRect().bottom : 0;
+  if(tb && tb.offsetParent !== null) top += tb.getBoundingClientRect().height;   // visible in browse mode
+  const y = window.scrollY + row.getBoundingClientRect().top - top - 12;
   window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
 }
 function renderRestock(){
@@ -10936,12 +11018,20 @@ function renderRestock(){
   const me = deviceInfo().id;
 
   const claimed = items.filter(x=>x.claimId).length;
-  // counts live on the FAB (claimed/total) and faintly in the unrolled bar
-  const _rkCnt = items.length ? (claimed + "/" + items.length) : "";
-  const _fabCount = document.getElementById("rkFabCount"); if(_fabCount) _fabCount.textContent = _rkCnt;
-  const _abCount  = document.getElementById("rkAbCount");  if(_abCount)  _abCount.textContent  = _rkCnt;
-  const _rkFab = document.getElementById("rkFab"); if(_rkFab) _rkFab.classList.toggle("rk-has", items.length > 0);
-  const _rkAddbar = document.getElementById("rkAddbar"); if(_rkAddbar) _rkAddbar.classList.toggle("rk-offline", !!(rkOffline && rkDirty));
+  const _tb = document.getElementById("rkTopbar");
+  if(_tb){
+    if(rkTopbarOn()){
+      _tb.style.display = "";
+      _tb.innerHTML =
+        '<div><strong>'+items.length+'</strong><span class="rk-lab">ITEMS</span></div>'+
+        '<div><strong>'+claimed+'</strong><span class="rk-lab">CLAIMED</span></div>'+
+        '<div class="rk-sy" onclick="rkSync(true)" style="cursor:pointer" title="Tap to sync now">'+
+          (rkDirty
+            ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span class="rk-lab">'+(rkOffline?'Offline':'Saving\u2026')+'</span>'
+            : '<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg><span class="rk-lab">'+(rkState.updatedAt?'Synced':'Nothing yet')+'</span>')+
+        '</div>';
+    } else { _tb.style.display = "none"; _tb.innerHTML = ""; }
+  }
 
   const host = document.getElementById("rkTables");
   const _rkOrder = RK_TABLES.slice().sort((a,b)=>{ const ea=items.filter(x=>x.table===a.id).length===0, eb=items.filter(x=>x.table===b.id).length===0; return ea===eb?0:(ea?1:-1); });
@@ -10957,13 +11047,10 @@ function renderRestock(){
     const rows = list.length
       ? list.map(x=>rkRow(x, me)).join("")
       : '<div class="rk-empty"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>Nothing on this table</div>';
-    const sub = t.kind==="loc" ? "File by hand"
-              : t.kind==="fridge" ? "Auto catch-all \u00b7 wet case, herbs, mushrooms\u2026"
-              : "Auto-filed by voice";
     return '<div class="rk-card'+(t.kind==="fridge"?" rk-fridge":"")+closed+dim+'" id="rkc-'+t.id+'" style="--tc:'+t.tc+'">'+
         '<div class="rk-thead" onclick="rkToggle(\''+t.id+'\')">'+
           '<span class="rk-mark">'+esc(t.g)+'</span>'+
-          '<div class="rk-ttl"><h2>'+esc(t.name)+'</h2><span class="rk-run">'+esc(t.run)+'</span><p>'+sub+'</p></div>'+
+          '<div class="rk-ttl"><h2>'+esc(t.name)+'</h2></div>'+
           '<span class="rk-count">'+list.length+'</span>'+
           '<span class="rk-caret">\u25BE</span>'+
         '</div>'+
@@ -11012,20 +11099,18 @@ function rkRow(x, me){
   const qtyChip = x.qty
     ? '<span class="rk-qty" onclick="rkEditQty(\''+x.id+'\')">'+esc(x.qty)+'</span>'
     : '<button class="rk-qty-add" onclick="rkEditQty(\''+x.id+'\')">qty</button>';
-  const chips = '<div class="rk-chips">'
-    + brandTags.map(t=>'<span class="nm-bdg brand">'+esc(rkBrandAbbr(t))+'</span>').join("")
+  const bdgs = brandTags.map(t=>'<span class="nm-bdg brand">'+esc(rkBrandAbbr(t))+'</span>').join("")
     + packTags.map(t=>'<span class="nm-bdg pack">'+esc(t)+'</span>').join("")
-    + orgTags.map(t=>'<span class="nm-bdg org">'+esc(t)+'</span>').join("")
-    + qtyChip
-    + '</div>';
+    + orgTags.map(t=>'<span class="nm-bdg org">'+esc(t)+'</span>').join("");
   const claimCell = other
     ? '<div class="rk-owner" onclick="rkClaim(\''+x.id+'\')" title="Tap to take over"><b>'+esc(rkInitials(x.claimBy))+'</b><small>'+esc(x.claimBy)+'</small></div>'
     : '<button class="rk-claim'+(mine?' rk-mine':'')+'" onclick="rkClaim(\''+x.id+'\')">'+
         (mine ? '<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>Mine' : 'Claim')+
       '</button>';
   return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+(rkEditId===x.id?' rk-editing':'')+'" id="rkrow-'+x.id+'">'+
-      '<div class="rk-copy"><strong>'+esc(x.name)+'</strong></div>'+
-      chips + claimCell +
+      '<div class="rk-copy"><strong>'+esc(x.name)+'</strong>'+
+        (bdgs ? '<div class="rk-bdgs">'+bdgs+'</div>' : '')+'</div>'+
+      qtyChip + claimCell +
       '<button class="rk-del" onclick="rkDel(\''+x.id+'\')" aria-label="Remove"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>'+
     '</div>';
 }
@@ -11260,12 +11345,7 @@ document.addEventListener("visibilitychange", ()=>{
   const _tlist = document.getElementById("rkTlist");
   if(_tlist) _tlist.addEventListener("click", function(e){
     const opt = e.target.closest(".rk-topt"); if(!opt) return;
-    const id = opt.getAttribute("data-t");
-    const s = document.getElementById("rkSel");
-    if(id){ rkPinned = true; if(s) s.value = id; }
-    else { rkPinned = false; }
-    rkReflectTarget(); rkCloseTsheet();
-    const tin = document.getElementById("rkTin"); if(tin) tin.focus();
+    rkPickTable(opt.getAttribute("data-t"));
   });
 }
 

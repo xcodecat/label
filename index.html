@@ -1032,10 +1032,14 @@
   .rk-plus.rk-pin .rk-plusicon{display:none}
   .rk-plus.rk-pin .rk-plusglyph{display:block}
   .rk-plus.rk-preview{opacity:.62}
+  .nm-bdg.ec{width:16px;height:16px;padding:0;border-radius:50%;display:inline-flex;align-items:center;
+    justify-content:center;font-size:9px;font-weight:800;font-family:var(--mono);color:#12151a;flex:none}
+  .nm-bdg.ec.h{background:#E08A3B}
+  .nm-bdg.ec.w{background:#4A90D9}
   #rkTin::placeholder{color:var(--muted)}
-  .rk-qghost{flex:none;width:52px;height:100%;border:0;background:none;color:var(--paper);
-    text-align:right;font-size:14px;font-family:var(--mono);outline:0;padding-right:2px}
-  .rk-qghost::placeholder{color:#5a6068;font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.04em}
+  .rk-qghost{flex:none;width:44px;height:100%;border:0;background:none;color:var(--paper);
+    text-align:center;font-size:15px;font-family:var(--mono);outline:0}
+  .rk-qghost::placeholder{color:#5a6068;font-family:var(--mono);font-size:16px;font-weight:600}
   .rk-scrim{position:fixed;inset:0;z-index:44;display:none}
   .rk-scrim.show{display:block}
   .rk-heard{position:fixed;right:16px;bottom:calc(196px + env(safe-area-inset-bottom));z-index:46;
@@ -1175,17 +1179,17 @@
     place-items:center;color:var(--ok);flex:none}
   .rk-row.rk-claimed .rk-st{background:rgba(76,175,125,.12);border-color:rgba(76,175,125,.55)}
   .rk-st svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2.6}
-  .rk-copy{min-width:0;display:flex;flex-direction:column;gap:3px}
+  .rk-copy{min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:3px 5px}
+  .rk-copy .nm-bdg{margin:0}
   .rk-line{display:flex;align-items:center;gap:6px;min-width:0}
   .rk-line .nm-bdg{flex:none}
-  .rk-copy strong{font-size:12px;font-weight:630;color:#EEEAE1;white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis;min-width:0;display:block}
+  .rk-copy strong{font-size:12px;font-weight:630;color:#EEEAE1;overflow-wrap:anywhere;min-width:0}
   .rk-chips{display:flex;align-items:center;gap:6px;flex:none}
-  .rk-qty{color:#C8C2B7;font-family:var(--mono);font-size:10px;border:1px solid #3A4148;border-radius:20px;
-    padding:4px 9px;white-space:nowrap;cursor:pointer}
+  .rk-qty{color:#C8C2B7;font-family:var(--mono);font-size:14px;font-weight:600;border:1px solid #3A4148;border-radius:20px;
+    min-width:30px;text-align:center;padding:3px 10px;white-space:nowrap;cursor:pointer}
   .rk-qty:active{border-color:var(--laser);color:#fff}
-  .rk-qty-add{color:#5E656D;font-family:var(--mono);font-size:9px;border:1px dashed #333B42;border-radius:20px;
-    padding:4px 8px;cursor:pointer;background:none}
+  .rk-qty-add{color:#7A828B;font-family:var(--mono);font-size:15px;font-weight:600;border:1px dashed #3A4148;border-radius:20px;
+    min-width:30px;text-align:center;padding:2px 9px;cursor:pointer;background:none}
   .rk-row.rk-editing{background:rgba(232,68,46,.16);border-radius:9px;box-shadow:0 0 0 1px rgba(232,68,46,.45) inset}
   .rk-claim{min-width:50px;height:28px;border:1px solid #444B52;border-radius:7px;background:none;
     color:#B1B7BD;font-size:9px;font-weight:720;cursor:pointer;display:inline-flex;
@@ -1717,7 +1721,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=128">
+  <link rel="manifest" href="./manifest.json?v=129">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2240,7 +2244,7 @@
           </button>
           <input id="rkTin" class="rk-tin" placeholder="Type or say an item…" autocomplete="off" enterkeyhint="done">
           <span class="rk-idiv2"></span>
-          <input id="rkQty" class="rk-qghost" placeholder="qty" autocomplete="off" inputmode="numeric">
+          <input id="rkQty" class="rk-qghost" placeholder="#" autocomplete="off" inputmode="numeric" enterkeyhint="done">
         </div>
       </div>
     </div>
@@ -2575,7 +2579,7 @@
 <!-- restock location prompt (pod / endcap) -->
 <div class="rk-loc" id="rkLoc" aria-hidden="true">
   <div class="rk-loc-card">
-    <div class="rk-loc-h">Where does <b id="rkLocName"></b> go?</div>
+    <div class="rk-loc-h" id="rkLocH">Where does <b id="rkLocName"></b> go?</div>
     <div class="rk-loc-opts" id="rkLocOpts"></div>
     <button class="rk-loc-x" type="button" onclick="rkLocClose()">Cancel</button>
   </div>
@@ -6234,7 +6238,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v128";
+const APP_VERSION = "v129";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10484,7 +10488,6 @@ const RK_TABLES = [
   { id:"root",   name:"Root Veg & Onions",         run:"RUN 5", tc:"#B5793E", g:"R", kind:"run" },
   { id:"pod1",   name:"Pod 1",                       run:"POD 1", tc:"#E7C338", g:"1", kind:"loc" },
   { id:"pod2",   name:"Pod 2",                       run:"POD 2", tc:"#A9CC3E", g:"2", kind:"loc" },
-  { id:"endcap", name:"Endcap",                      run:"ENDS",  tc:"#C264E0", g:"E", kind:"loc" },
   { id:"lots",   name:"Case Lots",                  run:"LOTS",  tc:"#2FC0C0", g:"L", kind:"loc" },
   { id:"fridge", name:"Wet Case",         run:"OTHER", tc:"#8c7cf0", g:"\u2744", kind:"fridge" }
 ];
@@ -10585,7 +10588,7 @@ function rkTouch(){
   rkAutoSync();                     // send it to the floor on its own, shortly
 }
 function rkDupKey(s){ return String(s||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/s\b/g,"").replace(/\s+/g," ").trim(); }
-function rkAddItem(name, table, qty, plu, tags){
+function rkAddItem(name, table, qty, plu, tags, ec){
   name = String(name||"").trim();
   if(!name) return null;
   table = RK_BY_ID[table] ? table : "fridge";
@@ -10599,13 +10602,14 @@ function rkAddItem(name, table, qty, plu, tags){
     if(plu) dup.plu = String(plu);
     if(tags.length) dup.tags = Array.from(new Set((dup.tags||[]).concat(tags)));
     dup.table = table;
+    if(ec !== undefined) dup.ec = !!ec;
     rkFlash2Id = dup.id; rkJustAddedId = null; rkScrollTargetId = dup.id;
     rkTouch();
     return dup;
   }
   const it = { id: rkNewId(), name: rkCap(name), table,
     qty, plu: String(plu||""), tags, by: rkMeName(),
-    claimId:"", claimBy:"", ts: Date.now() };
+    claimId:"", claimBy:"", ec: !!ec, ts: Date.now() };
   rkState.items.push(it);
   rkJustAddedId = it.id; rkFlash2Id = null; rkScrollTargetId = it.id;
   rkTouch();
@@ -10687,9 +10691,27 @@ function rkSpecialTable(name, tags){
   const hasLb  = /\d\s*lb/.test(packs) || /\d\s*lb/.test(n);
   const carrotOnion = /\bcarrots?\b|\bonions?\b/.test(n);
   const excluded    = /\b(mini|baby|chips?|sticks?|shred|shredded|matchstick|julienne|juice)\b/.test(n);
-  if(isFM && hasLb && carrotOnion && !excluded) return "endcap";
+  if(isFM && hasLb && carrotOnion && !excluded) return "root";   // FM bagged carrots/onions live in root veg
   return "";
 }
+const RK_RUN_IDS = ["apple","berry","citrus","ctp","root"];   // planogram run index -> category table id
+function rkFullName(name, tags){
+  const b = (tags||[]).filter(t=>nmTagKind(t)==="brand").map(t=>rkBrandAbbr(t)).join(" ");
+  return (b ? b+" " : "") + String(name||"");
+}
+/* Endcap membership is read LIVE from the planogram on every render and never
+   learned (endcaps rotate weekly). Match is strict: product + brand + pack. */
+function rkSkuKey(str){ const nn = nmNormalize(str); const core = rkDupKey(nn.core); return core ? (core + "#" + rkTagKey(nn.tags)) : ""; }
+let _rkEcMap = null, _rkEcStamp = "";
+function rkEndcapIndex(){
+  const s = pgLoad2();
+  if(!pgFresh(s)){ _rkEcMap = {}; _rkEcStamp = ""; return _rkEcMap; }
+  if(_rkEcStamp === s.updatedAt && _rkEcMap) return _rkEcMap;
+  const map = {};
+  (s.runs||[]).forEach(function(r,ri){ ["wet","hmr"].forEach(function(end){ (r[end]||[]).forEach(function(v){ if(v){ const k=rkSkuKey(v); if(k && !map[k]) map[k]={end:end, ri:ri}; } }); }); });
+  _rkEcMap = map; _rkEcStamp = s.updatedAt; return map;
+}
+function rkItemEndcap(name, tags){ const k = rkDupKey(name) + "#" + rkTagKey(tags); return rkEndcapIndex()[k] || null; }
 /* Identity for dedup: same produce name AND same brand + pack = the same row.
    A different brand or pack (FM 3pk vs NNI 11pk cucumber) is a separate row. */
 function rkTagKey(tags){
@@ -10837,7 +10859,7 @@ function commitRestockSpoken(text){
   let forced = "";
   if(/\bpod\s*(1|one)\b/i.test(t)){ forced="pod1"; t=t.replace(/\bpod\s*(1|one)\b/ig," "); }
   else if(/\bpod\s*(2|two)\b/i.test(t)){ forced="pod2"; t=t.replace(/\bpod\s*(2|two)\b/ig," "); }
-  else if(/\bend\s*caps?\b/i.test(t)){ forced="endcap"; t=t.replace(/\bend\s*caps?\b/ig," "); }
+  else if(/\bend\s*caps?\b/i.test(t)){ forced="__ec__"; t=t.replace(/\bend\s*caps?\b/ig," "); }
   else if(/\bcase\s*lots?\b/i.test(t)){ forced="lots"; t=t.replace(/\bcase\s*lots?\b/ig," "); }
   // Resolve exactly like the scrap tab: parse, snap the heard name, then read the
   // catalogue's proper name + PLU (snapSpokenName -> displayName -> codeForName).
@@ -10876,10 +10898,16 @@ function commitRestockSpoken(text){
    says it lives in two places. */
 function rkPlace(name, plu, tags, heard, forced, qty){
   qty = qty || "";
+  if(forced === "__ec__"){                       // spoken "endcap": file to category + endcap badge
+    const t0 = tableFor(name, plu, tags); const t = (t0 && t0!=="none") ? t0 : "fridge";
+    const it = rkAddItem(name, t, qty, plu, tags, true);
+    if(it){ rkUpgradeOnline(heard, it.id); toast("Filed \u201C"+name+"\u201D \u2192 "+RK_BY_ID[it.table].name+" (endcap)"); }
+    return;
+  }
   if(forced){ rkPlaceAt(name, plu, tags, [forced], qty); return; }
   const special = rkSpecialTable(name, tags);
-  if(special){                                   // fixed planogram spot -> file, never ask/prompt
-    const it = rkAddItem(name, special, qty, plu, tags);
+  if(special){                                   // FM carrots/onions -> root, endcap badge, never ask
+    const it = rkAddItem(name, special, qty, plu, tags, true);
     if(it){ rkUpgradeOnline(heard, it.id); toast("Filed \u201C"+name+"\u201D \u2192 "+RK_BY_ID[special].name); }
     return;
   }
@@ -10890,8 +10918,8 @@ function rkPlace(name, plu, tags, heard, forced, qty){
   }
   if(!sure.sure){ rkAskTable({ name:name, plu:plu, tags:tags, qty:qty, heard:heard }); return; }   // unsure -> ask which table
   const table = sure.table;
-  const locs = pgLocationsFor(name);   // cross-check the planogram every add; ask only if it's on it
-  if(locs.length){ rkShowLocPrompt(name, plu, tags, table, locs); return; }
+  const locs = pgLocationsFor(name, tags);   // pods + endcaps in this week's planogram
+  if(locs.length){ rkShowLocPrompt(name, plu, tags, table, locs, qty); return; }
   const it = rkAddItem(name, table, qty, plu, tags);
   if(it){ rkUpgradeOnline(heard, it.id); toast("Filed \u201C"+name+"\u201D \u2192 "+RK_BY_ID[table].name); }
 }
@@ -10910,14 +10938,17 @@ function pgMainTok(name){
   return w.sort((a,b)=>b.length-a.length)[0] || "";
 }
 function pgHit(cell, tok){ return tok && String(cell||"").toLowerCase().indexOf(tok) !== -1; }
-function pgLocationsFor(name){
+function pgLocationsFor(name, tags){
   const s = pgLoad2(); if(!pgFresh(s)) return [];
   const tok = pgMainTok(name); if(!tok) return [];
   const out = [];
-  (s.pod1||[]).forEach(p=>{ if(pgHit(p && p.name, tok)) out.push({loc:"pod1", label:"Pod 1"}); });
-  (s.pod2||[]).forEach(v=>{ if(pgHit(v, tok)) out.push({loc:"pod2", label:"Pod 2"}); });
-  (s.runs||[]).forEach((r,ri)=>{ (r.wet||[]).concat(r.hmr||[]).forEach(v=>{ if(pgHit(v, tok)) out.push({loc:"endcap", label:"Run "+(ri+1)+" endcap"}); }); });
-  const seen = {}; return out.filter(o=>{ if(seen[o.loc]) return false; seen[o.loc]=1; return true; });
+  (s.pod1||[]).forEach(p=>{ if(pgHit(p && p.name, tok)) out.push({kind:"pod", id:"pod1", label:"Pod 1"}); });
+  (s.pod2||[]).forEach(v=>{ if(pgHit(v, tok)) out.push({kind:"pod", id:"pod2", label:"Pod 2"}); });
+  (s.runs||[]).forEach((r,ri)=>{ ["wet","hmr"].forEach(function(end){ (r[end]||[]).forEach(function(v){ if(pgHit(v, tok)){
+    const tid = RK_RUN_IDS[ri] || "root";
+    out.push({kind:"endcap", ri:ri, end:end, slot:v, table:tid, label:(RK_BY_ID[tid]?RK_BY_ID[tid].name:("Run "+(ri+1)))+" \u2014 endcap"});
+  }}); }); });
+  const seen = {}; return out.filter(o=>{ const k=o.kind+(o.id||"")+(o.ri!=null?(o.ri+o.end):""); if(seen[k]) return false; seen[k]=1; return true; });
 }
 
 /* ---- location prompt ---- */
@@ -10925,20 +10956,30 @@ const KEY_RK_PROMPT = "label_rk_locprompt_v1";
 function rkPromptOn(){ return localStorage.getItem(KEY_RK_PROMPT) === "1"; }   // default OFF
 function rkPromptSet(on){ try{ localStorage.setItem(KEY_RK_PROMPT, on?"1":"0"); }catch(e){} }
 let rkLocCtx = null;
-function rkShowLocPrompt(name, plu, tags, table, locs){
+function rkShowLocPrompt(name, plu, tags, table, locs, qty){
   const ov = document.getElementById("rkLoc");
-  if(!ov){ rkPlaceAt(name, plu, tags, [table]); return; }
-  const opts = [{ ids:[table], label: RK_BY_ID[table].name + " (usual)" }];
-  locs.forEach(l=>opts.push({ ids:[l.loc], label: l.label }));
-  if(locs.length) opts.push({ ids:[table].concat(locs.map(l=>l.loc)), label:"Both" });
-  rkLocCtx = { name, plu, tags, opts };
-  document.getElementById("rkLocName").textContent = name;
+  if(!ov){ rkPlaceAt(name, plu, tags, [table], qty); return; }
+  const opts = [{ ids:[table], label: RK_BY_ID[table].name, ec:false }];
+  locs.forEach(function(l){
+    if(l.kind === "pod"){ opts.push({ ids:[l.id], label:(RK_BY_ID[l.id]?RK_BY_ID[l.id].name:l.label), ec:false }); }
+    else { opts.push({ ids:[table], label:l.label, ec:true, adopt:l.slot }); }   // endcap -> category row + H/W badge
+  });
+  const podIds = locs.filter(l=>l.kind==="pod").map(l=>l.id);
+  const ecSlot = (locs.find(l=>l.kind==="endcap")||{}).slot;
+  if(locs.length) opts.push({ ids:[table].concat(podIds), label:"Both", ec:!!ecSlot, adopt:ecSlot });
+  rkLocCtx = { name, plu, tags, qty: qty||"", opts };
+  const hEl = document.getElementById("rkLocH");
+  if(hEl) hEl.innerHTML = "Where does <b>"+esc(rkFullName(name, tags))+"</b> need filling?";
   document.getElementById("rkLocOpts").innerHTML = opts.map((o,i)=>'<button class="rk-loc-btn" onclick="rkLocPick('+i+')">'+esc(o.label)+'</button>').join("");
   ov.classList.add("open");
 }
 function rkLocPick(i){
   const c = rkLocCtx; if(!c) return;
-  rkPlaceAt(c.name, c.plu, c.tags, c.opts[i].ids);
+  const o = c.opts[i]; if(!o){ rkLocClose(); return; }
+  let nm = c.name, tg = c.tags;
+  if(o.adopt){ const sn = nmNormalize(o.adopt); nm = rkCap(sn.core) || nm; tg = Array.from(new Set(sn.tags||[])); }   // adopt the planogram SKU's brand/pack
+  o.ids.forEach(function(id){ rkAddItem(nm, id, c.qty||"", c.plu, tg, !!o.ec); });
+  toast("Filed \u201C"+nm+"\u201D \u2192 "+o.ids.map(id=>RK_BY_ID[id]?RK_BY_ID[id].name:id).join(" + ")+(o.ec?" (endcap)":""));
   rkLocClose();
 }
 function rkLocClose(){ const ov = document.getElementById("rkLoc"); if(ov) ov.classList.remove("open"); rkLocCtx = null; }
@@ -11085,6 +11126,7 @@ function renderRestock(){
   const rkQTokens = q ? pluTokens(q).map(stem) : [];
   const me = deviceInfo().id;
 
+  (items||[]).forEach(function(x){ if(x.table && !RK_BY_ID[x.table]){ x.table="root"; x.ec=true; } });   // migrate the removed endcap table
   const claimed = items.filter(x=>x.claimId).length;
   const _tb = document.getElementById("rkTopbar");
   if(_tb){
@@ -11152,7 +11194,7 @@ function rkEditQty(id){
   const tin = document.getElementById("rkTin"); if(tin) tin.value = it.name;
   const sel = document.getElementById("rkSel"); if(sel && it.table) sel.value = it.table;
   rkPinned = true; rkReflectTarget();
-  const qin = document.getElementById("rkQty"); if(qin) qin.value = it.qty || "";
+  const qin = document.getElementById("rkQty"); if(qin) qin.value = (String(it.qty||"").match(/\d+(?:\.\d+)?/)||[""])[0];
   rkEditId = id;
   renderRestock();
   setTimeout(function(){ if(qin){ qin.focus(); if(qin.select) qin.select(); } }, 360);
@@ -11164,20 +11206,22 @@ function rkRow(x, me){
   const packTags  = tags.filter(t=>nmTagKind(t)==="pack");
   const orgTags   = tags.filter(t=>nmTagKind(t)==="org");
   const brandTags = tags.filter(t=>nmTagKind(t)==="brand");
+  const qtyNum = (String(x.qty||"").match(/\d+(?:\.\d+)?/)||[])[0];
   const qtyChip = x.qty
-    ? '<span class="rk-qty" onclick="rkEditQty(\''+x.id+'\')">'+esc(x.qty)+'</span>'
-    : '<button class="rk-qty-add" onclick="rkEditQty(\''+x.id+'\')">qty</button>';
-  const bdgs = brandTags.map(t=>'<span class="nm-bdg brand">'+esc(rkBrandAbbr(t))+'</span>').join("")
-    + packTags.map(t=>'<span class="nm-bdg pack">'+esc(t)+'</span>').join("")
-    + orgTags.map(t=>'<span class="nm-bdg org">'+esc(t)+'</span>').join("");
+    ? '<span class="rk-qty" onclick="rkEditQty(\''+x.id+'\')">'+esc(qtyNum || x.qty)+'</span>'
+    : '<button class="rk-qty-add" onclick="rkEditQty(\''+x.id+'\')">#</button>';
+  const brandB = brandTags.map(t=>'<span class="nm-bdg brand">'+esc(rkBrandAbbr(t))+'</span>').join("");
+  const packB  = packTags.map(t=>'<span class="nm-bdg pack">'+esc(t)+'</span>').join("");
+  const orgB   = orgTags.map(t=>'<span class="nm-bdg org">'+esc(t)+'</span>').join("");
+  const _ec = x.ec ? rkItemEndcap(x.name, x.tags) : null;   // live from planogram; never stored
+  const ecB = _ec ? '<span class="nm-bdg ec '+(_ec.end==="hmr"?"h":"w")+'" title="'+(_ec.end==="hmr"?"HMR end":"Wet Cases end")+'">'+(_ec.end==="hmr"?"H":"W")+'</span>' : "";
   const claimCell = other
     ? '<div class="rk-owner" onclick="rkClaim(\''+x.id+'\')" title="Tap to take over"><b>'+esc(rkInitials(x.claimBy))+'</b><small>'+esc(x.claimBy)+'</small></div>'
     : '<button class="rk-claim'+(mine?' rk-mine':'')+'" onclick="rkClaim(\''+x.id+'\')">'+
         (mine ? '<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>Mine' : 'Claim')+
       '</button>';
   return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+(rkEditId===x.id?' rk-editing':'')+'" id="rkrow-'+x.id+'">'+
-      '<div class="rk-copy"><strong>'+esc(x.name)+'</strong>'+
-        (bdgs ? '<div class="rk-bdgs">'+bdgs+'</div>' : '')+'</div>'+
+      '<div class="rk-copy">'+brandB+'<strong>'+esc(x.name)+'</strong>'+packB+orgB+ecB+'</div>'+
       qtyChip + claimCell +
       '<button class="rk-del" onclick="rkDel(\''+x.id+'\')" aria-label="Remove"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>'+
     '</div>';
@@ -11385,6 +11429,7 @@ document.addEventListener("visibilitychange", ()=>{
   const _rkQty = document.getElementById("rkQty");
   const _rkCommit = function(e){
     if(e.key === "Enter"){ e.preventDefault(); rkAddManual(); }
+    else if(e.key === "Tab" && e.target && e.target.id === "rkQty"){ e.preventDefault(); rkAddManual(); }  // "next/->|" key on the qty pad commits
     else if(e.key === "Escape"){ rkCloseBar(); }
   };
   if(_rkTin) _rkTin.addEventListener("keydown", _rkCommit);

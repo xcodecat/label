@@ -1022,7 +1022,7 @@
   .rk-fab.rk-has .rk-fabmag{width:14px;height:14px;opacity:.7;margin-bottom:1px}
   .rk-fabcount{font-family:var(--mono);font-size:12px;font-weight:700;line-height:1;color:var(--paper)}
   .rk-addbar.rk-offline .rk-fabcount{color:#E0A43B}
-  .rk-abinner{display:none;align-items:center;width:100%;height:100%;padding:0 8px 0 4px;
+  .rk-abinner{display:none;align-items:center;width:100%;height:100%;padding:0 14px 0 4px;
     position:relative;z-index:1}
   .rk-addbar.open .rk-abinner{display:flex}
   .rk-plus{flex:none;width:46px;height:46px;border-radius:12px;border:0;background:none;cursor:pointer;
@@ -1181,7 +1181,7 @@
   .rk-caret{color:var(--muted);font-size:10px;transition:transform .15s;width:12px;text-align:center}
   .rk-card.rk-closed .rk-caret{transform:rotate(-90deg)}
   .rk-card.rk-closed .rk-ilist{display:none}
-  .rk-ilist{padding-left:0}
+  .rk-ilist{padding-left:0;background:color-mix(in srgb, var(--tc) 8%, transparent)}
   .rk-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;
     min-height:50px;padding:8px 12px 8px 14px;border-bottom:1px solid var(--line)}
   .rk-left{display:flex;flex-wrap:wrap;align-items:center;gap:4px 5px;min-width:0;flex:1 1 auto}
@@ -1197,9 +1197,9 @@
     background:var(--ok);padding:2px 5px;border-radius:5px;flex:none}
   @keyframes rkfresh{0%,100%{box-shadow:0 0 0 1px rgba(89,192,131,.5) inset}50%{box-shadow:0 0 0 2px rgba(89,192,131,.85) inset}}
   .rk-row.rk-fresh{background:rgba(89,192,131,.11);animation:rkfresh 1.35s ease-in-out infinite}
-  .rk-go{width:32px;height:32px;flex:none;align-self:center;border:0;border-radius:50%;background:#565E67;color:#fff;
+  .rk-go{width:28px;height:28px;flex:none;align-self:center;border:0;border-radius:50%;background:#565E67;color:#fff;
     cursor:pointer;display:flex;align-items:center;justify-content:center;margin-left:6px}
-  .rk-go svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.6}
+  .rk-go svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.8}
   .rk-row:last-child{border-bottom:0}
   .rk-row.rk-claimed{background:rgba(76,175,125,.05)}
   .rk-st{width:17px;height:17px;border:1px solid #424950;border-radius:50%;display:grid;
@@ -1748,7 +1748,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=130.1">
+  <link rel="manifest" href="./manifest.json?v=131">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6267,7 +6267,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v130.1";
+const APP_VERSION = "v131";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10514,7 +10514,7 @@ const RK_TABLES = [
   { id:"berry",  name:"Berry & Banana",            run:"RUN 2", tc:"#E85AA0", g:"B", kind:"run" },
   { id:"citrus", name:"Citrus & Stone",            run:"RUN 3", tc:"#F0912B", g:"C", kind:"run" },
   { id:"ctp",    name:"Cucumber \u00b7 Tomato \u00b7 Potato", run:"RUN 4", tc:"#4A90D9", g:"T", kind:"run" },
-  { id:"root",   name:"Root Veg & Onions",         run:"RUN 5", tc:"#B5793E", g:"R", kind:"run" },
+  { id:"root",   name:"Root Veg & Onions",         run:"RUN 5", tc:"#D9544D", g:"R", kind:"run" },
   { id:"pod1",   name:"Pod 1",                       run:"POD 1", tc:"#E7C338", g:"1", kind:"loc" },
   { id:"pod2",   name:"Pod 2",                       run:"POD 2", tc:"#A9CC3E", g:"2", kind:"loc" },
   { id:"lots",   name:"Case Lots",                  run:"LOTS",  tc:"#2FC0C0", g:"L", kind:"loc" },
@@ -10625,7 +10625,7 @@ function rkAddItem(name, table, qty, plu, tags, ec){
   qty = String(qty||"").trim();
   tags = Array.isArray(tags) ? tags : [];
   // board-wide dedup: update the existing row instead of duplicating it
-  const dup = rkState.items.find(x => rkDupKey(x.name) === rkDupKey(name) && rkTagKey(x.tags) === rkTagKey(tags));
+  const dup = rkState.items.find(x => x.table === table && rkDupKey(x.name) === rkDupKey(name) && rkTagKey(x.tags) === rkTagKey(tags));
   if(dup){
     if(qty) dup.qty = qty;
     if(plu) dup.plu = String(plu);
@@ -10638,7 +10638,7 @@ function rkAddItem(name, table, qty, plu, tags, ec){
   }
   const it = { id: rkNewId(), name: rkCap(name), table,
     qty, plu: String(plu||""), tags, by: rkMeName(),
-    claimId:"", claimBy:"", ec: !!ec, ts: Date.now(), createdAt: Date.now() };
+    claimId:"", claimBy:"", ec: !!ec, ts: Date.now(), createdAt: Date.now(), addedBy: rkMyId() };
   rkState.items.push(it);
   rkJustAddedId = it.id; rkFlash2Id = null; rkScrollTargetId = it.id;
   rkTouch();
@@ -10659,6 +10659,9 @@ function nmNormalize(raw){
   let s = " " + String(raw||"").replace(/\s+/g," ").trim() + " ";
   const brands = [];
   NM_BRANDS.forEach(b=>{ const before=s; s=s.replace(b.re," "); if(s!==before && brands.indexOf(b.tag)<0) brands.push(b.tag); });
+  // spoken number-words before a unit -> digits ("three pack"->"3 pack", "six pound"->"6 pound")
+  const _NW = {one:"1",two:"2",three:"3",four:"4",five:"5",six:"6",seven:"7",eight:"8",nine:"9",ten:"10",eleven:"11",twelve:"12"};
+  s = s.replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+(packs?|pk|counts?|cts?|ct|lbs?|pounds?|kgs?|kilograms?|kilos?|ozs?|ounces?|grams?|mls?|millilitres?|milliliters?|litres?|liters?|l)\b/ig, function(m,w,u){ return _NW[w.toLowerCase()] + " " + u; });
   const packs = [];
   s = s.replace(/\b(\d{1,2})[\s-]*(?:packs?|pk|p\s*k)\b/ig,(m,n)=>{ const t=n+"pk"; if(packs.indexOf(t)<0)packs.push(t); return " "; });
   s = s.replace(/\b(\d{1,2})[\s-]*(?:counts?|cts?|ct)\b/ig,(m,n)=>{ const t=n+"ct"; if(packs.indexOf(t)<0)packs.push(t); return " "; });
@@ -10895,8 +10898,9 @@ function rkDel(id){
   const i = rkState.items.findIndex(x=>x.id===id); if(i<0) return;
   const gone = rkState.items[i];
   rkState.items.splice(i,1);
+  rkTombs[id] = Date.now(); rkSaveTombs();        // tombstone so a sync can't resurrect it
   rkTouch();
-  toastUndo("Removed " + gone.name, ()=>{ rkState.items.splice(i,0,gone); rkTouch(); });
+  toastUndo("Removed " + gone.name, ()=>{ delete rkTombs[id]; rkSaveTombs(); rkState.items.splice(i,0,gone); rkTouch(); });
 }
 function rkToggle(id){
   rkClosed[id] = !rkClosed[id];
@@ -10910,41 +10914,42 @@ function rkToggle(id){
    against the catalogue with pluSearch, exactly like Info search, then hand the
    clean product name to the routing + trainer + (if on the planogram) the
    location prompt. One press = one item. */
+function rkDedupeWords(s){ const w=String(s||"").split(/\s+/); const out=[]; for(let i=0;i<w.length;i++){ if(i===0 || w[i].toLowerCase()!==w[i-1].toLowerCase()) out.push(w[i]); } return out.join(" "); }
 function commitRestockSpoken(text){
   const h = document.getElementById("rkHeard");
   let t = String(text||"").trim().replace(/^(look ?up|find|search( for)?|show me|add|restock)\s+/i,"");
-  // spoken location wins outright ("plantain on pod 1", "... case lot")
   let forced = "";
   if(/\bpod\s*(1|one)\b/i.test(t)){ forced="pod1"; t=t.replace(/\bpod\s*(1|one)\b/ig," "); }
   else if(/\bpod\s*(2|two)\b/i.test(t)){ forced="pod2"; t=t.replace(/\bpod\s*(2|two)\b/ig," "); }
   else if(/\bend\s*caps?\b/i.test(t)){ forced="__ec__"; t=t.replace(/\bend\s*caps?\b/ig," "); }
   else if(/\bcase\s*lots?\b/i.test(t)){ forced="lots"; t=t.replace(/\bcase\s*lots?\b/ig," "); }
-  // Resolve exactly like the scrap tab: parse, snap the heard name, then read the
-  // catalogue's proper name + PLU (snapSpokenName -> displayName -> codeForName).
-  // Restock drops the DB weight and files by the box count instead.
-  const heardItems = parseSpoken(t, "loop");
-  if(!heardItems.length){ if(h){ h.textContent = "Didn't catch an item \u2014 try again."; h.classList.add("show"); setTimeout(function(){ if(h) h.classList.remove("show"); }, 1800); } return; }
-  if(h){ h.textContent = ""; h.classList.remove("show"); }
-  heardItems.forEach(it=>{
-    // Resolve the product NAME exactly the way scrap does (learned alias + repair
-    // + catalogue). Re-resolving restock differently is what used to mangle names.
-    const heard0 = applyAlias(it.heard || it.name || "");
-    const resolved0 = snapSpokenName(heard0);
-    let disp = displayName(resolved0) || it.name || resolved0;
-    const cc = codeForName(resolved0 + (it.packWt ? " " + it.packWt : ""));
-    if(cc.code && cc.name) disp = displayName(cc.name);
-    // fold the spoken pack-weight (2lb/6lb/3L) back in, then split brand + weight/pack into tags
-    const nmN = nmNormalize(disp + (it.packWt ? " " + it.packWt : ""));
-    let name = rkCap(nmN.core) || rkCap(disp);
-    const _ns = name.replace(/\s+\d{1,3}$/, "").trim(); if(_ns) name = _ns;
+  const chunks = t.split(/\s+(?:and|then|also|plus)\s+|[,;]+/i).map(s=>s.trim()).filter(Boolean);
+  if(!chunks.length){ if(h){ h.textContent="Didn't catch an item \u2014 try again."; h.classList.add("show"); setTimeout(function(){ if(h) h.classList.remove("show"); },1800); } return; }
+  if(h){ h.textContent=""; h.classList.remove("show"); }
+  chunks.forEach(function(chunk){
+    // Pull brand + pack/weight (incl. word-numbers) and the box count from the RAW phrase, so
+    // pack/weight-first ("3 pack cucumber"), word weights ("six pound"), and box counts all parse.
+    const clean = applyAlias(chunk);
+    const nm = nmNormalize(clean);                 // brand + pack/weight -> tags
+    const bc = rkBoxCount(nm.core);                // "two boxes"/"one case" -> qty
+    const core = (bc.name || nm.core || "").trim();
+    const bTags = nm.tags.filter(x=>nmTagKind(x)==="brand");
+    const pTags = nm.tags.filter(x=>nmTagKind(x)==="pack");
+    const resolved0 = snapSpokenName(core);
+    // barcode lookup keeps the brand + pack so the right SKU matches
+    const codeQ = (bTags.join(" ") + " " + resolved0 + " " + pTags.join(" ")).replace(/\s+/g," ").trim();
+    const cc = codeForName(codeQ);
+    let disp = (cc.code && cc.name) ? displayName(cc.name) : (displayName(resolved0) || core);
+    const nmN = nmNormalize(disp);                 // strip any brand/weight the catalogue name carries
+    let name = rkDedupeWords(rkCap(nmN.core) || rkCap(disp));   // "peach peach" -> "peach"
+    const _ns = name.replace(/\s+\d{1,3}$/,"").trim(); if(_ns) name = _ns;
     if(!name) return;
     const plu  = cc.plu || "";
-    const tags = Array.from(new Set(nmN.tags || []));
-    const bc   = rkBoxCount(it.heard || "");                 // "two boxes" -> case count
-    const qty  = bc.qty || ((!it.kg && it.qty && it.qty > 1) ? (it.qty + " cs") : "");   // never the kg weight
+    const tags = Array.from(new Set(nm.tags.concat(nmN.tags||[])));
+    const qty  = bc.qty;
     try{ const _s = rkTableSure(name, plu, tags);
-      queueError("PROBE rk | heard:"+String(it.heard||it.name||"")+" | packWt:"+String(it.packWt||"")+" | kg:"+String(!!it.kg)+" | snap:"+String(resolved0||"")+" | disp:"+String(disp||"")+" | code:"+String(cc.code||"")+"/"+String(cc.name||"")+" | name:"+name+" | tags:"+tags.join(",")+" | plu:"+plu+" | qty:"+qty+" | table:"+_s.table+(_s.sure?"":"/ASK")); }catch(e){}
-    rkPlace(name, plu, tags, it.heard, forced, qty);
+      queueError("PROBE rk | chunk:"+chunk+" | nmcore:"+nm.core+" | snap:"+String(resolved0||"")+" | code:"+String(cc.code||"")+"/"+String(cc.name||"")+" | name:"+name+" | tags:"+tags.join(",")+" | plu:"+plu+" | qty:"+qty+" | table:"+_s.table+(_s.sure?"":"/ASK")); }catch(e){}
+    rkPlace(name, plu, tags, chunk, forced, qty);
   });
 }
 
@@ -10991,7 +10996,7 @@ function pgMainTok(name){
   const w = String(name||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(x=>x.length>2 && !RK_GEN.has(x));
   return w.sort((a,b)=>b.length-a.length)[0] || "";
 }
-function pgHit(cell, tok){ return tok && String(cell||"").toLowerCase().indexOf(tok) !== -1; }
+function pgHit(cell, tok){ if(!tok) return false; try{ return new RegExp("\\b"+String(tok).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).test(String(cell||"").toLowerCase()); }catch(e){ return String(cell||"").toLowerCase().indexOf(tok)!==-1; } }
 function pgLocationsFor(name, tags){
   const s = pgLoad2(); if(!pgFresh(s)) return [];
   const tok = pgMainTok(name); if(!tok) return [];
@@ -11025,6 +11030,8 @@ function rkShowLocPrompt(name, plu, tags, table, locs, qty){
   const hEl = document.getElementById("rkLocH");
   if(hEl) hEl.innerHTML = "Where does <b>"+esc(rkFullName(name, tags))+"</b> need filling?";
   document.getElementById("rkLocOpts").innerHTML = opts.map((o,i)=>'<button class="rk-loc-btn" onclick="rkLocPick('+i+')">'+esc(o.label)+'</button>').join("");
+  const _tin=document.getElementById("rkTin"); if(_tin) _tin.blur();   // drop the keyboard so the prompt isn't hidden
+  const _q=document.getElementById("rkQty"); if(_q) _q.blur();
   ov.classList.add("open");
 }
 function rkLocPick(i){
@@ -11035,6 +11042,7 @@ function rkLocPick(i){
   o.ids.forEach(function(id){ rkAddItem(nm, id, c.qty||"", c.plu, tg, !!o.ec); });
   toast("Filed \u201C"+nm+"\u201D \u2192 "+o.ids.map(id=>RK_BY_ID[id]?RK_BY_ID[id].name:id).join(" + ")+(o.ec?" (endcap)":""));
   rkLocClose();
+  const _bar=document.getElementById("rkAddbar"); if(_bar && _bar.classList.contains("open")){ const _tin=document.getElementById("rkTin"); if(_tin) setTimeout(function(){ _tin.focus(); }, 120); }   // typed add -> keyboard back for the next item
 }
 function rkLocClose(){ const ov = document.getElementById("rkLoc"); if(ov) ov.classList.remove("open"); rkLocCtx = null; }
 
@@ -11172,11 +11180,15 @@ function rkScrollToRow(id){
 }
 /* ---- list filter (Items / Unclaimed / Mine) + "new since you looked" ---- */
 let rkFilter = (function(){ try{ return localStorage.getItem("label_rk_filter") || "all"; }catch(e){ return "all"; } })();
-let rkSeenAt = Date.now();
-let rkSeenTimer = null;
-function rkMarkSeen(){ rkSeenAt = Date.now(); }
-function rkIsFresh(x){ return !!(x && (x.createdAt||0) > rkSeenAt); }
-function rkHasFresh(){ return (rkState.items||[]).some(rkIsFresh); }
+let rkCntSeen = Date.now(), rkItemSeen = Date.now(), rkCntTimer = null, rkItemTimer = null;
+let rkTombs = (function(){ try{ return JSON.parse(localStorage.getItem("label_rk_tombs")||"{}"); }catch(e){ return {}; } })();
+function rkSaveTombs(){ const cut = Date.now() - 7*864e5; for(const k in rkTombs){ if(rkTombs[k] < cut) delete rkTombs[k]; } try{ localStorage.setItem("label_rk_tombs", JSON.stringify(rkTombs)); }catch(e){} }
+function rkMyId(){ try{ return deviceInfo().id; }catch(e){ return ""; } }
+function rkMarkSeen(){ rkCntSeen = Date.now(); rkItemSeen = Date.now(); }
+/* NEW is for OTHER people's adds only (never your own) and lingers: item badge
+   through a couple of looks, counter badge through one. */
+function rkFreshItem(x){ return !!(x && (x.createdAt||0) > rkItemSeen && x.addedBy && x.addedBy !== rkMyId()); }
+function rkFreshCnt(){ const my = rkMyId(); return (rkState.items||[]).some(x=> (x.createdAt||0) > rkCntSeen && x.addedBy && x.addedBy !== my); }
 function rkSetFilter(f){ rkFilter = f; try{ localStorage.setItem("label_rk_filter", f); }catch(e){} rkMarkSeen(); renderRestock(); }
 function rkHue(s){ let h=0; s=String(s||""); for(let i=0;i<s.length;i++) h=(h*31 + s.charCodeAt(i))>>>0; return h%360; }
 function rkWhoStyle(name){ const H=rkHue(name); return "color:hsl("+H+" 70% 74%);border-color:hsl("+H+" 45% 44%);background:hsl("+H+" 45% 24% / .5)"; }
@@ -11199,8 +11211,8 @@ function renderRestock(){
       _tb.style.display = "";
       const _un = items.filter(x=>!x.claimId).length;
       const _mineN = items.filter(x=>x.claimId===me).length;
-      const _fr = rkHasFresh() ? " rk-segfresh" : "";
-      const _nb = rkHasFresh() ? '<span class="rk-segnew">NEW</span>' : "";
+      const _fr = rkFreshCnt() ? " rk-segfresh" : "";
+      const _nb = rkFreshCnt() ? '<span class="rk-segnew">NEW</span>' : "";
       _tb.innerHTML =
         '<div class="rk-seg'+(rkFilter==="all"?" on":"")+_fr+'" onclick="rkSetFilter(\'all\')">'+_nb+'<strong>'+items.length+'</strong><span class="rk-lab">ITEMS</span></div>'+
         '<div class="rk-seg'+(rkFilter==="unclaimed"?" on":"")+_fr+'" onclick="rkSetFilter(\'unclaimed\')">'+_nb+'<strong>'+_un+'</strong><span class="rk-lab">UNCLAIMED</span></div>'+
@@ -11254,9 +11266,9 @@ function renderRestock(){
   // blink the counters while there are unseen new items and you're on the board;
   // a few seconds of looking (or tapping a counter) counts as "checked it out".
   const _vr = document.getElementById("view-restock");
-  if(rkHasFresh() && _vr && _vr.classList.contains("active")){
-    clearTimeout(rkSeenTimer);
-    rkSeenTimer = setTimeout(function(){ rkMarkSeen(); renderRestock(); }, 3500);
+  if(_vr && _vr.classList.contains("active")){
+    if(rkFreshCnt()){ clearTimeout(rkCntTimer); rkCntTimer = setTimeout(function(){ rkCntSeen = Date.now(); renderRestock(); }, 6000); }
+    if((rkState.items||[]).some(rkFreshItem)){ clearTimeout(rkItemTimer); rkItemTimer = setTimeout(function(){ rkItemSeen = Date.now(); renderRestock(); }, 14000); }
   }
   if(rkScrollTargetId){
     const _t = rkScrollTargetId; rkScrollTargetId = null;   // one-shot: never re-scroll on later renders
@@ -11301,7 +11313,7 @@ function rkRow(x, me){
   const orgB   = orgTags.map(t=>'<span class="nm-bdg org">'+esc(t)+'</span>').join("");
   const _ec = x.ec ? rkItemEndcap(x.name, x.tags) : null;   // live from planogram; never stored
   const ecB = _ec ? '<span class="nm-bdg ec '+(_ec.end==="hmr"?"h":"w")+'" title="'+(_ec.end==="hmr"?"HMR end":"Wet Cases end")+'">'+(_ec.end==="hmr"?"H":"W")+'</span>' : "";
-  const newB = rkIsFresh(x) ? '<span class="rk-newb">NEW</span>' : "";
+  const newB = rkFreshItem(x) ? '<span class="rk-newb">NEW</span>' : "";
   const short = (rkFilter !== "all");                        // Unclaimed/Mine show a compact coloured initial
   let claimCell;
   if(other){
@@ -11315,7 +11327,7 @@ function rkRow(x, me){
   } else {
     claimCell = '<button class="rk-claim" onclick="rkClaim(\''+x.id+'\')">Claim</button>';
   }
-  return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+(rkEditId===x.id?' rk-editing':'')+(rkIsFresh(x)?' rk-fresh':'')+'" id="rkrow-'+x.id+'">'+
+  return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+(rkEditId===x.id?' rk-editing':'')+(rkFreshItem(x)?' rk-fresh':'')+'" id="rkrow-'+x.id+'">'+
       '<div class="rk-left">'+brandB+'<strong>'+esc(x.name)+'</strong>'+wtB+pkB+'</div>'+
       '<div class="rk-mid">'+orgB+ecB+newB+'</div>'+
       '<div class="rk-ctl">'+qtyChip+claimCell+
@@ -11391,8 +11403,9 @@ async function rkPull(){
       if(theirs && theirs >= mine){
         const prevIds = new Set((rkState.items||[]).map(x=>x.id));
         rkState = d.state;
+        rkState.items = (rkState.items||[]).filter(x=> !rkTombs[x.id]);   // never resurrect a deleted row
         const now = Date.now();
-        (rkState.items||[]).forEach(x=>{ if(!prevIds.has(x.id) && !x.createdAt) x.createdAt = now; });   // new to me -> blinks
+        (rkState.items||[]).forEach(x=>{ if(!prevIds.has(x.id) && !x.createdAt) x.createdAt = now; });
         rkSave(); renderRestock();
       }
     }

@@ -1086,7 +1086,7 @@
     border-radius:20px;padding:5px 8px;margin-bottom:4px}
   .rk-live span{width:6px;height:6px;border-radius:50%;background:var(--ok);
     box-shadow:0 0 0 3px rgba(76,175,125,.14)}
-  .rk-strip{display:grid;grid-template-columns:auto auto auto 1fr;border:1px solid var(--line);
+  .rk-strip{display:grid;grid-template-columns:1fr 1fr 1fr auto;border:1px solid var(--line);
     background:var(--surface);border-radius:12px;overflow:hidden;margin-top:9px}
   .rk-strip>div{padding:0 13px;min-height:42px;display:flex;flex-direction:column;
     justify-content:center;border-right:1px solid var(--line)}
@@ -1096,12 +1096,16 @@
   .rk-strip .rk-sy{flex-direction:row;align-items:center;justify-content:flex-end;gap:6px;color:var(--ok)}
   .rk-strip .rk-sy svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
   .rk-strip .rk-sy .rk-lab{margin:0;text-align:right;max-width:130px}
-  .rk-strip .rk-seg{cursor:pointer;transition:background .15s}
+  .rk-strip .rk-seg{cursor:pointer;position:relative;transition:background .15s}
   .rk-strip .rk-seg:active{background:var(--surface-2)}
   .rk-strip .rk-seg.on{background:var(--surface-2)}
   .rk-strip .rk-seg.on strong,.rk-strip .rk-seg.on .rk-lab{color:var(--paper)}
   @keyframes rkblink{0%,100%{opacity:1}50%{opacity:.38}}
   .rk-strip .rk-seg.blink strong,.rk-strip .rk-seg.blink .rk-lab{animation:rkblink 1.15s ease-in-out infinite}
+  .rk-strip .rk-segfresh{background:rgba(89,192,131,.15)}
+  .rk-strip .rk-segfresh strong{color:var(--ok)}
+  .rk-segnew{position:absolute;top:5px;right:6px;font-family:var(--mono);font-size:7px;font-weight:800;
+    letter-spacing:.04em;color:#12151a;background:var(--ok);padding:1px 3px;border-radius:3px;line-height:1.3}
   .rk-cap{border:1px solid var(--line);background:var(--surface);border-radius:14px;
     padding:11px 12px;margin-bottom:10px}
   .rk-flab{display:block;color:var(--muted);font-family:var(--mono);font-size:8px;font-weight:700;
@@ -1182,9 +1186,10 @@
     min-height:50px;padding:8px 12px 8px 14px;border-bottom:1px solid var(--line)}
   .rk-left{display:flex;flex-wrap:wrap;align-items:center;gap:4px 5px;min-width:0;flex:1 1 auto}
   .rk-left strong{font-size:13px;font-weight:620;color:#EEEAE1;overflow-wrap:anywhere;min-width:0}
+  .rk-left .nm-bdg,.rk-mid .nm-bdg{margin:0}
   .rk-mid{display:flex;flex-wrap:wrap;align-items:center;gap:5px;flex:0 1 auto}
   .rk-ctl{display:flex;align-items:center;gap:8px;margin-left:auto;flex:0 0 auto}
-  .nm-bdg.wt{color:#C7A96B;border-color:#5a4d33;background:rgba(200,170,110,.10)}
+  .nm-bdg.wt{color:#f0c98a;border:1px solid #5a4a33;background:#2a2118;font-size:10px;padding:1px 5px}
   .rk-who{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     font-family:var(--mono);font-size:13px;font-weight:800;cursor:pointer;border:1.5px solid;flex:none}
   .rk-who.rk-mine{box-shadow:0 0 0 2px rgba(232,68,46,.4)}
@@ -1192,9 +1197,9 @@
     background:var(--ok);padding:2px 5px;border-radius:5px;flex:none}
   @keyframes rkfresh{0%,100%{box-shadow:0 0 0 1px rgba(89,192,131,.5) inset}50%{box-shadow:0 0 0 2px rgba(89,192,131,.85) inset}}
   .rk-row.rk-fresh{background:rgba(89,192,131,.11);animation:rkfresh 1.35s ease-in-out infinite}
-  .rk-go{width:34px;height:34px;flex:none;border:0;border-radius:50%;background:var(--laser);color:#fff;
-    cursor:pointer;display:flex;align-items:center;justify-content:center;margin-left:2px}
-  .rk-go svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.6}
+  .rk-go{width:32px;height:32px;flex:none;align-self:center;border:0;border-radius:50%;background:#565E67;color:#fff;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;margin-left:6px}
+  .rk-go svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.6}
   .rk-row:last-child{border-bottom:0}
   .rk-row.rk-claimed{background:rgba(76,175,125,.05)}
   .rk-st{width:17px;height:17px;border:1px solid #424950;border-radius:50%;display:grid;
@@ -1743,7 +1748,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=130">
+  <link rel="manifest" href="./manifest.json?v=130.1">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6094,6 +6099,7 @@ function rememberAlias(heard, meant){
   localStorage.setItem(KEY_ALIAS, JSON.stringify(a));
 }
 function applyAlias(name){
+  name = String(name||"").replace(/\b(pitch|beach|bitch|peech)\b/ig, "peach");   // Chrome mishears "peach"
   const a = aliases();
   const k = aliasKey(name);
   // A 1–2 character key (e.g. "fm") is almost never a real word you meant to
@@ -6261,7 +6267,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v130";
+const APP_VERSION = "v130.1";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -11135,7 +11141,7 @@ function rkOpenBar(skipFocus){
   const bar=document.getElementById("rkAddbar"); if(bar) bar.classList.add("open");
   const sc=document.getElementById("rkScrim"); if(sc) sc.classList.add("show");
   document.documentElement.classList.add("rk-typing");   // hide sub-tabs + top counters, lift bar
-  const tin=document.getElementById("rkTin"); if(tin && !skipFocus) setTimeout(function(){ tin.focus(); }, 260);
+  const tin=document.getElementById("rkTin"); if(tin && !skipFocus){ tin.focus(); setTimeout(function(){ tin.focus(); }, 260); }
 }
 function rkCloseBar(){
   const bar=document.getElementById("rkAddbar"); if(bar) bar.classList.remove("open");
@@ -11193,10 +11199,11 @@ function renderRestock(){
       _tb.style.display = "";
       const _un = items.filter(x=>!x.claimId).length;
       const _mineN = items.filter(x=>x.claimId===me).length;
-      const _bl = rkHasFresh() ? " blink" : "";
+      const _fr = rkHasFresh() ? " rk-segfresh" : "";
+      const _nb = rkHasFresh() ? '<span class="rk-segnew">NEW</span>' : "";
       _tb.innerHTML =
-        '<div class="rk-seg'+(rkFilter==="all"?" on":"")+_bl+'" onclick="rkSetFilter(\'all\')"><strong>'+items.length+'</strong><span class="rk-lab">ITEMS</span></div>'+
-        '<div class="rk-seg'+(rkFilter==="unclaimed"?" on":"")+_bl+'" onclick="rkSetFilter(\'unclaimed\')"><strong>'+_un+'</strong><span class="rk-lab">UNCLAIMED</span></div>'+
+        '<div class="rk-seg'+(rkFilter==="all"?" on":"")+_fr+'" onclick="rkSetFilter(\'all\')">'+_nb+'<strong>'+items.length+'</strong><span class="rk-lab">ITEMS</span></div>'+
+        '<div class="rk-seg'+(rkFilter==="unclaimed"?" on":"")+_fr+'" onclick="rkSetFilter(\'unclaimed\')">'+_nb+'<strong>'+_un+'</strong><span class="rk-lab">UNCLAIMED</span></div>'+
         '<div class="rk-seg'+(rkFilter==="mine"?" on":"")+'" onclick="rkSetFilter(\'mine\')"><strong>'+_mineN+'</strong><span class="rk-lab">MINE</span></div>'+
         '<div class="rk-sy" onclick="rkSync(true)" style="cursor:pointer" title="Tap to sync now">'+
           (rkDirty
@@ -11271,8 +11278,9 @@ function rkEditQty(id){
   const qin = document.getElementById("rkQty"); if(qin) qin.value = (String(it.qty||"").match(/\d+(?:\.\d+)?/)||[""])[0];
   rkEditId = id;
   renderRestock();
-  if(qin){ qin.focus(); if(qin.select) qin.select(); }        // sync focus in the tap gesture -> iPhone opens the keypad
-  setTimeout(function(){ if(qin){ qin.focus(); if(qin.select) qin.select(); } }, 360);
+  const _selQ = function(){ if(!qin) return; qin.focus(); try{ qin.setSelectionRange(0, (qin.value||"").length); }catch(e){} if(qin.select) qin.select(); };
+  _selQ();                    // sync focus + select in the tap gesture -> iPhone opens the keypad on the number
+  setTimeout(_selQ, 360);
 }
 function rkRow(x, me){
   const mine = x.claimId && x.claimId===me;
@@ -11302,14 +11310,14 @@ function rkRow(x, me){
       : '<div class="rk-owner" onclick="rkClaim(\''+x.id+'\')" title="Tap to take over"><b>'+esc(rkInitials(x.claimBy))+'</b><small>'+esc(x.claimBy)+'</small></div>';
   } else if(mine){
     claimCell = short
-      ? '<div class="rk-who rk-mine" style="'+rkWhoStyle(x.claimBy)+'" title="'+esc(x.claimBy)+'" onclick="rkClaim(\''+x.id+'\')">'+esc(rkFirst(x.claimBy))+'</div>'
+      ? ''                                       // Mine tab: your own initial on every row is redundant
       : '<button class="rk-claim rk-mine" onclick="rkClaim(\''+x.id+'\')"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>Mine</button>';
   } else {
     claimCell = '<button class="rk-claim" onclick="rkClaim(\''+x.id+'\')">Claim</button>';
   }
   return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+(rkEditId===x.id?' rk-editing':'')+(rkIsFresh(x)?' rk-fresh':'')+'" id="rkrow-'+x.id+'">'+
-      '<div class="rk-left">'+brandB+'<strong>'+esc(x.name)+'</strong>'+wtB+'</div>'+
-      '<div class="rk-mid">'+pkB+orgB+ecB+newB+'</div>'+
+      '<div class="rk-left">'+brandB+'<strong>'+esc(x.name)+'</strong>'+wtB+pkB+'</div>'+
+      '<div class="rk-mid">'+orgB+ecB+newB+'</div>'+
       '<div class="rk-ctl">'+qtyChip+claimCell+
         '<button class="rk-del" onclick="rkDel(\''+x.id+'\')" aria-label="Remove"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>'+
       '</div>'+

@@ -1036,6 +1036,7 @@
     justify-content:center;font-size:9px;font-weight:800;font-family:var(--mono);color:#12151a;flex:none}
   .nm-bdg.ec.h{background:#E08A3B}
   .nm-bdg.ec.w{background:#4A90D9}
+  .rk-qwrap{display:flex;align-items:center;gap:5px;justify-content:flex-end}
   #rkTin::placeholder{color:var(--muted)}
   .rk-qghost{flex:none;width:44px;height:100%;border:0;background:none;color:var(--paper);
     text-align:center;font-size:15px;font-family:var(--mono);outline:0}
@@ -1085,7 +1086,7 @@
     border-radius:20px;padding:5px 8px;margin-bottom:4px}
   .rk-live span{width:6px;height:6px;border-radius:50%;background:var(--ok);
     box-shadow:0 0 0 3px rgba(76,175,125,.14)}
-  .rk-strip{display:grid;grid-template-columns:auto auto 1fr;border:1px solid var(--line);
+  .rk-strip{display:grid;grid-template-columns:auto auto auto 1fr;border:1px solid var(--line);
     background:var(--surface);border-radius:12px;overflow:hidden;margin-top:9px}
   .rk-strip>div{padding:0 13px;min-height:42px;display:flex;flex-direction:column;
     justify-content:center;border-right:1px solid var(--line)}
@@ -1095,6 +1096,12 @@
   .rk-strip .rk-sy{flex-direction:row;align-items:center;justify-content:flex-end;gap:6px;color:var(--ok)}
   .rk-strip .rk-sy svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
   .rk-strip .rk-sy .rk-lab{margin:0;text-align:right;max-width:130px}
+  .rk-strip .rk-seg{cursor:pointer;transition:background .15s}
+  .rk-strip .rk-seg:active{background:var(--surface-2)}
+  .rk-strip .rk-seg.on{background:var(--surface-2)}
+  .rk-strip .rk-seg.on strong,.rk-strip .rk-seg.on .rk-lab{color:var(--paper)}
+  @keyframes rkblink{0%,100%{opacity:1}50%{opacity:.38}}
+  .rk-strip .rk-seg.blink strong,.rk-strip .rk-seg.blink .rk-lab{animation:rkblink 1.15s ease-in-out infinite}
   .rk-cap{border:1px solid var(--line);background:var(--surface);border-radius:14px;
     padding:11px 12px;margin-bottom:10px}
   .rk-flab{display:block;color:var(--muted);font-family:var(--mono);font-size:8px;font-weight:700;
@@ -1171,8 +1178,23 @@
   .rk-card.rk-closed .rk-caret{transform:rotate(-90deg)}
   .rk-card.rk-closed .rk-ilist{display:none}
   .rk-ilist{padding-left:0}
-  .rk-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;
-    gap:8px;min-height:50px;padding:7px 10px 7px 14px;border-bottom:1px solid var(--line)}
+  .rk-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;
+    min-height:50px;padding:8px 12px 8px 14px;border-bottom:1px solid var(--line)}
+  .rk-left{display:flex;flex-wrap:wrap;align-items:center;gap:4px 5px;min-width:0;flex:1 1 auto}
+  .rk-left strong{font-size:13px;font-weight:620;color:#EEEAE1;overflow-wrap:anywhere;min-width:0}
+  .rk-mid{display:flex;flex-wrap:wrap;align-items:center;gap:5px;flex:0 1 auto}
+  .rk-ctl{display:flex;align-items:center;gap:8px;margin-left:auto;flex:0 0 auto}
+  .nm-bdg.wt{color:#C7A96B;border-color:#5a4d33;background:rgba(200,170,110,.10)}
+  .rk-who{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:13px;font-weight:800;cursor:pointer;border:1.5px solid;flex:none}
+  .rk-who.rk-mine{box-shadow:0 0 0 2px rgba(232,68,46,.4)}
+  .rk-newb{font-family:var(--mono);font-size:8px;font-weight:800;letter-spacing:.06em;color:#12151a;
+    background:var(--ok);padding:2px 5px;border-radius:5px;flex:none}
+  @keyframes rkfresh{0%,100%{box-shadow:0 0 0 1px rgba(89,192,131,.5) inset}50%{box-shadow:0 0 0 2px rgba(89,192,131,.85) inset}}
+  .rk-row.rk-fresh{background:rgba(89,192,131,.11);animation:rkfresh 1.35s ease-in-out infinite}
+  .rk-go{width:34px;height:34px;flex:none;border:0;border-radius:50%;background:var(--laser);color:#fff;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;margin-left:2px}
+  .rk-go svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.6}
   .rk-row:last-child{border-bottom:0}
   .rk-row.rk-claimed{background:rgba(76,175,125,.05)}
   .rk-st{width:17px;height:17px;border:1px solid #424950;border-radius:50%;display:grid;
@@ -1721,7 +1743,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=129">
+  <link rel="manifest" href="./manifest.json?v=130">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2245,6 +2267,7 @@
           <input id="rkTin" class="rk-tin" placeholder="Type or say an item…" autocomplete="off" enterkeyhint="done">
           <span class="rk-idiv2"></span>
           <input id="rkQty" class="rk-qghost" placeholder="#" autocomplete="off" inputmode="numeric" enterkeyhint="done">
+          <button class="rk-go" id="rkGo" type="button" onclick="rkAddManual()" aria-label="Add / update"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
         </div>
       </div>
     </div>
@@ -6171,7 +6194,7 @@ function parseSpoken(text, defList){
       // each, and the weight silently vanished. Read the unit before anything
       // is allowed to delete it. "of" is part of the match, not a separator.
       let kg = null, packWt = "";
-      const brandHit = /(^|[^a-z])(pc|pco|pcbm|nni|fm)([^a-z]|$)/i.test(chunk);
+      const brandHit = /(^|[^a-z])(pc|pco|pcbm|nni|fm)([^a-z]|$)/i.test(chunk) || /\b(no\s*name|naturally\s*imperfect|farmer'?s?\s*mark|president'?s?\s*choice|blue\s*menu)\b/i.test(chunk);
       const wm = chunk.match(RE_WEIGHT);
       if(wm){
         const mult = WEIGHT_UNITS[wm[2].toLowerCase()];
@@ -6238,7 +6261,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v129";
+const APP_VERSION = "v130";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -7364,7 +7387,7 @@ function snapSpokenName(raw){
   let n = String(raw||"").toLowerCase().trim();
   const w = n.split(/\s+/).filter(Boolean);
   let extraEach = false;
-  if(w.length >= 2 && /^peach(es)?$/.test(w[w.length-1])){ extraEach = true; w.pop(); n = w.join(" "); }
+  if(w.length >= 2 && /^peach(es)?$/.test(w[w.length-1]) && w.slice(0,-1).some(x=>isProduceWord(x))){ extraEach = true; w.pop(); n = w.join(" "); }
   const nm = (typeof nmNormalize === "function") ? nmNormalize(n) : { core:n, tags:[] };
   const brand = nm.tags.filter(t=> nmTagKind(t) === "brand");
   const wtM = n.match(/\b\d+(?:\.\d+)?\s?(lb|lbs|kg|g|ml|l|oz)\b/i);
@@ -10609,7 +10632,7 @@ function rkAddItem(name, table, qty, plu, tags, ec){
   }
   const it = { id: rkNewId(), name: rkCap(name), table,
     qty, plu: String(plu||""), tags, by: rkMeName(),
-    claimId:"", claimBy:"", ec: !!ec, ts: Date.now() };
+    claimId:"", claimBy:"", ec: !!ec, ts: Date.now(), createdAt: Date.now() };
   rkState.items.push(it);
   rkJustAddedId = it.id; rkFlash2Id = null; rkScrollTargetId = it.id;
   rkTouch();
@@ -10633,12 +10656,27 @@ function nmNormalize(raw){
   const packs = [];
   s = s.replace(/\b(\d{1,2})[\s-]*(?:packs?|pk|p\s*k)\b/ig,(m,n)=>{ const t=n+"pk"; if(packs.indexOf(t)<0)packs.push(t); return " "; });
   s = s.replace(/\b(\d{1,2})[\s-]*(?:counts?|cts?|ct)\b/ig,(m,n)=>{ const t=n+"ct"; if(packs.indexOf(t)<0)packs.push(t); return " "; });
+  s = s.replace(/\b(\d+(?:\.\d+)?)[\s-]*(kilograms?|kilogrammes?|kilos?|kgs?|pounds?|lbs?|ounces?|ozs?|grams?|grammes?|millilitres?|milliliters?|mls?|litres?|liters?|kg|lb|oz|ml|g|l)\b/ig,(m,n,u)=>{
+    u=u.toLowerCase(); let unit;
+    if(/^(kilograms?|kilogrammes?|kilos?|kgs?|kg)$/.test(u)) unit="kg";
+    else if(/^(pounds?|lbs?|lb)$/.test(u)) unit="lb";
+    else if(/^(ounces?|ozs?|oz)$/.test(u)) unit="oz";
+    else if(/^(millilitres?|milliliters?|mls?|ml)$/.test(u)) unit="ml";
+    else if(/^(grams?|grammes?|g)$/.test(u)) unit="g";
+    else unit="L";
+    const num=String(parseFloat(n)).replace(/\.0+$/,"");
+    const t=num+unit; if(packs.indexOf(t)<0)packs.push(t); return " ";
+  });
   const core = s.replace(/\s{2,}/g," ").trim();
   const tags = brands.concat(packs);
   if(!core && !tags.length) return { core: String(raw||"").trim(), tags: [] };
   return { core, tags };
 }
-function nmTagKind(t){ return /(pk|ct)$/i.test(t) ? "pack" : (/^org$/i.test(t) ? "org" : "brand"); }
+function nmTagKind(t){
+  if(/^org$/i.test(t)) return "org";
+  if(/[0-9]\s*(pk|ct|kg|lb|oz|ml|g|l)$/i.test(t)) return "pack";
+  return "brand";
+}
 function nmShort(raw){
   const nm = nmNormalize(raw);
   const brand = nm.tags.filter(t=>nmTagKind(t)==="brand");
@@ -10701,7 +10739,12 @@ function rkFullName(name, tags){
 }
 /* Endcap membership is read LIVE from the planogram on every render and never
    learned (endcaps rotate weekly). Match is strict: product + brand + pack. */
-function rkSkuKey(str){ const nn = nmNormalize(str); const core = rkDupKey(nn.core); return core ? (core + "#" + rkTagKey(nn.tags)) : ""; }
+function rkCanonCore(s){
+  let c = String(s||"");
+  try{ if(typeof snapSpokenName==="function" && typeof displayName==="function"){ c = displayName(snapSpokenName(c.toLowerCase())) || c; } }catch(e){}
+  return nmNormalize(c).core || c;   // strip anything the resolver re-appended
+}
+function rkSkuKey(str){ const nn = nmNormalize(str); const core = rkDupKey(rkCanonCore(nn.core)); return core ? (core + "#" + rkTagKey(nn.tags)) : ""; }
 let _rkEcMap = null, _rkEcStamp = "";
 function rkEndcapIndex(){
   const s = pgLoad2();
@@ -10711,7 +10754,7 @@ function rkEndcapIndex(){
   (s.runs||[]).forEach(function(r,ri){ ["wet","hmr"].forEach(function(end){ (r[end]||[]).forEach(function(v){ if(v){ const k=rkSkuKey(v); if(k && !map[k]) map[k]={end:end, ri:ri}; } }); }); });
   _rkEcMap = map; _rkEcStamp = s.updatedAt; return map;
 }
-function rkItemEndcap(name, tags){ const k = rkDupKey(name) + "#" + rkTagKey(tags); return rkEndcapIndex()[k] || null; }
+function rkItemEndcap(name, tags){ const k = rkDupKey(rkCanonCore(name)) + "#" + rkTagKey(tags); return rkEndcapIndex()[k] || null; }
 /* Identity for dedup: same produce name AND same brand + pack = the same row.
    A different brand or pack (FM 3pk vs NNI 11pk cucumber) is a separate row. */
 function rkTagKey(tags){
@@ -10815,14 +10858,23 @@ function rkAddManual(){
       return;
     }
   }
+  const _reset = function(){ nameEl.value=""; qtyEl.value=""; rkPinned=false; if(selEl) selEl.selectedIndex=0; rkReflectTarget(); nameEl.focus(); };
+  const sp = (!pin) ? rkSpecialTable(name, nm.tags) : "";
+  if(sp){                                            // FM carrots/onions -> root + endcap badge, never ask
+    const it = rkAddItem(name, sp, qty, "", nm.tags, true);
+    if(it){ toast("Added to " + RK_BY_ID[it.table].name); _reset(); }
+    return;
+  }
   const table = pin ? selEl.value : tableFor(name, "", nm.tags);
+  if(!pin){
+    const locs = pgLocationsFor(name, nm.tags);      // on a pod/endcap this week? ask where it needs filling
+    if(locs.length){ rkShowLocPrompt(name, "", nm.tags, table, locs, qty); _reset(); return; }
+  }
   const it = rkAddItem(name, table, qty, "", nm.tags);
   if(it){
-    nameEl.value = ""; qtyEl.value = "";
     const h = document.getElementById("rkHeard"); if(h){ h.textContent = ""; h.classList.remove("show"); }
     toast("Added to " + RK_BY_ID[it.table].name);
-    rkPinned = false; if(selEl) selEl.selectedIndex = 0; rkReflectTarget();
-    nameEl.focus();
+    _reset();
   }
 }
 function rkClaim(id){
@@ -10868,28 +10920,24 @@ function commitRestockSpoken(text){
   if(!heardItems.length){ if(h){ h.textContent = "Didn't catch an item \u2014 try again."; h.classList.add("show"); setTimeout(function(){ if(h) h.classList.remove("show"); }, 1800); } return; }
   if(h){ h.textContent = ""; h.classList.remove("show"); }
   heardItems.forEach(it=>{
-    // Pull brand/pack OUT first so the resolver never sees or expands it — the
-    // brand lives only in a badge, never in the product name.
-    const nmH = nmNormalize(it.heard || it.name);
-    const bc = rkBoxCount(nmH.core || (it.name || ""));   // "banana two boxes" -> qty, one row
-    const core = bc.name || nmH.core || (it.name || "");
-    const resolved0 = snapSpokenName(core);
-    let name = displayName(resolved0) || core;
-    const cc = codeForName(resolved0);              // resolved0 only -> drop the DB weight
-    if(cc.code && cc.name) name = displayName(cc.name);   // catalogue name only for a barcode hit
-    // second pass catches a brand the resolver expanded ("fm" -> "farmer's market")
-    const nmN = nmNormalize(name);
-    name = rkCap(nmN.core) || rkCap(String(name||""));
-    // strip a stray trailing number ("mandarin 15") — real pack/size counts were
-    // already lifted into tags by nmNormalize, so a leftover integer is noise.
-    const _ns = name.replace(/\s+\d{1,3}$/, "").trim();
-    if(_ns) name = _ns;
+    // Resolve the product NAME exactly the way scrap does (learned alias + repair
+    // + catalogue). Re-resolving restock differently is what used to mangle names.
+    const heard0 = applyAlias(it.heard || it.name || "");
+    const resolved0 = snapSpokenName(heard0);
+    let disp = displayName(resolved0) || it.name || resolved0;
+    const cc = codeForName(resolved0 + (it.packWt ? " " + it.packWt : ""));
+    if(cc.code && cc.name) disp = displayName(cc.name);
+    // fold the spoken pack-weight (2lb/6lb/3L) back in, then split brand + weight/pack into tags
+    const nmN = nmNormalize(disp + (it.packWt ? " " + it.packWt : ""));
+    let name = rkCap(nmN.core) || rkCap(disp);
+    const _ns = name.replace(/\s+\d{1,3}$/, "").trim(); if(_ns) name = _ns;
     if(!name) return;
     const plu  = cc.plu || "";
-    const tags = Array.from(new Set((nmH.tags||[]).concat(nmN.tags||[])));
-    const qty  = bc.qty || ((it.qty && it.qty > 1) ? (it.qty + " cs") : "");
+    const tags = Array.from(new Set(nmN.tags || []));
+    const bc   = rkBoxCount(it.heard || "");                 // "two boxes" -> case count
+    const qty  = bc.qty || ((!it.kg && it.qty && it.qty > 1) ? (it.qty + " cs") : "");   // never the kg weight
     try{ const _s = rkTableSure(name, plu, tags);
-      queueError("PROBE rk | heard:"+String(it.heard||it.name||"")+" | core:"+core+" | snap:"+String(resolved0||"")+" | disp:"+String(displayName(resolved0)||"")+" | code:"+String(cc.code||"")+"/"+String(cc.name||"")+" | name:"+name+" | plu:"+plu+" | table:"+_s.table+(_s.sure?"":"/ASK")); }catch(e){}
+      queueError("PROBE rk | heard:"+String(it.heard||it.name||"")+" | packWt:"+String(it.packWt||"")+" | kg:"+String(!!it.kg)+" | snap:"+String(resolved0||"")+" | disp:"+String(disp||"")+" | code:"+String(cc.code||"")+"/"+String(cc.name||"")+" | name:"+name+" | tags:"+tags.join(",")+" | plu:"+plu+" | qty:"+qty+" | table:"+_s.table+(_s.sure?"":"/ASK")); }catch(e){}
     rkPlace(name, plu, tags, it.heard, forced, qty);
   });
 }
@@ -11083,11 +11131,11 @@ function rkPickTable(id){
 function rkOpenTsheet(){ rkBuildTsheet(); const s=document.getElementById("rkTsheet"); if(s) s.classList.add("show"); const sc=document.getElementById("rkScrim"); if(sc) sc.classList.add("show"); }
 function rkCloseTsheet(){ const s=document.getElementById("rkTsheet"); if(s) s.classList.remove("show"); }
 function rkToggleTsheet(){ const s=document.getElementById("rkTsheet"); if(s && s.classList.contains("show")) rkCloseTsheet(); else rkOpenTsheet(); }
-function rkOpenBar(){
+function rkOpenBar(skipFocus){
   const bar=document.getElementById("rkAddbar"); if(bar) bar.classList.add("open");
   const sc=document.getElementById("rkScrim"); if(sc) sc.classList.add("show");
   document.documentElement.classList.add("rk-typing");   // hide sub-tabs + top counters, lift bar
-  const tin=document.getElementById("rkTin"); if(tin) setTimeout(function(){ tin.focus(); }, 260);
+  const tin=document.getElementById("rkTin"); if(tin && !skipFocus) setTimeout(function(){ tin.focus(); }, 260);
 }
 function rkCloseBar(){
   const bar=document.getElementById("rkAddbar"); if(bar) bar.classList.remove("open");
@@ -11116,6 +11164,17 @@ function rkScrollToRow(id){
   const y = window.scrollY + target.getBoundingClientRect().top - top - 12;
   window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
 }
+/* ---- list filter (Items / Unclaimed / Mine) + "new since you looked" ---- */
+let rkFilter = (function(){ try{ return localStorage.getItem("label_rk_filter") || "all"; }catch(e){ return "all"; } })();
+let rkSeenAt = Date.now();
+let rkSeenTimer = null;
+function rkMarkSeen(){ rkSeenAt = Date.now(); }
+function rkIsFresh(x){ return !!(x && (x.createdAt||0) > rkSeenAt); }
+function rkHasFresh(){ return (rkState.items||[]).some(rkIsFresh); }
+function rkSetFilter(f){ rkFilter = f; try{ localStorage.setItem("label_rk_filter", f); }catch(e){} rkMarkSeen(); renderRestock(); }
+function rkHue(s){ let h=0; s=String(s||""); for(let i=0;i<s.length;i++) h=(h*31 + s.charCodeAt(i))>>>0; return h%360; }
+function rkWhoStyle(name){ const H=rkHue(name); return "color:hsl("+H+" 70% 74%);border-color:hsl("+H+" 45% 44%);background:hsl("+H+" 45% 24% / .5)"; }
+function rkFirst(name){ const s=String(name||"").trim(); return (s ? s.charAt(0) : "?").toUpperCase(); }
 function renderRestock(){
   rkFillSelect();
   const items = rkState.items;
@@ -11132,9 +11191,13 @@ function renderRestock(){
   if(_tb){
     if(rkTopbarOn()){
       _tb.style.display = "";
+      const _un = items.filter(x=>!x.claimId).length;
+      const _mineN = items.filter(x=>x.claimId===me).length;
+      const _bl = rkHasFresh() ? " blink" : "";
       _tb.innerHTML =
-        '<div><strong>'+items.length+'</strong><span class="rk-lab">ITEMS</span></div>'+
-        '<div><strong>'+claimed+'</strong><span class="rk-lab">CLAIMED</span></div>'+
+        '<div class="rk-seg'+(rkFilter==="all"?" on":"")+_bl+'" onclick="rkSetFilter(\'all\')"><strong>'+items.length+'</strong><span class="rk-lab">ITEMS</span></div>'+
+        '<div class="rk-seg'+(rkFilter==="unclaimed"?" on":"")+_bl+'" onclick="rkSetFilter(\'unclaimed\')"><strong>'+_un+'</strong><span class="rk-lab">UNCLAIMED</span></div>'+
+        '<div class="rk-seg'+(rkFilter==="mine"?" on":"")+'" onclick="rkSetFilter(\'mine\')"><strong>'+_mineN+'</strong><span class="rk-lab">MINE</span></div>'+
         '<div class="rk-sy" onclick="rkSync(true)" style="cursor:pointer" title="Tap to sync now">'+
           (rkDirty
             ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span class="rk-lab">'+(rkOffline?'Offline':'Saving\u2026')+'</span>'
@@ -11143,15 +11206,18 @@ function renderRestock(){
     } else { _tb.style.display = "none"; _tb.innerHTML = ""; }
   }
 
+  let viewItems = items;
+  if(rkFilter==="unclaimed") viewItems = items.filter(x=>!x.claimId);
+  else if(rkFilter==="mine") viewItems = items.filter(x=>x.claimId===me);
   const host = document.getElementById("rkTables");
-  const _rkOrder = RK_TABLES.slice().sort((a,b)=>{ const ea=items.filter(x=>x.table===a.id).length===0, eb=items.filter(x=>x.table===b.id).length===0; return ea===eb?0:(ea?1:-1); });
+  const _rkOrder = RK_TABLES.slice().sort((a,b)=>{ const ea=viewItems.filter(x=>x.table===a.id).length===0, eb=viewItems.filter(x=>x.table===b.id).length===0; return ea===eb?0:(ea?1:-1); });
   if(host) host.innerHTML = _rkOrder.map(t=>{
-    let list = items.filter(x=>x.table===t.id);
+    let list = viewItems.filter(x=>x.table===t.id);
     if(rkQTokens.length) list = list.filter(x=>{
       const hay = new Set(pluTokens((x.name||"") + " " + (x.tags||[]).join(" ")).map(stem));
       return rkQTokens.every(qt => { for(const h of hay){ if(h.startsWith(qt)) return true; } return false; });
     });
-    if(q && !list.length) return "";
+    if((q || rkFilter!=="all") && !list.length) return "";
     const closed = rkClosed[t.id] ? " rk-closed" : "";
     const dim = list.length ? "" : " rk-dim";
     const rows = list.length
@@ -11168,6 +11234,7 @@ function renderRestock(){
       '</div>';
   }).join("");
 
+  if(host && !host.innerHTML){ host.innerHTML = '<div class="rk-card"><div class="rk-empty" style="padding:16px 14px">Nothing '+(rkFilter==="mine"?"claimed by you":(rkFilter==="unclaimed"?"unclaimed":"to restock"))+' right now.</div></div>'; }
   if(rkJustAddedId){
     const _r = document.getElementById("rkrow-"+rkJustAddedId);
     if(_r) _r.classList.add("rk-added-lit");
@@ -11176,6 +11243,13 @@ function renderRestock(){
     const _r = document.getElementById("rkrow-"+rkFlash2Id);
     if(_r){ _r.classList.remove("rk-flash2"); void _r.offsetWidth; _r.classList.add("rk-flash2"); }
     rkFlash2Id = null;
+  }
+  // blink the counters while there are unseen new items and you're on the board;
+  // a few seconds of looking (or tapping a counter) counts as "checked it out".
+  const _vr = document.getElementById("view-restock");
+  if(rkHasFresh() && _vr && _vr.classList.contains("active")){
+    clearTimeout(rkSeenTimer);
+    rkSeenTimer = setTimeout(function(){ rkMarkSeen(); renderRestock(); }, 3500);
   }
   if(rkScrollTargetId){
     const _t = rkScrollTargetId; rkScrollTargetId = null;   // one-shot: never re-scroll on later renders
@@ -11190,20 +11264,23 @@ function rkBrandAbbr(t){ const s = String(t||"").replace(/[^A-Za-z0-9]/g,""); re
    prefilled, so they adjust the case count there (Pass B updates on Add). */
 function rkEditQty(id){
   const it = (rkState.items||[]).find(x=>x.id===id); if(!it) return;
-  rkOpenBar();
+  rkOpenBar(true);                          // don't steal focus to the text field
   const tin = document.getElementById("rkTin"); if(tin) tin.value = it.name;
   const sel = document.getElementById("rkSel"); if(sel && it.table) sel.value = it.table;
   rkPinned = true; rkReflectTarget();
   const qin = document.getElementById("rkQty"); if(qin) qin.value = (String(it.qty||"").match(/\d+(?:\.\d+)?/)||[""])[0];
   rkEditId = id;
   renderRestock();
+  if(qin){ qin.focus(); if(qin.select) qin.select(); }        // sync focus in the tap gesture -> iPhone opens the keypad
   setTimeout(function(){ if(qin){ qin.focus(); if(qin.select) qin.select(); } }, 360);
 }
 function rkRow(x, me){
   const mine = x.claimId && x.claimId===me;
   const other = x.claimId && !mine;
   const tags = x.tags || [];
-  const packTags  = tags.filter(t=>nmTagKind(t)==="pack");
+  const packAll   = tags.filter(t=>nmTagKind(t)==="pack");
+  const wtTags    = packAll.filter(t=>/[0-9](kg|lb|oz|ml|g|l)$/i.test(t));   // weight -> left, with the name
+  const pkTags    = packAll.filter(t=>!/[0-9](kg|lb|oz|ml|g|l)$/i.test(t));  // pack count -> right
   const orgTags   = tags.filter(t=>nmTagKind(t)==="org");
   const brandTags = tags.filter(t=>nmTagKind(t)==="brand");
   const qtyNum = (String(x.qty||"").match(/\d+(?:\.\d+)?/)||[])[0];
@@ -11211,19 +11288,31 @@ function rkRow(x, me){
     ? '<span class="rk-qty" onclick="rkEditQty(\''+x.id+'\')">'+esc(qtyNum || x.qty)+'</span>'
     : '<button class="rk-qty-add" onclick="rkEditQty(\''+x.id+'\')">#</button>';
   const brandB = brandTags.map(t=>'<span class="nm-bdg brand">'+esc(rkBrandAbbr(t))+'</span>').join("");
-  const packB  = packTags.map(t=>'<span class="nm-bdg pack">'+esc(t)+'</span>').join("");
+  const wtB    = wtTags.map(t=>'<span class="nm-bdg wt">'+esc(t)+'</span>').join("");
+  const pkB    = pkTags.map(t=>'<span class="nm-bdg pack">'+esc(t)+'</span>').join("");
   const orgB   = orgTags.map(t=>'<span class="nm-bdg org">'+esc(t)+'</span>').join("");
   const _ec = x.ec ? rkItemEndcap(x.name, x.tags) : null;   // live from planogram; never stored
   const ecB = _ec ? '<span class="nm-bdg ec '+(_ec.end==="hmr"?"h":"w")+'" title="'+(_ec.end==="hmr"?"HMR end":"Wet Cases end")+'">'+(_ec.end==="hmr"?"H":"W")+'</span>' : "";
-  const claimCell = other
-    ? '<div class="rk-owner" onclick="rkClaim(\''+x.id+'\')" title="Tap to take over"><b>'+esc(rkInitials(x.claimBy))+'</b><small>'+esc(x.claimBy)+'</small></div>'
-    : '<button class="rk-claim'+(mine?' rk-mine':'')+'" onclick="rkClaim(\''+x.id+'\')">'+
-        (mine ? '<svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>Mine' : 'Claim')+
-      '</button>';
-  return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+(rkEditId===x.id?' rk-editing':'')+'" id="rkrow-'+x.id+'">'+
-      '<div class="rk-copy">'+brandB+'<strong>'+esc(x.name)+'</strong>'+packB+orgB+ecB+'</div>'+
-      qtyChip + claimCell +
-      '<button class="rk-del" onclick="rkDel(\''+x.id+'\')" aria-label="Remove"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>'+
+  const newB = rkIsFresh(x) ? '<span class="rk-newb">NEW</span>' : "";
+  const short = (rkFilter !== "all");                        // Unclaimed/Mine show a compact coloured initial
+  let claimCell;
+  if(other){
+    claimCell = short
+      ? '<div class="rk-who" style="'+rkWhoStyle(x.claimBy)+'" title="'+esc(x.claimBy)+'" onclick="rkClaim(\''+x.id+'\')">'+esc(rkFirst(x.claimBy))+'</div>'
+      : '<div class="rk-owner" onclick="rkClaim(\''+x.id+'\')" title="Tap to take over"><b>'+esc(rkInitials(x.claimBy))+'</b><small>'+esc(x.claimBy)+'</small></div>';
+  } else if(mine){
+    claimCell = short
+      ? '<div class="rk-who rk-mine" style="'+rkWhoStyle(x.claimBy)+'" title="'+esc(x.claimBy)+'" onclick="rkClaim(\''+x.id+'\')">'+esc(rkFirst(x.claimBy))+'</div>'
+      : '<button class="rk-claim rk-mine" onclick="rkClaim(\''+x.id+'\')"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg>Mine</button>';
+  } else {
+    claimCell = '<button class="rk-claim" onclick="rkClaim(\''+x.id+'\')">Claim</button>';
+  }
+  return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+(rkEditId===x.id?' rk-editing':'')+(rkIsFresh(x)?' rk-fresh':'')+'" id="rkrow-'+x.id+'">'+
+      '<div class="rk-left">'+brandB+'<strong>'+esc(x.name)+'</strong>'+wtB+'</div>'+
+      '<div class="rk-mid">'+pkB+orgB+ecB+newB+'</div>'+
+      '<div class="rk-ctl">'+qtyChip+claimCell+
+        '<button class="rk-del" onclick="rkDel(\''+x.id+'\')" aria-label="Remove"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>'+
+      '</div>'+
     '</div>';
 }
 
@@ -11291,7 +11380,13 @@ async function rkPull(){
     if(d && d.ok && d.state && Array.isArray(d.state.items)){
       const theirs = d.state.updatedAt || "";
       const mine   = rkState.updatedAt || "";
-      if(theirs && theirs >= mine){ rkState = d.state; rkSave(); renderRestock(); }
+      if(theirs && theirs >= mine){
+        const prevIds = new Set((rkState.items||[]).map(x=>x.id));
+        rkState = d.state;
+        const now = Date.now();
+        (rkState.items||[]).forEach(x=>{ if(!prevIds.has(x.id) && !x.createdAt) x.createdAt = now; });   // new to me -> blinks
+        rkSave(); renderRestock();
+      }
     }
   }catch(e){ /* offline or not approved yet — local board keeps working */ }
 }

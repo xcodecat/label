@@ -1009,6 +1009,7 @@
     overflow:hidden;position:relative;
     transition:width .34s cubic-bezier(.22,.61,.36,1),border-radius .34s,border-color .2s}
   .rk-addbar.open{width:100%;border-radius:16px;border-color:var(--laser)}
+  .rk-addbar.rk-nosnap{transition:none}
   .rk-addbar.rk-offline{border-color:#E0A43B;box-shadow:0 0 0 2px rgba(224,164,59,.25),0 6px 18px rgba(0,0,0,.42)}
   .rk-abcount{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
     font-family:var(--mono);font-size:22px;font-weight:800;color:var(--paper);opacity:.09;
@@ -1198,7 +1199,7 @@
   @keyframes rkfresh{0%,100%{box-shadow:0 0 0 1px rgba(89,192,131,.5) inset}50%{box-shadow:0 0 0 2px rgba(89,192,131,.85) inset}}
   .rk-row.rk-fresh{background:rgba(89,192,131,.11);animation:rkfresh 1.35s ease-in-out infinite}
   .rk-go{width:28px;height:28px;flex:none;align-self:center;border:0;border-radius:50%;background:#565E67;color:#fff;
-    cursor:pointer;display:flex;align-items:center;justify-content:center;margin-left:6px}
+    cursor:pointer;display:flex;align-items:center;justify-content:center;margin-left:6px;margin-right:6px}
   .rk-go svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.8}
   .rk-row:last-child{border-bottom:0}
   .rk-row.rk-claimed{background:rgba(76,175,125,.05)}
@@ -1748,7 +1749,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=131">
+  <link rel="manifest" href="./manifest.json?v=131.1">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -3696,7 +3697,7 @@ function showView(name){
   if(name==="list") renderList();
   if(name==="sales"){ renderWeekTabs(); renderSales(); }
   if(name==="scrap"){ maybeResumeWip(); renderLists(); }
-  if(name==="restock"){ renderRestock(); rkPull(); rkStartPoll(); }
+  if(name==="restock"){ renderRestock(); rkBumpItemViews(); rkPull(); rkStartPoll(); }
   if(name==="handoff"){ ensureBadgePermission(); hoMarkSeen(); renderHandoff(); hoPull(); hoStartPoll(); hoMaybePrompt(); renderHoIcon(); }
   if(name==="planogram"){ renderPlanogram(); pgPull(); pgStartPoll(); }
   if(name==="product"){
@@ -4877,6 +4878,7 @@ async function pullDb(){
     const bMap = {}; (d.barcodes || []).forEach(r=>{ if(r.code) bMap[r.code] = { name:r.name, brand:r.brand, packWt:r.packWt, origin:r.origin, unit:r.unit, pack:r.pack, size:r.size, store:r.store, deck:r.deck }; });
     localStorage.setItem(KEY_DBPLU, JSON.stringify(pMap));
     localStorage.setItem(KEY_DBBC, JSON.stringify(bMap));
+    _lbInval();   // a synced brand column may introduce new learned brands
     localStorage.setItem(KEY_DBAT, d.at || new Date().toISOString());
     applyStoreOverrides();
     d.pluCount = Object.keys(pMap).length; d.bcCount = Object.keys(bMap).length;
@@ -6267,7 +6269,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v131";
+const APP_VERSION = "v131.1";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6921,7 +6923,9 @@ document.getElementById("mSave").addEventListener("click", ()=>{
   const code = document.getElementById("mCode").value.trim();
   let name = document.getElementById("mName").value.trim();
   let brand = document.getElementById("mBrand").value.trim();
+  if(brand){ brand.split(/[\s,]+/).forEach(rememberBrand); }   // learn hand-entered brand tokens so the badge shows here + app-wide
   { const _p=nmNormalize((brand?brand+" ":"")+name); const _b=_p.tags.filter(t=>nmTagKind(t)==="brand"); if(_b.length){ brand=_b.join(" "); if(_p.core) name=_p.core; } }
+  if(brand){ brand = brand.split(/[\s,]+/).map(rkBrandAbbr).filter(Boolean).join(" "); }   // brand name capped at 3 chars
   const plu  = document.getElementById("mPlu").value.trim();
   const article = document.getElementById("mArticle").value.trim();
   const pack = document.getElementById("mPack").value.trim();
@@ -10613,6 +10617,7 @@ function rkInitials(name){
 function rkTouch(){
   rkState.updatedBy = rkMeName();
   rkState.updatedAt = new Date().toISOString();
+  rkState.tombs = rkTombsSnapshot();          // ride deletions along so no device resurrects them
   rkDirty = true; rkSave(); renderRestock();
   rkAutoSync();                     // send it to the floor on its own, shortly
 }
@@ -10655,10 +10660,47 @@ const NM_BRANDS = [
   { tag:"PC",   re:/\b(president'?s?\s*choice|pc)\b/ig },
   { tag:"FM",   re:/\bfm\b/ig }
 ];
+/* ---- learned brands ---------------------------------------------------------
+   User- or DB-added brand tokens (<=3 chars) that nmNormalize should treat as
+   brands everywhere. The local extras list gives instant recognition; the DB's
+   brand column carries them across the fleet on sync (no backend change -- brand
+   is already a synced column, so harvesting it here spreads a new brand to every
+   device once the DB pulls). Guarded: <=3 chars, whole-word, never a pack unit
+   or a bare number. ---------------------------------------------------------- */
+const KEY_BRANDS = "label_brands_v1";
+var _lbRe = null;
+function _lbInval(){ _lbRe = null; }
+function learnedBrandList(){ try{ const a = JSON.parse(localStorage.getItem(KEY_BRANDS)||"[]"); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function _lbClean(tok){
+  const t = String(tok||"").replace(/[^A-Za-z0-9]/g,"").slice(0,3).toUpperCase();
+  if(!t) return "";
+  if(/^\d+$/.test(t)) return "";                             // pure numbers aren't brands
+  if(/^(PK|CT|KG|LB|OZ|ML|G|L)$/.test(t)) return "";          // don't shadow pack units
+  return t;
+}
+function rememberBrand(tok){
+  const t = _lbClean(tok); if(!t) return;
+  const arr = learnedBrandList();
+  if(arr.indexOf(t) < 0){ arr.push(t); try{ localStorage.setItem(KEY_BRANDS, JSON.stringify(arr)); }catch(e){} _lbInval(); }
+}
+function _lbHarvest(b, set){ String(b||"").split(/[\s,]+/).forEach(function(x){ const t=_lbClean(x); if(t) set[t]=1; }); }
+function learnedBrandRe(){
+  if(_lbRe !== null) return _lbRe;
+  const set = {};
+  learnedBrandList().forEach(function(t){ const c=_lbClean(t); if(c) set[c]=1; });
+  try{ const bm=dbBcMap(); for(const k in bm){ _lbHarvest(bm[k]&&bm[k].brand, set); } }catch(e){}
+  try{ const pm=dbPluMap(); for(const k in pm){ _lbHarvest(pm[k]&&pm[k].brand, set); } }catch(e){}
+  const toks = Object.keys(set);
+  if(!toks.length){ _lbRe = false; return _lbRe; }
+  const alt = toks.map(function(t){ return t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); }).join("|");
+  _lbRe = new RegExp("\\b("+alt+")\\b","ig");
+  return _lbRe;
+}
 function nmNormalize(raw){
   let s = " " + String(raw||"").replace(/\s+/g," ").trim() + " ";
   const brands = [];
   NM_BRANDS.forEach(b=>{ const before=s; s=s.replace(b.re," "); if(s!==before && brands.indexOf(b.tag)<0) brands.push(b.tag); });
+  { const _lb = learnedBrandRe(); if(_lb){ s = s.replace(_lb, function(m){ const t = _lbClean(m); if(t && brands.indexOf(t) < 0) brands.push(t); return " "; }); } }
   // spoken number-words before a unit -> digits ("three pack"->"3 pack", "six pound"->"6 pound")
   const _NW = {one:"1",two:"2",three:"3",four:"4",five:"5",six:"6",seven:"7",eight:"8",nine:"9",ten:"10",eleven:"11",twelve:"12"};
   s = s.replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+(packs?|pk|counts?|cts?|ct|lbs?|pounds?|kgs?|kilograms?|kilos?|ozs?|ounces?|grams?|mls?|millilitres?|milliliters?|litres?|liters?|l)\b/ig, function(m,w,u){ return _NW[w.toLowerCase()] + " " + u; });
@@ -10778,7 +10820,7 @@ function rkTagKey(tags){
 function rkBoxCount(text){
   let t = " " + String(text||"").trim() + " ";
   let n = "";
-  const UNIT = "cartons?|boxes?|cases?|flats?|crates?|cs";
+  const UNIT = "cartons?|boxes?|cases?|bags?|sacks?|flats?|crates?|cs";
   const NUM = Object.keys(RK_NUMW).join("|");
   let m = t.match(new RegExp("\\b(\\d+|"+NUM+")\\s+("+UNIT+")\\b","i"));
   if(m){ const r=m[1].toLowerCase(); n=/^\d+$/.test(r)?r:String(RK_NUMW[r]||1); t=t.replace(m[0]," "); }
@@ -11018,14 +11060,19 @@ let rkLocCtx = null;
 function rkShowLocPrompt(name, plu, tags, table, locs, qty){
   const ov = document.getElementById("rkLoc");
   if(!ov){ rkPlaceAt(name, plu, tags, [table], qty); return; }
-  const opts = [{ ids:[table], label: RK_BY_ID[table].name, ec:false }];
+  const opts = [{ label: RK_BY_ID[table].name, places:[{ id:table, ec:false }] }];
   locs.forEach(function(l){
-    if(l.kind === "pod"){ opts.push({ ids:[l.id], label:(RK_BY_ID[l.id]?RK_BY_ID[l.id].name:l.label), ec:false }); }
-    else { opts.push({ ids:[table], label:l.label, ec:true, adopt:l.slot }); }   // endcap -> category row + H/W badge
+    if(l.kind === "pod"){ opts.push({ label:(RK_BY_ID[l.id]?RK_BY_ID[l.id].name:l.label), places:[{ id:l.id, ec:false }] }); }
+    else { opts.push({ label:l.label, places:[{ id:(l.table||table), ec:true, adopt:l.slot }] }); }   // endcap -> ITS OWN run table + H/W badge
   });
-  const podIds = locs.filter(l=>l.kind==="pod").map(l=>l.id);
-  const ecSlot = (locs.find(l=>l.kind==="endcap")||{}).slot;
-  if(locs.length) opts.push({ ids:[table].concat(podIds), label:"Both", ec:!!ecSlot, adopt:ecSlot });
+  if(locs.length){
+    const both = [{ id:table, ec:false }];                 // the regular (learned) location...
+    locs.forEach(function(l){
+      if(l.kind === "pod"){ both.push({ id:l.id, ec:false }); }
+      else { both.push({ id:(l.table||table), ec:true, adopt:l.slot }); }   // ...PLUS the endcap's own run table, badged, brand/pack adopted
+    });
+    opts.push({ label:"Both", places:both });
+  }
   rkLocCtx = { name, plu, tags, qty: qty||"", opts };
   const hEl = document.getElementById("rkLocH");
   if(hEl) hEl.innerHTML = "Where does <b>"+esc(rkFullName(name, tags))+"</b> need filling?";
@@ -11037,10 +11084,17 @@ function rkShowLocPrompt(name, plu, tags, table, locs, qty){
 function rkLocPick(i){
   const c = rkLocCtx; if(!c) return;
   const o = c.opts[i]; if(!o){ rkLocClose(); return; }
-  let nm = c.name, tg = c.tags;
-  if(o.adopt){ const sn = nmNormalize(o.adopt); nm = rkCap(sn.core) || nm; tg = Array.from(new Set(sn.tags||[])); }   // adopt the planogram SKU's brand/pack
-  o.ids.forEach(function(id){ rkAddItem(nm, id, c.qty||"", c.plu, tg, !!o.ec); });
-  toast("Filed \u201C"+nm+"\u201D \u2192 "+o.ids.map(id=>RK_BY_ID[id]?RK_BY_ID[id].name:id).join(" + ")+(o.ec?" (endcap)":""));
+  const places = o.places || [{ id:(o.ids&&o.ids[0]), ec:!!o.ec, adopt:o.adopt }];   // back-compat
+  const filed = []; let anyEc = false;
+  places.forEach(function(p){
+    if(!p || !p.id) return;
+    let nm = c.name, tg = c.tags;
+    if(p.adopt){ const sn = nmNormalize(p.adopt); nm = rkCap(sn.core) || nm; tg = Array.from(new Set(sn.tags||[])); }   // adopt the planogram SKU's brand/pack
+    rkAddItem(nm, p.id, c.qty||"", c.plu, tg, !!p.ec);
+    filed.push(RK_BY_ID[p.id]?RK_BY_ID[p.id].name:p.id);
+    if(p.ec) anyEc = true;
+  });
+  toast("Filed \u201C"+c.name+"\u201D \u2192 "+filed.join(" + ")+(anyEc?" (endcap)":""));
   rkLocClose();
   const _bar=document.getElementById("rkAddbar"); if(_bar && _bar.classList.contains("open")){ const _tin=document.getElementById("rkTin"); if(_tin) setTimeout(function(){ _tin.focus(); }, 120); }   // typed add -> keyboard back for the next item
 }
@@ -11180,14 +11234,43 @@ function rkScrollToRow(id){
 }
 /* ---- list filter (Items / Unclaimed / Mine) + "new since you looked" ---- */
 let rkFilter = (function(){ try{ return localStorage.getItem("label_rk_filter") || "all"; }catch(e){ return "all"; } })();
-let rkCntSeen = Date.now(), rkItemSeen = Date.now(), rkCntTimer = null, rkItemTimer = null;
+let rkCntSeen = Date.now(), rkItemSeen = Date.now();
 let rkTombs = (function(){ try{ return JSON.parse(localStorage.getItem("label_rk_tombs")||"{}"); }catch(e){ return {}; } })();
 function rkSaveTombs(){ const cut = Date.now() - 7*864e5; for(const k in rkTombs){ if(rkTombs[k] < cut) delete rkTombs[k]; } try{ localStorage.setItem("label_rk_tombs", JSON.stringify(rkTombs)); }catch(e){} }
+function rkTombsSnapshot(){ const o={}; for(const k in rkTombs) o[k]=rkTombs[k]; return o; }
+/* Merge any tombstones that arrived inside the shared state, prune >7d, carry the
+   live set back into the state we push, and drop tombstoned rows. Runs on every
+   pull AND sync-echo so a server copy can never resurrect a deleted row. */
+function rkApplyTombs(){
+  const st = rkState && rkState.tombs;
+  if(st && typeof st === "object"){ for(const k in st){ const v = +st[k]||0; if(v && (!rkTombs[k] || v > rkTombs[k])) rkTombs[k] = v; } }
+  rkSaveTombs();
+  if(rkState){ rkState.tombs = rkTombsSnapshot(); rkState.items = (rkState.items||[]).filter(x=> !rkTombs[x.id]); }
+}
 function rkMyId(){ try{ return deviceInfo().id; }catch(e){ return ""; } }
-function rkMarkSeen(){ rkCntSeen = Date.now(); rkItemSeen = Date.now(); }
-/* NEW is for OTHER people's adds only (never your own) and lingers: item badge
-   through a couple of looks, counter badge through one. */
-function rkFreshItem(x){ return !!(x && (x.createdAt||0) > rkItemSeen && x.addedBy && x.addedBy !== rkMyId()); }
+function rkMarkSeen(){ rkCntSeen = Date.now(); }   // a counter tap clears the counter NEW only; item badges clear after being seen twice
+/* NEW is for OTHER people's adds only (never your own). The counter NEW stays
+   until the worker taps a counter; the per-item NEW stays until the board has
+   been opened twice with that item present (a per-device "seen twice" tally). */
+const KEY_RK_VIEWS = "label_rk_item_views_v1";
+let _rkViews = null;
+function rkViewsGet(){ if(!_rkViews){ try{ _rkViews = JSON.parse(localStorage.getItem(KEY_RK_VIEWS)||"{}"); }catch(e){ _rkViews = {}; } if(!_rkViews||typeof _rkViews!=="object") _rkViews={}; } return _rkViews; }
+function rkViewsSave(){ try{ localStorage.setItem(KEY_RK_VIEWS, JSON.stringify(rkViewsGet())); }catch(e){} }
+/* Count one "look" per item each time the Restock board is opened while the item
+   is present and still unseen; cap at 2. Also prune tallies for gone items. */
+function rkBumpItemViews(){
+  const me = rkMyId(); const v = rkViewsGet(); let changed = false;
+  const ids = {};
+  (rkState.items||[]).forEach(function(x){
+    if(!x || !x.id) return; ids[x.id] = 1;
+    if(x.addedBy && x.addedBy !== me && (x.createdAt||0) > rkItemSeen){
+      const c = v[x.id]||0; if(c < 2){ v[x.id] = c+1; changed = true; }
+    }
+  });
+  for(const k in v){ if(!ids[k]){ delete v[k]; changed = true; } }
+  if(changed) rkViewsSave();
+}
+function rkFreshItem(x){ return !!(x && (x.createdAt||0) > rkItemSeen && x.addedBy && x.addedBy !== rkMyId() && (rkViewsGet()[x.id]||0) < 2); }
 function rkFreshCnt(){ const my = rkMyId(); return (rkState.items||[]).some(x=> (x.createdAt||0) > rkCntSeen && x.addedBy && x.addedBy !== my); }
 function rkSetFilter(f){ rkFilter = f; try{ localStorage.setItem("label_rk_filter", f); }catch(e){} rkMarkSeen(); renderRestock(); }
 function rkHue(s){ let h=0; s=String(s||""); for(let i=0;i<s.length;i++) h=(h*31 + s.charCodeAt(i))>>>0; return h%360; }
@@ -11263,13 +11346,8 @@ function renderRestock(){
     if(_r){ _r.classList.remove("rk-flash2"); void _r.offsetWidth; _r.classList.add("rk-flash2"); }
     rkFlash2Id = null;
   }
-  // blink the counters while there are unseen new items and you're on the board;
-  // a few seconds of looking (or tapping a counter) counts as "checked it out".
-  const _vr = document.getElementById("view-restock");
-  if(_vr && _vr.classList.contains("active")){
-    if(rkFreshCnt()){ clearTimeout(rkCntTimer); rkCntTimer = setTimeout(function(){ rkCntSeen = Date.now(); renderRestock(); }, 6000); }
-    if((rkState.items||[]).some(rkFreshItem)){ clearTimeout(rkItemTimer); rkItemTimer = setTimeout(function(){ rkItemSeen = Date.now(); renderRestock(); }, 14000); }
-  }
+  // No auto-clear: the counter NEW stays until a counter is tapped, and each
+  // item's NEW stays until the board has been opened twice with it present.
   if(rkScrollTargetId){
     const _t = rkScrollTargetId; rkScrollTargetId = null;   // one-shot: never re-scroll on later renders
     requestAnimationFrame(function(){ rkScrollToRow(_t); });
@@ -11283,16 +11361,25 @@ function rkBrandAbbr(t){ const s = String(t||"").replace(/[^A-Za-z0-9]/g,""); re
    prefilled, so they adjust the case count there (Pass B updates on Add). */
 function rkEditQty(id){
   const it = (rkState.items||[]).find(x=>x.id===id); if(!it) return;
-  rkOpenBar(true);                          // don't steal focus to the text field
+  const bar = document.getElementById("rkAddbar");
+  const qin = document.getElementById("rkQty");
+  // Snap the bar to full width with NO transition, so #rkQty is laid out and
+  // un-clipped the instant we focus it. iOS refuses to raise the numeric keypad
+  // when the target input is zero-width / mid-transition / clipped by overflow.
+  if(bar){ bar.classList.add("rk-nosnap"); bar.classList.add("open"); }
+  const sc = document.getElementById("rkScrim"); if(sc) sc.classList.add("show");
+  document.documentElement.classList.add("rk-typing");
   const tin = document.getElementById("rkTin"); if(tin) tin.value = it.name;
   const sel = document.getElementById("rkSel"); if(sel && it.table) sel.value = it.table;
+  if(qin) qin.value = (String(it.qty||"").match(/\d+(?:\.\d+)?/)||[""])[0];
+  // FOCUS SYNCHRONOUSLY, inside the tap gesture, BEFORE any heavy DOM work.
+  if(qin){ qin.focus(); try{ qin.setSelectionRange(0, (qin.value||"").length); }catch(e){} if(qin.select) qin.select(); }
   rkPinned = true; rkReflectTarget();
-  const qin = document.getElementById("rkQty"); if(qin) qin.value = (String(it.qty||"").match(/\d+(?:\.\d+)?/)||[""])[0];
   rkEditId = id;
-  renderRestock();
-  const _selQ = function(){ if(!qin) return; qin.focus(); try{ qin.setSelectionRange(0, (qin.value||"").length); }catch(e){} if(qin.select) qin.select(); };
-  _selQ();                    // sync focus + select in the tap gesture -> iPhone opens the keypad on the number
-  setTimeout(_selQ, 360);
+  renderRestock();            // rebuilds #rkTables/#rkTopbar only — #rkQty keeps focus
+  if(bar) requestAnimationFrame(function(){ bar.classList.remove("rk-nosnap"); });   // restore the animation for later opens
+  const _selQ = function(){ if(!qin) return; qin.focus(); try{ qin.setSelectionRange(0, (qin.value||"").length); }catch(e){} };
+  setTimeout(_selQ, 360);     // belt-and-suspenders re-select after layout settles
 }
 function rkRow(x, me){
   const mine = x.claimId && x.claimId===me;
@@ -11376,7 +11463,7 @@ async function rkSync(manual){
   rkSyncing = true; rkDock();
   try{
     const d = await callProxy({ action:"restockSync", state: rkState });
-    if(d && d.ok && d.state){ rkState = d.state; rkSave(); }
+    if(d && d.ok && d.state){ rkState = d.state; rkApplyTombs(); rkSave(); }
     rkDirty = false; rkOffline = false;
     if(manual) toast("Board synced");
   }catch(err){
@@ -11403,7 +11490,7 @@ async function rkPull(){
       if(theirs && theirs >= mine){
         const prevIds = new Set((rkState.items||[]).map(x=>x.id));
         rkState = d.state;
-        rkState.items = (rkState.items||[]).filter(x=> !rkTombs[x.id]);   // never resurrect a deleted row
+        rkApplyTombs();   // merge shared tombstones + drop deleted rows (no device resurrects them)
         const now = Date.now();
         (rkState.items||[]).forEach(x=>{ if(!prevIds.has(x.id) && !x.createdAt) x.createdAt = now; });
         rkSave(); renderRestock();

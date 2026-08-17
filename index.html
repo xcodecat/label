@@ -1162,7 +1162,7 @@
   .rk-card.rk-dim{opacity:.42;filter:grayscale(.4)}
   .rk-tables{display:flex;flex-direction:column;gap:9px;padding-bottom:calc(74px + env(safe-area-inset-bottom))}
   .rk-row.rk-flash2{animation:rkflash2 .55s ease 2}
-  .rk-row.rk-added-lit{background:rgba(76,175,125,.20);border-radius:9px;box-shadow:0 0 0 1px rgba(76,175,125,.5) inset}
+  .rk-row.rk-added-lit{background:rgba(238,234,225,.10);border-radius:9px;box-shadow:0 0 0 1px rgba(238,234,225,.22) inset;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
   @keyframes rkflash2{0%,100%{background:rgba(232,68,46,0)}50%{background:rgba(232,68,46,.24);border-radius:9px}}
   .rk-card{border:1px solid var(--line);background:var(--surface);border-radius:12px;overflow:hidden}
   .rk-card.rk-fridge{border-style:dashed}
@@ -1183,10 +1183,10 @@
   .rk-card.rk-closed .rk-caret{transform:rotate(-90deg)}
   .rk-card.rk-closed .rk-ilist{display:none}
   .rk-ilist{padding-left:0;background:color-mix(in srgb, var(--tc) 8%, transparent)}
-  .rk-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;
+  .rk-row{display:flex;flex-wrap:nowrap;align-items:center;gap:6px 8px;
     min-height:50px;padding:8px 12px 8px 14px;border-bottom:1px solid var(--line)}
   .rk-left{display:flex;flex-wrap:wrap;align-items:center;gap:4px 5px;min-width:0;flex:1 1 auto}
-  .rk-left strong{font-size:13px;font-weight:620;color:#EEEAE1;overflow-wrap:anywhere;min-width:0}
+  .rk-left strong{font-size:13px;font-weight:620;color:#EEEAE1;overflow-wrap:anywhere;min-width:0;line-height:1.25}
   .rk-left .nm-bdg,.rk-mid .nm-bdg{margin:0}
   .rk-mid{display:flex;flex-wrap:wrap;align-items:center;gap:5px;flex:0 1 auto}
   .rk-ctl{display:flex;align-items:center;gap:8px;margin-left:auto;flex:0 0 auto}
@@ -1749,7 +1749,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=131.1">
+  <link rel="manifest" href="./manifest.json?v=131.2">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -5245,6 +5245,10 @@ function searchEntries(q){
   const hit = (name, brand, code, plu)=>
     matchItem(name, brand, q) ||
     (code && String(code).includes(q)) || (plu && String(plu).includes(q));
+  // PLU sources also match with scrap's stemmed scorer (so "tomatoes"->"Tomato Roma",
+  // "onions"->"Onions Yellow" surface here too). Barcodes are untouched.
+  const hitPlu = (name, brand, plu)=>
+    hit(name, brand, "", plu) || (name && pluSearchIn(q, [{ name:name, plu:plu||"" }]).length > 0);
   // Barcode DB: the app's built-in list is the source of truth, so a Sheet row
   // whose barcode duplicates a built-in one (leading zeros ignored) is skipped.
   const bm = dbBcMap();
@@ -5269,24 +5273,24 @@ function searchEntries(q){
   // Sheet PLU DB
   const pm = dbPluMap();
   for(const plu in pm){ const c = pm[plu];
-    if(hit(c.name, c.brand, "", plu)) push({ name:c.name||"", code:"", plu:String(plu),
+    if(hitPlu(c.name, c.brand, plu)) push({ name:c.name||"", code:"", plu:String(plu),
       brand:c.brand||"", packWt:c.packWt||"", pack:"", size:"", unit:c.unit||"",
       store:storeVal(c.store)===true }); }
   // hardcoded store PLUs (offline source of truth)
   if(typeof STORE_ITEMS !== "undefined") STORE_ITEMS.forEach(it=>{
     if(it.t !== "plu") return;
-    if(hit(it.n, it.b, "", it.k)) push({ name:it.n, code:"", plu:String(it.k),
+    if(hitPlu(it.n, it.b, it.k)) push({ name:it.n, code:"", plu:String(it.k),
       brand:it.b||"", packWt:it.w||"", pack:"", size:"", unit:it.u||"", store:true });
   });
   // built-in PLU list (produce)
   if(Array.isArray(PLU)) PLU.forEach(e=>{
-    if(e && e.name && hit(e.name, "", "", e.plu))
+    if(e && e.name && hitPlu(e.name, "", e.plu))
       push({ name:e.name, code:"", plu:String(e.plu||""), brand:"", packWt:"",
              pack:"", size:"", unit:(e.e?"ea":"kg"), store:!!e.own });
   });
   // barcodes first (so you can scan straight off the list), then PLUs
   out.sort((a,b)=> (a.code?0:1) - (b.code?0:1));
-  return out.slice(0, 20);
+  return out.slice(0, 30);
 }
 /* Add-tab search results, grouped: what your store carries first, then a
    collapsed-by-default "catalogue" section (muted rows, each with a live + to
@@ -6269,7 +6273,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v131.1";
+const APP_VERSION = "v131.2";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10622,6 +10626,41 @@ function rkTouch(){
   rkAutoSync();                     // send it to the floor on its own, shortly
 }
 function rkDupKey(s){ return String(s||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/s\b/g,"").replace(/\s+/g," ").trim(); }
+/* When a chilled/berry-home product that's ALSO on a pod or endcap this week gets
+   listed, drop a friendly "time to rotate it" note on the Handoff board. Capped at
+   twice per user per product per day and >=1h apart, so it never spams (and a single
+   "Both" placement won't double-post). No web push — just a synced handoff note. */
+const KEY_RK_ROTATE = "label_rk_rotate_v1";
+const RK_ROTATE_HOMES = ["fridge","berry"];   // Wet Case + Berry & Banana (extend if more chilled homes get added)
+function rkRotateDay(){ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); }
+function rkMaybeRotate(name, tags){
+  try{
+    if(typeof hoState==="undefined" || !hoState || !Array.isArray(hoState.notes)) return;
+    const home = tableFor(name, "", tags||[]);
+    if(RK_ROTATE_HOMES.indexOf(home) < 0) return;                 // only wet-case / berry homes
+    if(!pgLocationsFor(name, tags||[]).length) return;            // must be on a pod/endcap this week
+    const me = rkMeName();
+    const prod = rkCap(String(name||"").trim());
+    const day = rkRotateDay();
+    const key = (me+"|"+prod+"|"+day).toLowerCase();
+    let map = {}; try{ map = JSON.parse(localStorage.getItem(KEY_RK_ROTATE)||"{}") || {}; }catch(e){ map = {}; }
+    Object.keys(map).forEach(k=>{ if(k.indexOf("|"+day) < 0) delete map[k]; });   // drop other days
+    const rec = map[key] || { c:0, t:0 };
+    if(rec.c >= 2) return;                                         // twice per user per product per day
+    if(Date.now() - (rec.t||0) < 36e5) return;                    // >=1h apart (collapses bursts like "Both")
+    rec.c += 1; rec.t = Date.now(); map[key] = rec;
+    try{ localStorage.setItem(KEY_RK_ROTATE, JSON.stringify(map)); }catch(e){}
+    hoState.notes.unshift({
+      id: hoNewId(), prio:"medium",
+      title: "Hey " + me + ", it's time to rotate the " + prod,
+      detail: "It's on an endcap or pod this week \u2014 bring the older stock to the front.",
+      by: "CatCaddy", ts: Date.now(),
+      locCat: (RK_BY_ID[home] ? RK_BY_ID[home].name : ""), locSub:"",
+      assignee: me, done:false, doneBy:"", doneTs:0, auto:"rotate"
+    });
+    hoTouch();
+  }catch(e){}
+}
 function rkAddItem(name, table, qty, plu, tags, ec){
   name = String(name||"").trim();
   if(!name) return null;
@@ -10639,6 +10678,7 @@ function rkAddItem(name, table, qty, plu, tags, ec){
     if(ec !== undefined) dup.ec = !!ec;
     rkFlash2Id = dup.id; rkJustAddedId = null; rkScrollTargetId = dup.id;
     rkTouch();
+    rkMaybeRotate(name, tags);
     return dup;
   }
   const it = { id: rkNewId(), name: rkCap(name), table,
@@ -10647,6 +10687,7 @@ function rkAddItem(name, table, qty, plu, tags, ec){
   rkState.items.push(it);
   rkJustAddedId = it.id; rkFlash2Id = null; rkScrollTargetId = it.id;
   rkTouch();
+  rkMaybeRotate(name, tags);
   return it;
 }
 function rkTidy(n){ return String(n||"").replace(/\s*\([^)]*\)/g," ").replace(/\s{2,}/g," ").trim(); }
@@ -10771,16 +10812,31 @@ const RK_NUMW = {one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,
    out of a spoken/typed phrase. Restock loads in cases, so a bare count -> cases. */
 /* Fixed planogram spots we never ask about: FM bagged carrots/onions (lb bags)
    live on the run-5 endcap — distinct from mini carrots, carrot chips/sticks. */
+/* Fixed "primary-location, never-prompt" placements now live in the planogram
+   (pgState.pinned), seeded with FM lb carrots/onions -> root. The match is the
+   same strict test as before (brand + N-lb bag + product word, minus the
+   mini/chips/etc. lookalikes) so restock behaviour is unchanged out of the box,
+   while the set is editable and future-proof for whatever ends up in those spots. */
+const RK_PIN_EXCLUDE = /\b(mini|baby|chips?|sticks?|shred|shredded|matchstick|julienne|juice)\b/;
 function rkSpecialTable(name, tags){
+  const list = (typeof pgState!=="undefined" && pgState && Array.isArray(pgState.pinned)) ? pgState.pinned : [];
+  if(!list.length) return "";
   const n = " " + String(name||"").toLowerCase().replace(/[^a-z0-9 ]/g," ") + " ";
+  if(RK_PIN_EXCLUDE.test(n)) return "";
   const arr = tags || [];
   const brands = arr.filter(t=>nmTagKind(t)==="brand").map(t=>rkBrandAbbr(t).toLowerCase());
   const packs  = arr.filter(t=>nmTagKind(t)==="pack").map(t=>String(t).toLowerCase()).join(" ");
-  const isFM   = brands.indexOf("fm") >= 0 || /\bfm\b|farmer/.test(n);
-  const hasLb  = /\d\s*lb/.test(packs) || /\d\s*lb/.test(n);
-  const carrotOnion = /\bcarrots?\b|\bonions?\b/.test(n);
-  const excluded    = /\b(mini|baby|chips?|sticks?|shred|shredded|matchstick|julienne|juice)\b/.test(n);
-  if(isFM && hasLb && carrotOnion && !excluded) return "root";   // FM bagged carrots/onions live in root veg
+  const rxe = function(x){ return String(x||"").toLowerCase().replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); };
+  for(const pin of list){
+    if(!pin || !pin.table || !(typeof RK_BY_ID!=="undefined" && RK_BY_ID[pin.table])) continue;
+    const wb = rxe(pin.brand);
+    if(wb){ const okB = brands.indexOf(wb) >= 0 || new RegExp("\\b"+wb+"\\b").test(n) || (wb==="fm" && /farmer/.test(n)); if(!okB) continue; }
+    const wp = rxe(pin.pack);   // "lb" == any N-lb bag
+    if(wp){ if(!(new RegExp("\\d\\s*"+wp).test(packs) || new RegExp("\\d\\s*"+wp).test(n))) continue; }
+    const wk = rxe(pin.kw);
+    if(wk){ if(!new RegExp("\\b"+wk+"s?\\b").test(n)) continue; }
+    return pin.table;
+  }
   return "";
 }
 const RK_RUN_IDS = ["apple","berry","citrus","ctp","root"];   // planogram run index -> category table id
@@ -11415,7 +11471,7 @@ function rkRow(x, me){
     claimCell = '<button class="rk-claim" onclick="rkClaim(\''+x.id+'\')">Claim</button>';
   }
   return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+(rkEditId===x.id?' rk-editing':'')+(rkFreshItem(x)?' rk-fresh':'')+'" id="rkrow-'+x.id+'">'+
-      '<div class="rk-left">'+brandB+'<strong>'+esc(x.name)+'</strong>'+wtB+pkB+'</div>'+
+      '<div class="rk-left"><strong>'+esc(x.name)+'</strong>'+brandB+wtB+pkB+'</div>'+
       '<div class="rk-mid">'+orgB+ecB+newB+'</div>'+
       '<div class="rk-ctl">'+qtyChip+claimCell+
         '<button class="rk-del" onclick="rkDel(\''+x.id+'\')" aria-label="Remove"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>'+
@@ -12139,6 +12195,10 @@ function pgDefault(){
       "10lb Yellow & 10lb Red Potato",
       "NN Peanuts 907g","","","Burpee Seed Rack"
     ],
+    pinned:[
+      { brand:"FM", kw:"carrot", pack:"lb", table:"root" },
+      { brand:"FM", kw:"onion",  pack:"lb", table:"root" }
+    ],
     learn:{}, updatedBy:"", updatedAt:""
   };
 }
@@ -12150,7 +12210,7 @@ let pgSyncTimer = null, pgPollTimer = null;
 function pgLoad(){
   try{
     const s = JSON.parse(localStorage.getItem(KEY_PLANO) || "null");
-    if(s && Array.isArray(s.runs)){ if(!s.learn) s.learn = {}; return s; }
+    if(s && Array.isArray(s.runs)){ if(!s.learn) s.learn = {}; if(!Array.isArray(s.pinned)) s.pinned = pgDefault().pinned; return s; }
   }catch(e){}
   return pgDefault();
 }

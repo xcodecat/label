@@ -1163,6 +1163,41 @@
   .rk-tables{display:flex;flex-direction:column;gap:9px;padding-bottom:calc(74px + env(safe-area-inset-bottom))}
   .rk-row.rk-flash2{animation:rkflash2 .55s ease 2}
   .rk-row.rk-added-lit{background:rgba(238,234,225,.10);border-radius:9px;box-shadow:0 0 0 1px rgba(238,234,225,.22) inset;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+  /* ---- scrap insights dashboard ---- */
+  .ins-open{margin-left:auto;background:var(--surface-2);border:1px solid var(--line);color:var(--paper);
+    font-size:13px;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer}
+  .ins-scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;display:flex;align-items:flex-end;
+    justify-content:center;backdrop-filter:blur(2px)}
+  .ins-scrim[hidden]{display:none}
+  .ins-panel{background:var(--surface,#14181c);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;
+    border-radius:16px 16px 0 0;border:1px solid var(--line);padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
+  .ins-head{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .ins-title{font-size:17px;font-weight:700;color:var(--paper)}
+  .ins-x{margin-left:auto;background:none;border:0;color:var(--muted);font-size:26px;line-height:1;cursor:pointer;padding:0 4px}
+  .ins-seg{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:3px;margin-bottom:14px}
+  .ins-seg button{flex:1;background:none;border:0;color:var(--muted);font-size:13px;font-weight:600;padding:7px;border-radius:7px;cursor:pointer}
+  .ins-seg button.on{background:var(--surface);color:var(--paper)}
+  .ins-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 12px 14px;margin-bottom:12px}
+  .ins-card h4{margin:0 0 10px;font-size:13px;font-weight:700;color:var(--paper)}
+  .ins-legend{display:flex;gap:14px;font-size:11px;color:var(--muted);margin-bottom:8px}
+  .ins-legend span{display:inline-flex;align-items:center;gap:5px}
+  .ins-legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+  .ins-kpis{display:flex;gap:8px;margin-bottom:12px}
+  .ins-kpi{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .ins-kpi .v{font-size:19px;font-weight:700;color:var(--paper)}
+  .ins-kpi .l{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.3}
+  .ins-note{font-size:12.5px;line-height:1.5;color:var(--paper);background:var(--surface-2);
+    border:1px solid var(--line);border-left:3px solid var(--laser);border-radius:8px;padding:9px 11px;margin-bottom:8px}
+  .ins-empty{color:var(--muted);font-size:13px;text-align:center;padding:34px 12px;line-height:1.6}
+  .ins-hbar{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:12px;color:var(--paper)}
+  .ins-hbar .nm{width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ins-hbar .track{flex:1;background:var(--surface-2);border-radius:4px;height:15px;overflow:hidden;display:flex}
+  .ins-hbar .fillL{background:#e8442e;height:100%}
+  .ins-hbar .fillF{background:#4caf7d;height:100%}
+  .ins-hbar .val{width:52px;text-align:right;color:var(--muted);font-family:var(--mono)}
+  .ins-chart{width:100%;height:170px;display:block}
+  .ins-chart .axis{stroke:var(--line);stroke-width:1}
+  .ins-chart .glabel{fill:var(--muted);font-size:9px}
   @keyframes rkflash2{0%,100%{background:rgba(232,68,46,0)}50%{background:rgba(232,68,46,.24);border-radius:9px}}
   .rk-card{border:1px solid var(--line);background:var(--surface);border-radius:12px;overflow:hidden}
   .rk-card.rk-fridge{border-style:dashed}
@@ -1749,7 +1784,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=131.4">
+  <link rel="manifest" href="./manifest.json?v=131.5">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1981,6 +2016,7 @@
         <button class="wtab active" data-list="loop">Loop</button>
         <button class="wtab" data-list="flashfood">Flashfood</button>
       </div>
+      <button class="ins-open" id="btnScrapInsights" type="button" aria-label="Scrap insights">Insights</button>
     </div>
     <div class="tabpanel">
         <div class="heard hidden" id="heard"></div>
@@ -1998,6 +2034,20 @@
         </div>
       </div>
     <div id="savedWrap"></div>
+    <div class="ins-scrim" id="insScrim" hidden>
+      <div class="ins-panel">
+        <div class="ins-head">
+          <div class="ins-title">Scrap insights</div>
+          <button class="ins-x" id="insClose" type="button" aria-label="Close">\u00d7</button>
+        </div>
+        <div class="ins-seg" id="insSeg" role="tablist">
+          <button data-p="month" class="on" type="button">Month</button>
+          <button data-p="quarter" type="button">Quarter</button>
+          <button data-p="year" type="button">Year</button>
+        </div>
+        <div class="ins-body" id="insBody"></div>
+      </div>
+    </div>
     <button class="sync-fab" id="btnScrapSync" aria-label="Sync saved lists to the Sheet">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-7.5-4"/><path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 7.5 4"/>
@@ -6307,7 +6357,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v131.4";
+const APP_VERSION = "v131.5";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -7701,6 +7751,160 @@ document.getElementById("btnScrapSave").addEventListener("click", ()=>{
 function fmtQty(r){
   return r.kg ? wFull(r.qty) : ("x" + (parseInt(r.qty,10)||0));
 }
+
+/* ============================================================
+   SCRAP INSIGHTS — charts + heuristic analysis from the Loop/Flashfood logs
+   ------------------------------------------------------------
+   Reads the monthly rollup the Sheet returns (scrapReport) and draws it for
+   month / quarter / year. No price data, so this stays descriptive + heuristic:
+   what's wasted, the discard-vs-discount split, the trend, and which items are
+   being binned rather than marked down. Profit-optimal markdown/order sizing is
+   deliberately left for later (needs cost + retail price).
+   ============================================================ */
+const INS_RED = "#e8442e", INS_GREEN = "#4caf7d";
+let _insRows = null, _insPeriod = "month", _insLoading = false;
+function insFmt(n){ n = Math.round((+n||0)*10)/10; return (n%1===0? String(n) : n.toFixed(1)); }
+function insMonthLabel(ym){
+  const m = String(ym).match(/^(\d{4})-(\d{2})$/); if(!m) return String(ym);
+  const M = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return M[(+m[2]-1)%12] + " '" + m[1].slice(2);
+}
+function insBucketKey(ym, period){
+  const m = String(ym).match(/^(\d{4})-(\d{2})$/); if(!m) return { key:ym, label:ym, sort:ym };
+  const y = m[1], mo = +m[2];
+  if(period === "year")    return { key:y, label:y, sort:y };
+  if(period === "quarter"){ const q = Math.ceil(mo/3); return { key:y+"-Q"+q, label:"Q"+q+" '"+y.slice(2), sort:y+"-"+q }; }
+  return { key:ym, label:insMonthLabel(ym), sort:ym };
+}
+function insAgg(rows, period){
+  const buckets = {}, items = {};
+  let totLoop = 0, totFlash = 0;
+  (rows||[]).forEach(function(r){
+    if(String(r.ym) === "unknown") return;
+    const b = insBucketKey(r.ym, period);
+    const bk = buckets[b.key] || (buckets[b.key] = { key:b.key, label:b.label, sort:b.sort, loop:0, flash:0 });
+    const it = items[r.name] || (items[r.name] = { name:r.name, loop:0, flash:0 });
+    const q = +r.qty || 0;
+    if(r.list === "flashfood"){ bk.flash += q; it.flash += q; totFlash += q; }
+    else { bk.loop += q; it.loop += q; totLoop += q; }
+  });
+  const bArr = Object.keys(buckets).map(k=>buckets[k]).sort((a,b)=> a.sort<b.sort?-1:a.sort>b.sort?1:0);
+  const iArr = Object.keys(items).map(k=>items[k]).map(x=>Object.assign(x,{ total:x.loop+x.flash }))
+                 .sort((a,b)=> b.total - a.total);
+  return { buckets:bArr, items:iArr, totLoop, totFlash };
+}
+function insBarsSVG(buckets){
+  const view = buckets.slice(-12);                     // keep it readable
+  if(!view.length) return '<div class="ins-empty">No data yet for this view.</div>';
+  const W = 640, H = 170, padB = 22, padT = 8, padL = 4, padR = 4;
+  const max = Math.max(1, ...view.map(b=> b.loop + b.flash));
+  const bw = (W - padL - padR) / view.length;
+  const barW = Math.min(38, bw * 0.66);
+  const plotH = H - padB - padT;
+  let bars = "";
+  view.forEach(function(b,i){
+    const x = padL + i*bw + (bw - barW)/2;
+    const lh = (b.loop / max) * plotH;
+    const fh = (b.flash / max) * plotH;
+    const yF = padT + plotH - fh;
+    const yL = yF - lh;
+    if(fh > 0) bars += '<rect x="'+x.toFixed(1)+'" y="'+yF.toFixed(1)+'" width="'+barW+'" height="'+fh.toFixed(1)+'" rx="2" fill="'+INS_GREEN+'"/>';
+    if(lh > 0) bars += '<rect x="'+x.toFixed(1)+'" y="'+yL.toFixed(1)+'" width="'+barW+'" height="'+lh.toFixed(1)+'" rx="2" fill="'+INS_RED+'"/>';
+    bars += '<text class="glabel" x="'+(x+barW/2).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle">'+esc(b.label)+'</text>';
+  });
+  return '<svg class="ins-chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'
+    + '<line class="axis" x1="'+padL+'" y1="'+(padT+plotH)+'" x2="'+(W-padR)+'" y2="'+(padT+plotH)+'"/>'
+    + bars + '</svg>';
+}
+function insTopItems(items){
+  const view = items.slice(0, 8);
+  if(!view.length) return "";
+  const max = Math.max(1, ...view.map(i=> i.total));
+  return view.map(function(i){
+    const lw = (i.loop / max) * 100, fw = (i.flash / max) * 100;
+    return '<div class="ins-hbar"><span class="nm">'+esc(i.name)+'</span>'
+      + '<span class="track"><span class="fillL" style="width:'+lw.toFixed(1)+'%"></span>'
+      + '<span class="fillF" style="width:'+fw.toFixed(1)+'%"></span></span>'
+      + '<span class="val">'+insFmt(i.total)+'</span></div>';
+  }).join("");
+}
+function insNotes(agg){
+  const notes = [];
+  const tot = agg.totLoop + agg.totFlash;
+  if(tot <= 0) return notes;
+  const share = Math.round((agg.totFlash / tot) * 100);
+  notes.push("<b>"+share+"%</b> of scrapped stock went to Flashfood (discounted); the other <b>"+(100-share)+"%</b> went to Loop (discarded).");
+  // trend: last full bucket vs the one before
+  const b = agg.buckets;
+  if(b.length >= 2){
+    const last = b[b.length-1], prev = b[b.length-2];
+    const lt = last.loop+last.flash, pt = prev.loop+prev.flash;
+    if(pt > 0){
+      const ch = Math.round(((lt - pt)/pt)*100);
+      if(Math.abs(ch) >= 8) notes.push("Waste is <b>"+(ch>0?"up "+ch+"%":"down "+Math.abs(ch)+"%")+"</b> in "+esc(last.label)+" vs "+esc(prev.label)+(ch>0?" \u2014 worth a look.":" \u2014 nice."));
+    }
+  }
+  if(agg.items[0]) notes.push("Most-scrapped item: <b>"+esc(agg.items[0].name)+"</b> ("+insFmt(agg.items[0].total)+" total).");
+  // high-discard items: significant volume mostly binned rather than marked down
+  const binned = agg.items.filter(i=> i.total >= Math.max(3, tot*0.03) && (i.loop/(i.loop+i.flash)) >= 0.7).slice(0,3);
+  if(binned.length){
+    notes.push("Mostly <b>binned, not discounted</b>: "+binned.map(i=>esc(i.name)).join(", ")
+      + " \u2014 marking these down earlier (or ordering a touch less) would cut the loss.");
+  }
+  return notes;
+}
+function insRender(){
+  const body = document.getElementById("insBody"); if(!body) return;
+  if(_insLoading){ body.innerHTML = '<div class="ins-empty">Loading the Sheet\u2026</div>'; return; }
+  if(_insRows === null){ body.innerHTML = '<div class="ins-empty">Couldn\u2019t reach the Sheet.<br>Check your connection and reopen.</div>'; return; }
+  if(!_insRows.length){ body.innerHTML = '<div class="ins-empty">No scrap has been synced to the Sheet yet.<br>Save a Loop or Flashfood list and it\u2019ll show up here.</div>'; return; }
+  const agg = insAgg(_insRows, _insPeriod);
+  const tot = agg.totLoop + agg.totFlash;
+  let html = "";
+  html += '<div class="ins-kpis">'
+    + '<div class="ins-kpi"><div class="v">'+insFmt(tot)+'</div><div class="l">total scrapped</div></div>'
+    + '<div class="ins-kpi"><div class="v" style="color:'+INS_GREEN+'">'+insFmt(agg.totFlash)+'</div><div class="l">to Flashfood</div></div>'
+    + '<div class="ins-kpi"><div class="v" style="color:'+INS_RED+'">'+insFmt(agg.totLoop)+'</div><div class="l">to Loop</div></div>'
+    + '</div>';
+  html += '<div class="ins-card"><h4>Over time</h4>'
+    + '<div class="ins-legend"><span><i style="background:'+INS_GREEN+'"></i>Flashfood</span><span><i style="background:'+INS_RED+'"></i>Loop</span></div>'
+    + insBarsSVG(agg.buckets) + '</div>';
+  html += '<div class="ins-card"><h4>Most scrapped</h4>'
+    + '<div class="ins-legend"><span><i style="background:'+INS_RED+'"></i>Loop</span><span><i style="background:'+INS_GREEN+'"></i>Flashfood</span></div>'
+    + insTopItems(agg.items) + '</div>';
+  const notes = insNotes(agg);
+  if(notes.length) html += '<div class="ins-card"><h4>What it\u2019s telling you</h4>' + notes.map(n=>'<div class="ins-note">'+n+'</div>').join("") + '</div>';
+  body.innerHTML = html;
+}
+async function _insLoad(force){
+  if(_insRows !== null && !force) return;
+  _insLoading = true; insRender();
+  try{
+    const d = await callProxy({ action:"scrapReport" });
+    _insRows = (d && d.ok && Array.isArray(d.rows)) ? d.rows : null;
+  }catch(e){ _insRows = null; }
+  _insLoading = false; insRender();
+}
+function openScrapInsights(){
+  const sc = document.getElementById("insScrim"); if(!sc) return;
+  sc.hidden = false; document.documentElement.classList.add("rk-typing");
+  insRender(); _insLoad(false);
+}
+function closeScrapInsights(){
+  const sc = document.getElementById("insScrim"); if(sc) sc.hidden = true;
+  document.documentElement.classList.remove("rk-typing");
+}
+(function wireInsights(){
+  const b = document.getElementById("btnScrapInsights"); if(b) b.addEventListener("click", openScrapInsights);
+  const x = document.getElementById("insClose"); if(x) x.addEventListener("click", closeScrapInsights);
+  const sc = document.getElementById("insScrim"); if(sc) sc.addEventListener("click", e=>{ if(e.target===sc) closeScrapInsights(); });
+  const seg = document.getElementById("insSeg");
+  if(seg) seg.querySelectorAll("button").forEach(btn=> btn.addEventListener("click", ()=>{
+    _insPeriod = btn.dataset.p || "month";
+    seg.querySelectorAll("button").forEach(x=> x.classList.toggle("on", x===btn));
+    insRender();
+  }));
+})();
 
 function renderSaved(){
   const mine = sessions().filter(x=>x.list === activeList);

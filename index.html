@@ -1749,7 +1749,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=131.2">
+  <link rel="manifest" href="./manifest.json?v=131.3">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -3428,7 +3428,7 @@ function applyDbDefaults(plu, code){
   const hit = (code && dbHitForCode(code)) || (plu && dbHitForPlu(plu));
   if(!hit) return;
   if(hit.origin){ try{ fOrigins = originList(hit.origin); drawFOrigins(); }catch(e){} }
-  if(hit.unit){ try{ setManualUnit(hit.unit.toLowerCase() === "ea" ? "each" : "kg"); }catch(e){} }
+  if(hit.unit){ try{ setManualUnit(/^(ea|each)$/.test(hit.unit.toLowerCase()) ? "each" : "kg"); }catch(e){} }
 }
 
 let PLU = [];
@@ -3694,10 +3694,10 @@ function showView(name){
   if(nb) nb.classList.add("active");
   const kb = document.getElementById("hoKebab"); if(kb) kb.classList.toggle("on", name === "settings");
   if(name === "settings") hoRenderDevInfo();
-  if(name==="list") renderList();
+  if(name==="list"){ renderList(); dbAutoRefresh(false); }
   if(name==="sales"){ renderWeekTabs(); renderSales(); }
   if(name==="scrap"){ maybeResumeWip(); renderLists(); }
-  if(name==="restock"){ renderRestock(); rkBumpItemViews(); rkPull(); rkStartPoll(); }
+  if(name==="restock"){ renderRestock(); rkBumpItemViews(); rkPull(); rkStartPoll(); dbAutoRefresh(false); }
   if(name==="handoff"){ ensureBadgePermission(); hoMarkSeen(); renderHandoff(); hoPull(); hoStartPoll(); hoMaybePrompt(); renderHoIcon(); }
   if(name==="planogram"){ renderPlanogram(); pgPull(); pgStartPoll(); }
   if(name==="product"){
@@ -5288,6 +5288,10 @@ function searchEntries(q){
       push({ name:e.name, code:"", plu:String(e.plu||""), brand:"", packWt:"",
              pack:"", size:"", unit:(e.e?"ea":"kg"), store:!!e.own });
   });
+  // a produce PLU on the built-in carried list stays a store item even if a Sheet
+  // row for it is missing the flag (so store PLUs always land in "In store")
+  const ownSet = new Set(); if(Array.isArray(PLU)) PLU.forEach(e=>{ if(e && e.own && e.plu) ownSet.add(String(e.plu)); });
+  out.forEach(o=>{ if(o.plu && !o.store && ownSet.has(String(o.plu))) o.store = true; });
   // barcodes first (so you can scan straight off the list), then PLUs
   out.sort((a,b)=> (a.code?0:1) - (b.code?0:1));
   return out.slice(0, 30);
@@ -6273,7 +6277,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v131.2";
+const APP_VERSION = "v131.3";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6816,7 +6820,7 @@ document.getElementById("btnScrapSync").addEventListener("click", async ()=>{
     session: new Date(x.ts).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"}),
     list: x.list, name: r.name, plu: r.plu || "", code: r.code || "",
     qty: r.kg ? kg3(parseFloat(r.qty)||0) : (parseInt(r.qty,10)||0),
-    unit: r.kg ? "kg" : "each"        // always kg on the Sheet, whatever you display
+    unit: r.kg ? "kg" : "ea"          // "ea" to match the Sheet's Sold-as dropdown
   })));
   try{
     const d = await callProxy({ action:"scrap", rows });
@@ -10818,6 +10822,11 @@ const RK_NUMW = {one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,
    mini/chips/etc. lookalikes) so restock behaviour is unchanged out of the box,
    while the set is editable and future-proof for whatever ends up in those spots. */
 const RK_PIN_EXCLUDE = /\b(mini|baby|chips?|sticks?|shred|shredded|matchstick|julienne|juice)\b/;
+/* A pinned product is "also placed elsewhere" when the planogram shows it on any
+   spot OTHER than its own run's endcap (its default home). Only then do we ask. */
+function rkPinnedElsewhere(name, tags, sp){
+  return pgLocationsFor(name, tags||[]).some(function(l){ return !(l.kind==="endcap" && l.table===sp); });
+}
 function rkSpecialTable(name, tags){
   const list = (typeof pgState!=="undefined" && pgState && Array.isArray(pgState.pinned)) ? pgState.pinned : [];
   if(!list.length) return "";
@@ -10967,10 +10976,14 @@ function rkAddManual(){
   }
   const _reset = function(){ nameEl.value=""; qtyEl.value=""; rkPinned=false; if(selEl) selEl.selectedIndex=0; rkReflectTarget(); nameEl.focus(); };
   const sp = (!pin) ? rkSpecialTable(name, nm.tags) : "";
-  if(sp){                                            // FM carrots/onions -> root + endcap badge, never ask
+  if(sp && !rkPinnedElsewhere(name, nm.tags, sp)){   // default spot only -> file to root + endcap badge, no prompt
     const it = rkAddItem(name, sp, qty, "", nm.tags, true);
     if(it){ toast("Added to " + RK_BY_ID[it.table].name); _reset(); }
     return;
+  }
+  if(sp){                                            // pinned but ALSO placed elsewhere -> ask, root is the regular option
+    const locs = pgLocationsFor(name, nm.tags);
+    rkShowLocPrompt(name, "", nm.tags, sp, locs, qty); _reset(); return;
   }
   const table = pin ? selEl.value : tableFor(name, "", nm.tags);
   if(!pin){
@@ -11063,10 +11076,13 @@ function rkPlace(name, plu, tags, heard, forced, qty){
   }
   if(forced){ rkPlaceAt(name, plu, tags, [forced], qty); return; }
   const special = rkSpecialTable(name, tags);
-  if(special){                                   // FM carrots/onions -> root, endcap badge, never ask
+  if(special && !rkPinnedElsewhere(name, tags, special)){   // default spot only -> file + endcap badge, no ask
     const it = rkAddItem(name, special, qty, plu, tags, true);
     if(it){ rkUpgradeOnline(heard, it.id); toast("Filed \u201C"+name+"\u201D \u2192 "+RK_BY_ID[special].name); }
     return;
+  }
+  if(special){                                   // pinned but ALSO placed elsewhere -> ask, root is the regular option
+    rkShowLocPrompt(name, plu, tags, special, pgLocationsFor(name, tags), qty); return;
   }
   const sure = rkTableSure(name, plu, tags);
   if(sure.table === "none"){
@@ -12473,7 +12489,7 @@ async function pgSync(manual){
   pgSyncing = true; pgDock();
   try{
     const d = await callProxy({ action:"planogramSync", state: pgState });
-    if(d && d.ok && d.state){ pgState = d.state; if(!pgState.learn) pgState.learn={}; pgSave(); }
+    if(d && d.ok && d.state){ pgState = d.state; if(!pgState.learn) pgState.learn={}; if(!Array.isArray(pgState.pinned)) pgState.pinned = pgDefault().pinned; pgSave(); }
     pgDirty = false; pgOffline = false;
     if(manual) toast("Planogram synced");
   }catch(err){
@@ -12489,7 +12505,7 @@ async function pgPull(){
     const d = await callProxy({ action:"planogramGet" });
     if(d && d.ok && d.state && Array.isArray(d.state.runs)){
       const theirs = d.state.updatedAt||"", mine = pgState.updatedAt||"";
-      if(theirs && theirs >= mine){ pgState = d.state; if(!pgState.learn) pgState.learn={}; pgSave(); renderPlanogram(); }
+      if(theirs && theirs >= mine){ pgState = d.state; if(!pgState.learn) pgState.learn={}; if(!Array.isArray(pgState.pinned)) pgState.pinned = pgDefault().pinned; pgSave(); renderPlanogram(); }
     }
   }catch(e){}
 }
@@ -12532,7 +12548,7 @@ let _dbAutoAt = 0;
 async function dbAutoRefresh(force){
   if(!proxyUrl() || !navigator.onLine) return;
   const now = Date.now();
-  if(!force && now - _dbAutoAt < 120000) return;
+  if(!force && now - _dbAutoAt < 30000) return;   // was 120s -> reflect Sheet edits faster
   _dbAutoAt = now;
   try{ await flushDbQueue(); }catch(e){}
   try{ const d = await pullDb(); if(d && d.ok) renderList(); }catch(e){}
@@ -12541,7 +12557,7 @@ async function dbAutoRefresh(force){
 if(proxyUrl() && navigator.onLine) dbAutoRefresh(true);
 window.addEventListener("online", ()=>dbAutoRefresh(true));
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) dbAutoRefresh(false); });
-setInterval(()=>{ if(!document.hidden) dbAutoRefresh(false); }, 180000);
+setInterval(()=>{ if(!document.hidden) dbAutoRefresh(false); }, 90000);
 
 /* ================= boot ================= */
 // Last thing in the file: everything it might reveal is already wired.

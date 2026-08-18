@@ -1749,7 +1749,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=131.3">
+  <link rel="manifest" href="./manifest.json?v=131.4">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -5236,6 +5236,27 @@ function storeBcNorm(){
   }
   return _storeBcNorm;
 }
+/* Rank a result against the query: an exact / same-word-form match outranks a
+   stemmed (plural<->singular) match, which outranks a loose partial. So searching
+   "strawberries" lists the plural items first then the singular, and vice-versa. */
+function relScore(name, q){
+  const n = String(name||"").toLowerCase();
+  const query = String(q||"").toLowerCase().trim();
+  if(!query) return 0;
+  const nWords = n.split(/[^a-z0-9]+/).filter(Boolean);
+  const qWords = query.split(/\s+/).filter(Boolean);
+  let s = 0;
+  if(n === query) s += 1000;
+  else if(n.indexOf(query) === 0) s += 300;
+  else if(n.indexOf(query) >= 0) s += 80;
+  qWords.forEach(function(qw){
+    if(nWords.indexOf(qw) >= 0) s += 120;                          // same word form
+    else if(nWords.some(function(nw){ return stem(nw) === stem(qw); })) s += 55;   // plural/singular
+    else if(n.indexOf(qw) >= 0) s += 25;                           // partial
+  });
+  s -= Math.max(0, nWords.length - qWords.length) * 3;             // tighter names first
+  return s;
+}
 function searchEntries(q){
   const out = [], seen = new Set();
   const push = (o)=>{
@@ -5249,23 +5270,26 @@ function searchEntries(q){
   // "onions"->"Onions Yellow" surface here too). Barcodes are untouched.
   const hitPlu = (name, brand, plu)=>
     hit(name, brand, "", plu) || (name && pluSearchIn(q, [{ name:name, plu:plu||"" }]).length > 0);
+  // barcode NAMES get the same stemmed matching, so "strawberry" also finds the
+  // "Strawberries 1lb" barcode (plural/singular no longer splits barcodes vs PLUs)
+  const stemHit = (name)=> !!(name && pluSearchIn(q, [{ name:name, plu:"" }]).length > 0);
   // Barcode DB: the app's built-in list is the source of truth, so a Sheet row
   // whose barcode duplicates a built-in one (leading zeros ignored) is skipped.
   const bm = dbBcMap();
   for(const code in bm){ const c = bm[code];
     if(storeBcNorm().has(String(code).replace(/^0+/, ""))) continue;   // built-in wins
-    if(hit(c.name, c.brand, code, "")) push({ name:c.name||"", code:String(code), plu:"",
+    if(hit(c.name, c.brand, code, "") || stemHit(c.name)) push({ name:c.name||"", code:String(code), plu:"",
       brand:c.brand||"", packWt:c.packWt||"", pack:c.pack||"", size:c.size||"", unit:c.unit||"",
       store:storeVal(c.store)===true, deck:storeVal(c.deck)===true }); }
   // hardcoded store barcodes (offline source of truth)
   if(typeof STORE_ITEMS !== "undefined") STORE_ITEMS.forEach(it=>{
     if(it.t !== "bc") return;
-    if(hit(it.n, it.b, it.k, "")) push({ name:it.n, code:String(it.k), plu:"",
+    if(hit(it.n, it.b, it.k, "") || stemHit(it.n)) push({ name:it.n, code:String(it.k), plu:"",
       brand:it.b||"", packWt:it.w||"", pack:"", size:"", unit:it.u||"ea", store:true, deck:!!it.d });
   });
   // built-in barcode catalogue
   if(typeof CATALOG !== "undefined") CATALOG.forEach(c=>{
-    if(c && c.name && hit(c.name, c.brand, c.code, c.plu))
+    if(c && c.name && (hit(c.name, c.brand, c.code, c.plu) || stemHit(c.name)))
       push({ name:c.name, code:String(c.code||""), plu:c.plu||"", brand:c.brand||"",
              packWt:wtFrom(c), pack:c.pack||"", size:c.size||"", unit:c.unit||"",
              store:dbStoreCodes.has(String(c.code||"")), deck:dbDeckCodes.has(String(c.code||"")) });
@@ -5292,8 +5316,9 @@ function searchEntries(q){
   // row for it is missing the flag (so store PLUs always land in "In store")
   const ownSet = new Set(); if(Array.isArray(PLU)) PLU.forEach(e=>{ if(e && e.own && e.plu) ownSet.add(String(e.plu)); });
   out.forEach(o=>{ if(o.plu && !o.store && ownSet.has(String(o.plu))) o.store = true; });
-  // barcodes first (so you can scan straight off the list), then PLUs
-  out.sort((a,b)=> (a.code?0:1) - (b.code?0:1));
+  // strongest match first (form-aware), barcodes ahead of PLUs on a tie so you
+  // can still scan straight off the list
+  out.sort((a,b)=> relScore(b.name,q) - relScore(a.name,q) || (a.code?0:1) - (b.code?0:1));
   return out.slice(0, 30);
 }
 /* Add-tab search results, grouped: what your store carries first, then a
@@ -6222,6 +6247,11 @@ function parseSpoken(text, defList){
           if(brandHit){
             // branded packet: the weight is a pack-size badge, never a bulk amount
             packWt = cleanWt(wm[0].replace(/\s+/g,""));
+          } else if(typeof bcMatches === "function" && bcMatches(chunk).length){
+            // a packaged SKU exists for this product at this size (e.g. a
+            // "Strawberries 1lb" barcode) -> treat the weight as a pack-size badge
+            // and count by each, instead of weighing it as loose bulk
+            packWt = cleanWt(wm[0].replace(/\s+/g,""));
           } else {
             kg = kg3(n * mult);
           }
@@ -6277,7 +6307,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v131.3";
+const APP_VERSION = "v131.4";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is

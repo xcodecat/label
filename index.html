@@ -780,6 +780,9 @@
     padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05)}
   .cd-src{font-size:10px;color:var(--muted);margin-top:8px;line-height:1.5;font-style:italic}
   .cd-none{font-size:12px;color:var(--muted);font-style:italic;margin-bottom:10px}
+  .cd-store{display:grid;grid-template-columns:auto 1fr;gap:2px 12px}
+  .cd-store span{font-size:12px;color:var(--muted);padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+  .cd-store b{font-size:12px;color:var(--paper);text-align:right;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05)}
   .allmo{float:right;background:var(--surface-2);border:1px solid var(--line);
     color:var(--paper);border-radius:5px;padding:3px 10px;font-size:10px;cursor:pointer;
     font-family:var(--sans);letter-spacing:.06em;text-transform:uppercase;margin-top:-3px}
@@ -948,13 +951,29 @@
     min-height:46px}
   .sess-h .caret{color:var(--muted);font-size:10px;transition:transform .15s;flex:none}
   .sess.open .caret{transform:rotate(90deg)}
-  .sess-h{display:grid;grid-template-columns:12px 9px 62px 1fr auto;gap:8px;align-items:center}
+  .sess-h{display:grid;grid-template-columns:12px 9px auto 1fr auto auto;gap:8px;align-items:center}
   .sess-h .st{font-family:var(--mono);font-size:12px;color:var(--paper)}
   .sess-h .brk{font-family:var(--mono);font-size:10px;color:var(--muted);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .sess-h .sum{font-family:var(--mono);font-size:13px;color:var(--paper);font-weight:600;
     text-align:right;white-space:nowrap}
   .saved-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+  .sess-h .fromtag{font-size:9px;color:var(--laser);letter-spacing:.02em;margin-left:3px}
+  .sess.shared{border-left:3px solid var(--laser)}
+  .sess:not(.open) .sess-h .brk{visibility:hidden}
+  .sess-share{background:var(--surface-2);border:1px solid var(--line);color:var(--paper);
+    font-size:10px;font-weight:600;letter-spacing:.04em;padding:4px 10px;border-radius:7px;cursor:pointer;flex:none}
+  .sess-share:active{transform:scale(.96)}
+  .share-sub{font-size:12px;color:var(--muted);margin:2px 0 12px}
+  .share-people{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+  .share-person{background:var(--surface-2);border:1px solid var(--line);color:var(--paper);
+    font-size:13px;padding:8px 14px;border-radius:9px;cursor:pointer}
+  .share-person.on{background:var(--laser);border-color:var(--laser);color:#0b0d0f;font-weight:600}
+  .share-type{width:100%;background:var(--ink);border:1px solid var(--line);color:var(--paper);
+    border-radius:9px;padding:10px 12px;font-size:13px;margin-bottom:8px}
+  #shareExtra{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  #shareExtra .chip{background:var(--surface-2);border:1px solid var(--line);color:var(--paper);
+    font-size:12px;padding:4px 9px;border-radius:7px;cursor:pointer}
   .allsess{background:none;border:1px solid var(--line);color:var(--muted);border-radius:5px;
     padding:3px 8px;font-size:9px;letter-spacing:.06em;text-transform:uppercase;
     cursor:pointer;margin-left:10px;font-family:var(--sans)}
@@ -1749,7 +1768,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=131.6">
+  <link rel="manifest" href="./manifest.json?v=131.7">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1998,6 +2017,23 @@
         </div>
       </div>
     <div id="savedWrap"></div>
+    <div class="overlay hidden" id="shareOverlay">
+      <div class="modal">
+        <div class="modal-head">
+          <h2>Share list</h2>
+          <button class="modal-close" id="shareClose" aria-label="Close">✕</button>
+        </div>
+        <p class="share-sub" id="shareSub"></p>
+        <div class="share-people" id="sharePeople"></div>
+        <input id="shareType" class="share-type" placeholder="or type a name, then Enter" autocomplete="off">
+        <div id="shareExtra"></div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" id="shareCancel">Cancel</button>
+          <button class="btn btn-primary" id="shareGo">Share</button>
+        </div>
+        <p class="cd-src">A snapshot is sent now. If they can't finish it, they re-share it onward — edits you make here afterward don't follow.</p>
+      </div>
+    </div>
     <button class="sync-fab" id="btnScrapSync" aria-label="Sync saved lists to the Sheet">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-7.5-4"/><path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 7.5 4"/>
@@ -2217,6 +2253,11 @@
         <div id="cdNut"><div class="cd-none">Not fetched yet.</div></div>
         <button class="btn btn-ghost" id="cdFetch">Fetch nutrition</button>
         <p class="cd-src" id="cdSrc"></p>
+      </div>
+
+      <div class="cd-sec">
+        <h5>Storage <span class="hint">USDA FoodKeeper &amp; Handbook&nbsp;66 · a guide, not gospel</span></h5>
+        <div id="cdStorage"></div>
       </div>
 
       <div class="cd-sec">
@@ -3696,7 +3737,7 @@ function showView(name){
   if(name === "settings") hoRenderDevInfo();
   if(name==="list"){ renderList(); dbAutoRefresh(false); }
   if(name==="sales"){ renderWeekTabs(); renderSales(); }
-  if(name==="scrap"){ maybeResumeWip(); renderLists(); }
+  if(name==="scrap"){ maybeResumeWip(); renderLists(); scrapSharePull(); }
   if(name==="restock"){ renderRestock(); rkBumpItemViews(); rkPull(); rkStartPoll(); dbAutoRefresh(false); }
   if(name==="handoff"){ ensureBadgePermission(); hoMarkSeen(); renderHandoff(); hoPull(); hoStartPoll(); hoMaybePrompt(); renderHoIcon(); }
   if(name==="planogram"){ renderPlanogram(); pgPull(); pgStartPoll(); }
@@ -6307,7 +6348,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v131.6";
+const APP_VERSION = "v131.7";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -7702,6 +7743,110 @@ function fmtQty(r){
   return r.kg ? wFull(r.qty) : ("x" + (parseInt(r.qty,10)||0));
 }
 
+/* ---- Scrap sharing: one-shot snapshot handoff ----
+   A saved list is shared as a point-in-time copy addressed to one or more
+   people. Each recipient claims it once (server marks their row); a re-share is
+   just a fresh snapshot to the next person. Roster = approved Devices names. */
+const KEY_ROSTER = "label_roster_v1";
+const KEY_SHARE_SEEN = "label_share_seen_v1";
+let _roster = null, _shareSid = null;
+let _sharePick = new Set(), _shareExtra = [];
+try{ const r = JSON.parse(localStorage.getItem(KEY_ROSTER)||"null"); if(Array.isArray(r)) _roster = r; }catch(e){}
+async function loadRoster(force){
+  if(_roster && !force) return _roster;
+  if(!proxyUrl()){ _roster = _roster || []; return _roster; }
+  try{
+    const d = await callProxy({ action:"roster" });
+    if(d && d.ok && Array.isArray(d.names)){ _roster = d.names; localStorage.setItem(KEY_ROSTER, JSON.stringify(d.names)); }
+  }catch(e){ _roster = _roster || []; }
+  return _roster || [];
+}
+function shareSeen(){ try{ return JSON.parse(localStorage.getItem(KEY_SHARE_SEEN)||"[]"); }catch(e){ return []; } }
+function openSharePicker(sid){
+  _shareSid = sid; _sharePick.clear(); _shareExtra = [];
+  const ov = document.getElementById("shareOverlay"); if(!ov) return;
+  const ty = document.getElementById("shareType"); if(ty) ty.value = "";
+  ov.classList.remove("hidden"); document.body.style.overflow = "hidden";
+  renderSharePeople();
+  loadRoster(false).then(renderSharePeople);
+}
+function closeShare(){
+  const ov = document.getElementById("shareOverlay"); if(ov) ov.classList.add("hidden");
+  document.body.style.overflow = ""; _sharePick.clear(); _shareExtra = [];
+}
+function renderSharePeople(){
+  const box = document.getElementById("sharePeople"); if(!box) return;
+  const me = (rkMeName()||"").toLowerCase();
+  const names = (_roster||[]).filter(n=> String(n).toLowerCase() !== me);
+  box.innerHTML = names.length
+    ? names.map(n=>`<button type="button" class="share-person${_sharePick.has(n)?" on":""}" data-n="${esc(n)}">${esc(n)}</button>`).join("")
+    : '<div class="cd-none">No other approved people yet — type a name below.</div>';
+  const sess = sessions().find(x=>x.id === _shareSid);
+  const sub = document.getElementById("shareSub");
+  if(sub && sess) sub.textContent = sess.rows.length + " item" + (sess.rows.length===1?"":"s") + " · " + LIST_META[sess.list].label;
+  const ex = document.getElementById("shareExtra");
+  if(ex) ex.innerHTML = _shareExtra.map(n=>`<span class="chip">${esc(n)} ✕</span>`).join("");
+}
+async function doShare(){
+  const sess = sessions().find(x=>x.id === _shareSid);
+  if(!sess) return closeShare();
+  const to = [...Array.from(_sharePick), ..._shareExtra].filter(Boolean);
+  if(!to.length) return toast("Pick at least one person");
+  if(!proxyUrl()) return toast("Not set up yet — see Settings");
+  try{
+    const d = await callProxy({ action:"scrapShareSend", from: rkMeName(), to, list: sess.list, rows: sess.rows });
+    if(d && d.ok){ toast("Shared to " + to.join(", ")); closeShare(); }
+    else toast((d && d.error) || "Couldn't share");
+  }catch(e){ toast("Couldn't reach the server"); }
+}
+async function scrapSharePull(){
+  if(!proxyUrl()) return;
+  let d; try{ d = await callProxy({ action:"scrapSharePull", name: rkMeName() }); }catch(e){ return; }
+  if(!d || !d.ok || !Array.isArray(d.shares) || !d.shares.length) return;
+  const seen = new Set(shareSeen());
+  const all = sessions(); let added = 0, from = "";
+  d.shares.forEach(sh=>{
+    if(seen.has(sh.id)) return; seen.add(sh.id);
+    const rows = (sh.rows||[]).map(r=>({ name:String(r.name||""), plu:r.plu||"", code:r.code||"",
+      qty: r.kg ? kg3(parseFloat(r.qty)||0) : (parseInt(r.qty,10)||0), kg: !!r.kg }));
+    all.unshift({ id:"x"+Date.now()+"_"+Math.random().toString(36).slice(2,6), ts:Date.now(),
+      list: sh.list==="flashfood" ? "flashfood" : "loop", rows, from: sh.from||"", shared:true });
+    added++; from = sh.from || from;
+  });
+  if(added){
+    saveSessions(all);
+    localStorage.setItem(KEY_SHARE_SEEN, JSON.stringify([...seen].slice(-200)));
+    renderSaved();
+    toast(added + " shared list" + (added===1?"":"s") + (from ? " from " + from : ""));
+  }
+}
+(function wireShare(){
+  const ov = document.getElementById("shareOverlay"); if(!ov) return;
+  const x = document.getElementById("shareClose"); if(x) x.addEventListener("click", closeShare);
+  const c = document.getElementById("shareCancel"); if(c) c.addEventListener("click", closeShare);
+  const g = document.getElementById("shareGo"); if(g) g.addEventListener("click", doShare);
+  ov.addEventListener("click", e=>{ if(e.target === ov) closeShare(); });
+  const pp = document.getElementById("sharePeople");
+  if(pp) pp.addEventListener("click", e=>{
+    const b = e.target.closest(".share-person"); if(!b) return;
+    const n = b.dataset.n; if(_sharePick.has(n)) _sharePick.delete(n); else _sharePick.add(n);
+    renderSharePeople();
+  });
+  const ex = document.getElementById("shareExtra");
+  if(ex) ex.addEventListener("click", e=>{
+    const chip = e.target.closest(".chip"); if(!chip) return;
+    const n = chip.textContent.replace(/\s*✕\s*$/,"").trim();
+    _shareExtra = _shareExtra.filter(v=>v!==n); renderSharePeople();
+  });
+  const ty = document.getElementById("shareType");
+  if(ty) ty.addEventListener("keydown", e=>{
+    if(e.key !== "Enter") return;
+    e.preventDefault();
+    const v = ty.value.trim(); if(!v) return;
+    if(!_shareExtra.includes(v) && !_sharePick.has(v)) _shareExtra.push(v);
+    ty.value = ""; renderSharePeople();
+  });
+})();
 function renderSaved(){
   const mine = sessions().filter(x=>x.list === activeList);
   const wrap = document.getElementById("savedWrap");
@@ -7738,12 +7883,13 @@ function renderSaved(){
           // Always print both halves, even when one is zero. A card that hides
           // its empty half shifts the columns and nothing lines up down the page.
           const brk = ea + " ea · " + wFull(kgs);
-          return `<div class="sess" data-id="${x.id}">
+          return `<div class="sess${x.from?' shared':''}" data-id="${x.id}">
             <div class="sess-h">
               <span class="caret">▶</span>
               <span class="tag ${LIST_META[x.list].cls}"></span>
-              <span class="st">${esc(t)}</span>
+              <span class="st">${esc(t)}${x.from?'<span class="fromtag">\u00b7 from '+esc(x.from)+'</span>':''}</span>
               <span class="brk">${x.rows.length} item${x.rows.length===1?"":"s"} · ${esc(brk)}</span>
+              <button class="sess-share" type="button" aria-label="Share this list">Share</button>
               <span class="sum">Σ ${kgStr(tally)}</span>
             </div>
             <div class="sess-b">
@@ -7782,6 +7928,7 @@ document.getElementById("savedWrap").addEventListener("click", e=>{
   const all = sessions();
   const x = all.find(v=>v.id === sess.dataset.id); if(!x) return;
   const act = e.target.dataset.act;
+  if(e.target.closest(".sess-share")){ openSharePicker(x.id); return; }
 
   // flip a single saved line between "each" and "by weight" without restoring
   // the whole list — the qty number is kept, only how it's counted changes
@@ -10105,6 +10252,7 @@ function openCard(name){
 
   renderMonths();
   renderNut();
+  renderStorage();
   cardOverlay.classList.remove("hidden");
   document.body.style.overflow = "hidden";
 }
@@ -10163,6 +10311,94 @@ document.getElementById("cdMonths").addEventListener("click", e=>{
 });
 
 /* ---- USDA: measured, cached forever, never guessed ---- */
+/* ---- Storage guidance: shelf life / refrigerate / ideal temp ----
+   Baked-in so it works in a walk-in with no signal. Values compiled from USDA
+   FoodKeeper (storage timeframes) + Agriculture Handbook 66 (optimal temps).
+   Matched by name, most-specific first; a generic line is the last resort.
+   A guide, not gospel — ripeness and variety shift all of it.               */
+const STORAGE_ITEMS = [
+  {k:["sweet potato","yam"],        shelf:"1-2 weeks",  fridge:"No - cool, dark", temp:"13-16 \u00b0C"},
+  {k:["green onion","spring onion","scallion"], shelf:"1-2 weeks", fridge:"Yes", temp:"0-2 \u00b0C"},
+  {k:["watermelon"],                shelf:"1-2 weeks whole", fridge:"Whole: cool room; cut: fridge", temp:"10-15 \u00b0C"},
+  {k:["cantaloupe","muskmelon"],    shelf:"~1 week",    fridge:"Ripe/cut: fridge", temp:"2-5 \u00b0C"},
+  {k:["honeydew"],                  shelf:"1-2 weeks",  fridge:"Ripe/cut: fridge", temp:"7-10 \u00b0C"},
+  {k:["bell pepper","sweet pepper","pepper"], shelf:"1-2 weeks", fridge:"Yes", temp:"7-10 \u00b0C"},
+  {k:["jalapeno","chili","chilli","hot pepper"], shelf:"1-2 weeks", fridge:"Yes", temp:"5-7 \u00b0C"},
+  {k:["apple"],                     shelf:"1-2 months", fridge:"Yes",            temp:"0-4 \u00b0C"},
+  {k:["pear"],                      shelf:"Ripen out, then 2-4 wk fridge", fridge:"After ripening", temp:"-1-0 \u00b0C"},
+  {k:["banana"],                    shelf:"2-5 days (ripe)", fridge:"No - chills & blackens", temp:"13-15 \u00b0C"},
+  {k:["strawberr"],                 shelf:"3-5 days",   fridge:"Yes",            temp:"0-2 \u00b0C"},
+  {k:["raspberr","blackberr"],      shelf:"2-3 days",   fridge:"Yes",            temp:"0-2 \u00b0C"},
+  {k:["blueberr"],                  shelf:"1-2 weeks",  fridge:"Yes",            temp:"0-2 \u00b0C"},
+  {k:["cranberr"],                  shelf:"3-4 weeks",  fridge:"Yes",            temp:"2-5 \u00b0C"},
+  {k:["grape"],                     shelf:"1-2 weeks",  fridge:"Yes",            temp:"-1-0 \u00b0C"},
+  {k:["cherr"],                     shelf:"~1 week",    fridge:"Yes",            temp:"0-2 \u00b0C"},
+  {k:["peach","nectarine"],         shelf:"Ripen out, then 3-5 days fridge", fridge:"After ripening", temp:"0 \u00b0C"},
+  {k:["plum","apricot"],            shelf:"Ripen out, then fridge", fridge:"After ripening", temp:"0 \u00b0C"},
+  {k:["mandarin","clementine","tangerine","orange"], shelf:"1-2 weeks", fridge:"Cool room or fridge", temp:"3-8 \u00b0C"},
+  {k:["lemon","lime"],              shelf:"2-3 weeks",  fridge:"Yes (or cool room)", temp:"5-8 \u00b0C"},
+  {k:["grapefruit"],                shelf:"1-2 weeks",  fridge:"Cool room or fridge", temp:"10-15 \u00b0C"},
+  {k:["avocado"],                   shelf:"Ripen out, then 2-3 days fridge", fridge:"After ripening", temp:"4-7 \u00b0C"},
+  {k:["tomato"],                    shelf:"3-5 days (ripe)", fridge:"No - dulls flavour", temp:"13-21 \u00b0C"},
+  {k:["potato"],                    shelf:"Several weeks", fridge:"No - cool, dark", temp:"7-10 \u00b0C"},
+  {k:["shallot","onion"],           shelf:"1-2 months", fridge:"No - cool, dry, dark", temp:"0-4 \u00b0C (dry)"},
+  {k:["garlic"],                    shelf:"Weeks-months", fridge:"No - cool, dry", temp:"Cool pantry"},
+  {k:["ginger"],                    shelf:"2-3 weeks",  fridge:"Yes",            temp:"0-4 \u00b0C"},
+  {k:["romaine","iceberg","lettuce"], shelf:"~1 week",  fridge:"Yes",            temp:"0-2 \u00b0C"},
+  {k:["spinach"],                   shelf:"5-7 days",   fridge:"Yes",            temp:"0-2 \u00b0C"},
+  {k:["kale","chard","collard","arugula","rocket"], shelf:"5-7 days", fridge:"Yes", temp:"0-2 \u00b0C"},
+  {k:["cabbage"],                   shelf:"3-6 weeks",  fridge:"Yes",            temp:"0 \u00b0C"},
+  {k:["broccoli"],                  shelf:"3-5 days",   fridge:"Yes",            temp:"0 \u00b0C"},
+  {k:["cauliflower"],               shelf:"~1 week",    fridge:"Yes",            temp:"0 \u00b0C"},
+  {k:["brussels"],                  shelf:"~1 week",    fridge:"Yes",            temp:"0 \u00b0C"},
+  {k:["carrot"],                    shelf:"2-4 weeks",  fridge:"Yes",            temp:"0 \u00b0C"},
+  {k:["beet","turnip","parsnip","radish","rutabaga"], shelf:"2-4 weeks", fridge:"Yes", temp:"0 \u00b0C"},
+  {k:["celery"],                    shelf:"1-2 weeks",  fridge:"Yes",            temp:"0 \u00b0C"},
+  {k:["cucumber"],                  shelf:"~1 week",    fridge:"Yes (brief) - chill-sensitive", temp:"10-12 \u00b0C"},
+  {k:["eggplant","aubergine"],      shelf:"~1 week",    fridge:"Cool, not cold", temp:"10-12 \u00b0C"},
+  {k:["zucchini","courgette"],      shelf:"4-5 days",   fridge:"Yes",            temp:"7-10 \u00b0C"},
+  {k:["butternut","acorn squash","spaghetti squash","winter squash"], shelf:"1-3 months", fridge:"No - cool, dry", temp:"10-13 \u00b0C"},
+  {k:["pumpkin"],                   shelf:"1-2 months", fridge:"No - cool, dry", temp:"10-15 \u00b0C"},
+  {k:["green bean","string bean"],  shelf:"5-7 days",   fridge:"Yes",            temp:"4-7 \u00b0C"},
+  {k:["snap pea","snow pea","green pea","peas"], shelf:"3-5 days", fridge:"Yes", temp:"0 \u00b0C"},
+  {k:["corn"],                      shelf:"1-3 days",   fridge:"Yes - asap",     temp:"0 \u00b0C"},
+  {k:["asparagus"],                 shelf:"3-5 days",   fridge:"Yes - upright in water", temp:"0-2 \u00b0C"},
+  {k:["mushroom"],                  shelf:"3-7 days",   fridge:"Yes - paper bag", temp:"0-4 \u00b0C"},
+  {k:["basil"],                     shelf:"3-5 days",   fridge:"No - counter in water", temp:"12-15 \u00b0C"},
+  {k:["cilantro","coriander","parsley","dill","mint"], shelf:"~1 week", fridge:"Yes - in water", temp:"0-2 \u00b0C"},
+  {k:["rosemary","thyme","sage","oregano"], shelf:"1-2 weeks", fridge:"Yes",    temp:"0-2 \u00b0C"},
+  {k:["pineapple"],                 shelf:"Counter 1-2 d, then 3-5 d fridge", fridge:"After ripening", temp:"7-10 \u00b0C"},
+  {k:["mango"],                     shelf:"Ripen out, then fridge", fridge:"After ripening", temp:"10-13 \u00b0C"},
+  {k:["papaya"],                    shelf:"Ripen out, then fridge", fridge:"After ripening", temp:"7-13 \u00b0C"},
+  {k:["kiwi"],                      shelf:"Ripen out, then 1-2 wk fridge", fridge:"After ripening", temp:"0 \u00b0C"},
+  {k:["pomegranate"],               shelf:"2-3 weeks",  fridge:"Yes",            temp:"5 \u00b0C"},
+  {k:["rhubarb"],                   shelf:"~1 week",    fridge:"Yes",            temp:"0 \u00b0C"},
+  {k:["leek"],                      shelf:"1-2 weeks",  fridge:"Yes",            temp:"0 \u00b0C"},
+  {k:["fig"],                       shelf:"2-3 days",   fridge:"Yes",            temp:"0 \u00b0C"},
+  // broad catch-alls, lowest priority
+  {k:["berry","berries"],           shelf:"3-7 days",   fridge:"Yes",            temp:"0-2 \u00b0C"},
+  {k:["melon"],                     shelf:"Whole: ~1 week", fridge:"Whole: cool room; cut: fridge", temp:"7-13 \u00b0C"},
+  {k:["squash"],                    shelf:"4-5 days",   fridge:"Yes",            temp:"7-10 \u00b0C"},
+  {k:["greens","herb"],             shelf:"~1 week",    fridge:"Yes - in water", temp:"0-2 \u00b0C"}
+];
+const STORAGE_GENERIC = {generic:true, shelf:"Use within a few days", fridge:"Refrigerate once ripe or cut", temp:"0-4 \u00b0C"};
+function storageFor(name){
+  const norm = " " + String(name||"").toLowerCase().replace(/\([^)]*\)/g," ").replace(/[^a-z ]/g," ").replace(/\s+/g," ") + " ";
+  for(const it of STORAGE_ITEMS){
+    for(const kw of it.k){ if(new RegExp("\\b"+kw).test(norm)) return it; }
+  }
+  return STORAGE_GENERIC;
+}
+function renderStorage(){
+  const box = document.getElementById("cdStorage"); if(!box) return;
+  const it = storageFor(cardName);
+  box.innerHTML = '<div class="cd-store">'
+    + '<span>Shelf life</span><b>'+esc(it.shelf)+'</b>'
+    + '<span>Refrigerate?</span><b>'+esc(it.fridge)+'</b>'
+    + '<span>Ideal temp</span><b>'+esc(it.temp)+'</b></div>'
+    + '<p class="cd-src">'+(it.generic?'General produce guidance. ':'')
+    + 'USDA FoodKeeper &amp; Handbook\u00a066 \u2014 a guide; ripeness &amp; variety shift it.</p>';
+}
 function renderNut(){
   const cache = usdaStore()[cardName];
   const box = document.getElementById("cdNut");

@@ -1701,6 +1701,43 @@
   .pg-slot:active{border-color:var(--muted)}
   .pg-slot.pg-blank{color:var(--muted);font-style:italic;font-weight:500}
 
+  /* ---- attachments: silver racks + small tables that live BETWEEN the runs ----
+     They hang off a run (runs[i].after, plus runs[0].before) so the board reads
+     in walk order instead of burying them in a section of their own. Indented
+     and colour-coded on the left edge: steel for a silver rack, tan for a small
+     table, so neither can be mistaken for a run at a glance. */
+  .pg-att{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    margin:0 0 11px 14px;border-left:3px solid var(--ac)}
+  .pg-att-h{display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:1px solid var(--line)}
+  .pg-att-tag{font-family:var(--mono);font-size:10px;letter-spacing:.07em;font-weight:800;color:var(--ac);
+    border:1px solid var(--ac);border-radius:20px;padding:4px 10px;white-space:nowrap}
+  .pg-att-sub{font-family:var(--mono);font-size:9px;letter-spacing:.09em;color:var(--muted);text-transform:uppercase}
+  .pg-att-h .pg-menubtn{margin-left:auto}
+  .pg-rackgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:11px}
+  .pg-rackgrid .pg-slot{margin-top:0}
+
+  /* ---- context dropdown (replaces the bare camera button everywhere) ---- */
+  .pg-menubtn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:var(--surface-2);
+    display:grid;place-items:center;cursor:pointer;flex:none}
+  .pg-menubtn svg{width:17px;height:17px;stroke:var(--paper-dim);fill:none;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round}
+  .pg-menubtn:active{background:var(--surface)}
+  .pg-eyebrow .pg-menubtn,.pg-run-h .pg-menubtn{margin-left:auto}
+  .pg-menuscrim{position:fixed;inset:0;z-index:70;display:none}
+  .pg-menuscrim.show{display:block}
+  .pg-menu{position:fixed;z-index:71;min-width:206px;max-width:262px;background:var(--surface);
+    border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 14px 34px rgba(0,0,0,.5);display:none}
+  .pg-menu.show{display:block}
+  .pg-menu button{display:flex;align-items:center;gap:10px;width:100%;background:none;border:0;color:var(--paper);
+    text-align:left;font-size:13.5px;font-family:var(--sans);padding:10px;border-radius:9px;cursor:pointer}
+  .pg-menu button:active{background:var(--surface-2)}
+  .pg-menu button[disabled]{color:var(--muted);opacity:.45;cursor:default}
+  .pg-menu button svg{width:15px;height:15px;stroke:var(--paper-dim);fill:none;stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round;flex:none}
+  .pg-menu .pg-mh{font-family:var(--mono);font-size:9px;letter-spacing:.11em;color:var(--muted);
+    text-transform:uppercase;padding:7px 10px 4px}
+  .pg-menu hr{border:0;border-top:1px solid var(--line);margin:5px 6px}
+
   .pg-lot{display:grid;grid-template-columns:auto 1fr;gap:11px;align-items:center;background:var(--surface);
     border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer}
   .pg-lot .pg-lt{font-family:var(--mono);font-size:12px;font-weight:800;background:var(--surface-2);border:1px solid var(--line);
@@ -1766,7 +1803,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=131.9">
+  <link rel="manifest" href="./manifest.json?v=132.0">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2322,14 +2359,14 @@
     <div class="pg-findres" id="pgFindRes"></div>
 
     <div class="pg-eyebrow">POD 1 — AS IT SITS ON THE FLOOR
-      <button class="pg-cam" type="button" onclick="pgShoot('pod1',['Pod 1'])" aria-label="Photo of Pod 1"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
+      <button class="pg-menubtn" type="button" onclick="pgMenu(event,'sec-pod1')" aria-label="Pod 1 options"><svg viewBox="0 0 24 24"><path d="M3 9V6.6A2.6 2.6 0 0 1 5.6 4H8"/><path d="M16 4h2.4A2.6 2.6 0 0 1 21 6.6V9"/><path d="M21 15v2.4a2.6 2.6 0 0 1-2.6 2.6H16"/><path d="M8 20H5.6A2.6 2.6 0 0 1 3 17.4V15"/><circle cx="12" cy="12" r="3.4"/></svg></button>
     </div>
     <div class="pg-grid2" id="pgPod1"></div>
     <div class="pg-mango" id="pgMango"></div>
 
     <div class="pg-eyebrow">POD 2 — NUMBERED PODS
-      <button class="pg-cam" type="button" onclick="pgShoot('pod2',['Pod 2'])" aria-label="Photo of Pod 2"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
-      <button class="pg-toggle" type="button" onclick="document.getElementById('pgPodCount').classList.toggle('open')" aria-label="Pod count"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button>
+      <button class="pg-menubtn" type="button" onclick="pgMenu(event,'sec-pod2')" aria-label="Pod 2 options"><svg viewBox="0 0 24 24"><path d="M3 9V6.6A2.6 2.6 0 0 1 5.6 4H8"/><path d="M16 4h2.4A2.6 2.6 0 0 1 21 6.6V9"/><path d="M21 15v2.4a2.6 2.6 0 0 1-2.6 2.6H16"/><path d="M8 20H5.6A2.6 2.6 0 0 1 3 17.4V15"/><circle cx="12" cy="12" r="3.4"/></svg></button>
+      <button class="pg-toggle" type="button" style="display:none" onclick="document.getElementById('pgPodCount').classList.toggle('open')" aria-label="Pod count"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button>
     </div>
     <div class="pg-podcount" id="pgPodCount">
       <button data-n="4" type="button" onclick="pgSetPods(4)">4 pods</button>
@@ -2342,7 +2379,7 @@
     <div id="pgRuns"></div>
 
     <div class="pg-eyebrow">CASE LOTS
-      <button class="pg-cam" type="button" onclick="pgShoot('lots',['Case Lots'])" aria-label="Photo of Case Lots"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
+      <button class="pg-menubtn" type="button" onclick="pgMenu(event,'sec-lots')" aria-label="Case Lots options"><svg viewBox="0 0 24 24"><path d="M3 9V6.6A2.6 2.6 0 0 1 5.6 4H8"/><path d="M16 4h2.4A2.6 2.6 0 0 1 21 6.6V9"/><path d="M21 15v2.4a2.6 2.6 0 0 1-2.6 2.6H16"/><path d="M8 20H5.6A2.6 2.6 0 0 1 3 17.4V15"/><circle cx="12" cy="12" r="3.4"/></svg></button>
     </div>
     <div id="pgLots"></div>
 
@@ -2382,6 +2419,8 @@
     <button class="pg-keep" id="pgKeepBtn" type="button" onclick="pgKeepTyped()">Keep what I typed</button>
     <div class="pg-hint">Matches search the PLU + Barcode DB. Speak or type — no match keeps your text. Suggestions learn from what usually goes here.</div>
   </div>
+  <div class="pg-menuscrim" id="pgMenuScrim" onclick="pgMenuClose()"></div>
+  <div class="pg-menu" id="pgMenu"></div>
   <div class="pg-reading" id="pgReading"><div><div class="pg-spin"></div><p id="pgReadingTxt">Reading photo…</p></div></div>
   <input type="file" accept="image/*" capture="environment" id="pgCamInput" hidden>
 
@@ -6335,7 +6374,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v131.9";
+const APP_VERSION = "v132.0";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -12479,10 +12518,48 @@ let pgState = pgLoad();
 let pgDirty = false, pgSyncing = false, pgOffline = false;
 let pgSyncTimer = null, pgPollTimer = null;
 
+/* Normalise any state we load or receive. Every new field is OPTIONAL and
+   filled in here, which is why racks/tables needed no migration: an old blob
+   simply has no .after, reads as [], and syncs back unharmed. */
+function pgNorm(s){
+  if(!s || !Array.isArray(s.runs)) return s;
+  if(!s.learn) s.learn = {};
+  if(!Array.isArray(s.pinned)) s.pinned = pgDefault().pinned;
+  if(!Array.isArray(s.lots) || !s.lots.length) s.lots = pgDefault().lots;
+  s.runs.forEach(function(r,i){
+    if(!r) return;
+    if(!Array.isArray(r.wet) || !r.wet.length) r.wet = ["",""];
+    if(!Array.isArray(r.hmr) || !r.hmr.length) r.hmr = ["",""];
+    while(r.hmr.length < r.wet.length) r.hmr.push("");   // ends move in step
+    while(r.wet.length < r.hmr.length) r.wet.push("");
+    if(!Array.isArray(r.after)) r.after = [];
+    if(i === 0 && !Array.isArray(r.before)) r.before = [];
+    [r.after, r.before || []].forEach(function(list){
+      list.forEach(function(a){
+        if(!a) return;
+        if(a.type === "rack"){
+          if(!Array.isArray(a.boxes) || !a.boxes.length) a.boxes = ["","","","","",""];
+          if(a.side !== "hmr") a.side = "wet";
+        } else {
+          a.type = "table";
+          if(typeof a.wet !== "string") a.wet = "";
+          if(typeof a.hmr !== "string") a.hmr = "";
+        }
+      });
+    });
+  });
+  return s;
+}
+function pgAtts(ri,pos){
+  const r = pgState.runs[ri]; if(!r) return [];
+  const k = (pos === "b") ? "before" : "after";
+  if(!Array.isArray(r[k])) r[k] = [];
+  return r[k];
+}
 function pgLoad(){
   try{
     const s = JSON.parse(localStorage.getItem(KEY_PLANO) || "null");
-    if(s && Array.isArray(s.runs)){ if(!s.learn) s.learn = {}; if(!Array.isArray(s.pinned)) s.pinned = pgDefault().pinned; return s; }
+    if(s && Array.isArray(s.runs)) return pgNorm(s);
   }catch(e){}
   return pgDefault();
 }
@@ -12531,26 +12608,58 @@ function pgRenderPod2(){
   el.innerHTML = h;
   document.querySelectorAll('#pgPodCount button').forEach(b=>b.classList.toggle('on', +b.dataset.n===pgState.podN));
 }
+/* Run + everything attached to it, in walk order:
+   [run 1 "before" attachments] run 1 [run 1 "after"] run 2 [run 2 "after"] ...
+   Only run 1 carries a "before" list — nothing sits ahead of the other runs. */
+const PG_ATT_C = { rack:"#A8B0BA", table:"#C39B5E" };
+function pgAttHtml(ri,pos,ai,a){
+  const tag = PG_RUN_DEF[ri] ? PG_RUN_DEF[ri].tag : (ri+1);
+  const ctx = "att-"+ri+"-"+pos+"-"+ai;
+  const where = (pos === "b" ? "before" : "after") + " run " + tag;
+  if(a.type === "rack"){
+    const side = a.side === "hmr" ? "HMR side" : "Wet-case side";
+    const boxes = a.boxes.map(function(v,bi){
+      return '<div class="pg-slot '+(v?'':'pg-blank')+'" onclick="pgEdit(\''+ctx+'-box-'+bi+'\')">'+(nmNameHtml(v)||'tap to add')+'</div>';
+    }).join("");
+    return '<div class="pg-att" style="--ac:'+PG_ATT_C.rack+'">'
+      + '<div class="pg-att-h"><span class="pg-att-tag">SILVER RACK</span>'
+      + '<span class="pg-att-sub">'+esc(side)+' \u00b7 '+esc(where)+'</span>'
+      + '<button class="pg-menubtn" type="button" onclick="pgMenu(event,\''+ctx+'\')" aria-label="Silver rack options">'+PG_ICON_CAM+'</button></div>'
+      + '<div class="pg-rackgrid">'+boxes+'</div></div>';
+  }
+  return '<div class="pg-att" style="--ac:'+PG_ATT_C.table+'">'
+    + '<div class="pg-att-h"><span class="pg-att-tag">SMALL TABLE</span>'
+    + '<span class="pg-att-sub">pair \u00b7 '+esc(where)+'</span>'
+    + '<button class="pg-menubtn" type="button" onclick="pgMenu(event,\''+ctx+'\')" aria-label="Small table options">'+PG_ICON_CAM+'</button></div>'
+    + '<div class="pg-ends">'
+    +   '<div class="pg-endcol"><h5>\u25b2 WET CASES</h5>'
+    +     '<div class="pg-slot '+(a.wet?'':'pg-blank')+'" onclick="pgEdit(\''+ctx+'-tbl-wet\')">'+(nmNameHtml(a.wet)||'tap to add')+'</div></div>'
+    +   '<div class="pg-endcol"><h5>\u25bc HMR</h5>'
+    +     '<div class="pg-slot '+(a.hmr?'':'pg-blank')+'" onclick="pgEdit(\''+ctx+'-tbl-hmr\')">'+(nmNameHtml(a.hmr)||'tap to add')+'</div></div>'
+    + '</div></div>';
+}
 function pgRenderRuns(){
   const el = document.getElementById("pgRuns"); if(!el) return;
-  el.innerHTML = PG_RUN_DEF.map((r,ri)=>{
+  let out = "";
+  PG_RUN_DEF.forEach(function(r,ri){
     const st = pgState.runs[ri] || {wet:["",""],hmr:["",""]};
-    return `<div class="pg-run" style="--rc:var(${r.c})">
-      <div class="pg-run-h">
-        <span class="pg-run-tag">RUN <b>${r.tag}</b></span>
-        <span class="pg-run-name">${esc(r.name)}</span>
-        <button class="pg-cam" type="button" onclick="pgShoot('run-${ri}',['Run ${r.tag} \u00b7 Wet Cases end','Run ${r.tag} \u00b7 HMR end'])" aria-label="Two photos of Run ${r.tag}"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg></button>
-      </div>
-      <div class="pg-ends">
-        <div class="pg-endcol"><h5>\u25b2 WET CASES</h5>
-          ${st.wet.map((v,i)=>`<div class="pg-slot ${v?'':'pg-blank'}" onclick="pgEdit('run-${ri}-wet-${i}')">${nmNameHtml(v)||'tap to add'}</div>`).join("")}
-        </div>
-        <div class="pg-endcol"><h5>\u25bc HMR</h5>
-          ${st.hmr.map((v,i)=>`<div class="pg-slot ${v?'':'pg-blank'}" onclick="pgEdit('run-${ri}-hmr-${i}')">${nmNameHtml(v)||'tap to add'}</div>`).join("")}
-        </div>
-      </div>
-    </div>`;
-  }).join("");
+    if(ri === 0) pgAtts(0,"b").forEach(function(a,ai){ out += pgAttHtml(0,"b",ai,a); });
+    const col = function(end){
+      return st[end].map(function(v,i){
+        return '<div class="pg-slot '+(v?'':'pg-blank')+'" onclick="pgEdit(\'run-'+ri+'-'+end+'-'+i+'\')">'+(nmNameHtml(v)||'tap to add')+'</div>';
+      }).join("");
+    };
+    out += '<div class="pg-run" style="--rc:var('+r.c+')">'
+      + '<div class="pg-run-h"><span class="pg-run-tag">RUN <b>'+r.tag+'</b></span>'
+      + '<span class="pg-run-name">'+esc(r.name)+'</span>'
+      + '<button class="pg-menubtn" type="button" onclick="pgMenu(event,\'run-'+ri+'\')" aria-label="Run '+r.tag+' options">'+PG_ICON_CAM+'</button></div>'
+      + '<div class="pg-ends">'
+      +   '<div class="pg-endcol"><h5>\u25b2 WET CASES</h5>'+col("wet")+'</div>'
+      +   '<div class="pg-endcol"><h5>\u25bc HMR</h5>'+col("hmr")+'</div>'
+      + '</div></div>';
+    pgAtts(ri,"a").forEach(function(a,ai){ out += pgAttHtml(ri,"a",ai,a); });
+  });
+  el.innerHTML = out;
 }
 function pgRenderLots(){
   const el = document.getElementById("pgLots"); if(!el) return;
@@ -12573,10 +12682,155 @@ function pgCycleBanner(i){
 }
 function pgSetPods(n){ pgState.podN = n; document.getElementById("pgPodCount").classList.remove("open"); pgTouch(); }
 
+/* ---- icons + the context dropdown that replaced the bare camera button ---- */
+var PG_ICON_CAM = '<svg viewBox="0 0 24 24"><path d="M3 9V6.6A2.6 2.6 0 0 1 5.6 4H8"/><path d="M16 4h2.4A2.6 2.6 0 0 1 21 6.6V9"/><path d="M21 15v2.4a2.6 2.6 0 0 1-2.6 2.6H16"/><path d="M8 20H5.6A2.6 2.6 0 0 1 3 17.4V15"/><circle cx="12" cy="12" r="3.4"/></svg>';
+var PG_ICON_ADD = '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+var PG_ICON_SUB = '<svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+var PG_ICON_DEL = '<svg viewBox="0 0 24 24"><polyline points="3 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg>';
+var PG_ICON_RACK = '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="5" rx="1"/><rect x="3" y="11" width="18" height="5" rx="1"/><line x1="6" y1="16" x2="6" y2="20"/><line x1="18" y1="16" x2="18" y2="20"/></svg>';
+var PG_ICON_TBL = '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="7" height="8" rx="1"/><rect x="14" y="6" width="7" height="8" rx="1"/><line x1="6.5" y1="14" x2="6.5" y2="19"/><line x1="17.5" y1="14" x2="17.5" y2="19"/></svg>';
+
+function pgMi(icon,label,action,disabled){
+  return '<button type="button"'+(disabled?' disabled':' onclick="pgMenuClose();'+action+'"')+'>'+icon+'<span>'+label+'</span></button>';
+}
+function pgMenuHtml(ctx){
+  if(ctx === "sec-pod1") return pgMi(PG_ICON_CAM,"Camera","pgShoot('pod1',['Pod 1'])");
+  if(ctx === "sec-pod2"){
+    return '<div class="pg-mh">How many pods</div>'
+      + [4,6,8].map(function(n){ return pgMi(PG_ICON_ADD, n+" pods", "pgSetPods("+n+")", pgState.podN===n); }).join("")
+      + '<hr>' + pgMi(PG_ICON_CAM,"Camera","pgShoot('pod2',['Pod 2'])");
+  }
+  if(ctx === "sec-lots"){
+    return pgMi(PG_ICON_ADD,"Add a lot","pgLotSlots(1)")
+      + pgMi(PG_ICON_SUB,"Remove last lot","pgLotSlots(-1)", pgState.lots.length <= 1)
+      + '<hr>' + pgMi(PG_ICON_CAM,"Camera","pgShoot('lots',['Case Lots'])");
+  }
+  if(ctx.indexOf("run-") === 0){
+    const ri = +ctx.split("-")[1];
+    const st = pgState.runs[ri] || {wet:[""]};
+    const tag = PG_RUN_DEF[ri].tag;
+    let h = '<div class="pg-mh">Boxes on run '+tag+'</div>'
+      + pgMi(PG_ICON_ADD,"Add \u2014 one each side","pgRunSlots("+ri+",1)")
+      + pgMi(PG_ICON_SUB,"Remove \u2014 one each side","pgRunSlots("+ri+",-1)", st.wet.length <= 1)
+      + '<hr><div class="pg-mh">Add after run '+tag+'</div>'
+      + pgMi(PG_ICON_RACK,"Silver rack","pgAddRack("+ri+",'a')", pgAtts(ri,"a").filter(function(a){return a.type==="rack";}).length >= 2)
+      + pgMi(PG_ICON_TBL,"Small tables (pair)","pgAddTables("+ri+",'a')");
+    if(ri === 0){
+      h += '<hr><div class="pg-mh">Add before run 1</div>'
+        + pgMi(PG_ICON_RACK,"Silver rack","pgAddRack(0,'b')", pgAtts(0,"b").filter(function(a){return a.type==="rack";}).length >= 2)
+        + pgMi(PG_ICON_TBL,"Small tables (pair)","pgAddTables(0,'b')");
+    }
+    return h + '<hr>' + pgMi(PG_ICON_CAM,"Camera","pgShoot('run-"+ri+"',['Run "+tag+" \u00b7 Wet Cases end','Run "+tag+" \u00b7 HMR end'])");
+  }
+  if(ctx.indexOf("att-") === 0){
+    const p = ctx.split("-"), ri = +p[1], pos = p[2], ai = +p[3];
+    const a = pgAtts(ri,pos)[ai]; if(!a) return "";
+    if(a.type === "rack"){
+      return '<div class="pg-mh">Boxes on this rack</div>'
+        + pgMi(PG_ICON_ADD,"Add a box","pgRackSlots("+ri+",'"+pos+"',"+ai+",1)")
+        + pgMi(PG_ICON_SUB,"Remove last box","pgRackSlots("+ri+",'"+pos+"',"+ai+",-1)", a.boxes.length <= 1)
+        + '<hr>' + pgMi(PG_ICON_DEL,"Remove silver rack","pgDelAtt("+ri+",'"+pos+"',"+ai+")")
+        + pgMi(PG_ICON_CAM,"Camera","pgShoot('"+ctx+"',['Silver rack'])");
+    }
+    return pgMi(PG_ICON_DEL,"Remove small tables","pgDelAtt("+ri+",'"+pos+"',"+ai+")")
+      + pgMi(PG_ICON_CAM,"Camera","pgShoot('"+ctx+"',['Small tables'])");
+  }
+  return "";
+}
+function pgMenu(ev,ctx){
+  ev.stopPropagation();
+  const btn = ev.currentTarget;
+  const m = document.getElementById("pgMenu"), s = document.getElementById("pgMenuScrim");
+  if(!m || !s) return;
+  const html = pgMenuHtml(ctx);
+  if(!html) return;
+  m.innerHTML = html;
+  s.classList.add("show"); m.classList.add("show");
+  const r = btn.getBoundingClientRect();
+  const mw = m.offsetWidth || 210, mh = m.offsetHeight || 120;
+  let left = Math.max(8, Math.min(r.right - mw, window.innerWidth - mw - 8));
+  let top = r.bottom + 6;
+  if(top + mh > window.innerHeight - 8) top = Math.max(8, r.top - mh - 6);
+  m.style.left = left + "px"; m.style.top = top + "px";
+}
+function pgMenuClose(){
+  const m = document.getElementById("pgMenu"), s = document.getElementById("pgMenuScrim");
+  if(m) m.classList.remove("show");
+  if(s) s.classList.remove("show");
+}
+
+/* ---- box-count + attachment mutators (each ends in pgTouch -> save+sync) ---- */
+function pgRunSlots(ri,d){
+  const st = pgState.runs[ri]; if(!st) return;
+  if(d > 0){ st.wet.push(""); st.hmr.push(""); }
+  else {
+    if(st.wet.length <= 1) return;
+    if(st.wet[st.wet.length-1] || st.hmr[st.hmr.length-1]){
+      if(!confirm("The last box on each end still has an item. Remove anyway?")) return;
+    }
+    st.wet.pop(); st.hmr.pop();
+  }
+  pgTouch();
+}
+function pgLotSlots(d){
+  if(d > 0) pgState.lots.push("");
+  else {
+    if(pgState.lots.length <= 1) return;
+    if(pgState.lots[pgState.lots.length-1] && !confirm("That lot still has an item. Remove anyway?")) return;
+    pgState.lots.pop();
+  }
+  pgTouch();
+}
+function pgAddRack(ri,pos){
+  const list = pgAtts(ri,pos);
+  const racks = list.filter(function(a){ return a.type === "rack"; });
+  if(racks.length >= 2){ toast("Two silver racks already there"); return; }
+  const side = racks.length && racks[0].side === "wet" ? "hmr" : "wet";
+  list.push({ type:"rack", side:side, boxes:["","","","","",""] });
+  pgTouch(); toast("Silver rack added \u2014 " + (side === "wet" ? "wet-case side" : "HMR side"));
+}
+function pgAddTables(ri,pos){
+  pgAtts(ri,pos).push({ type:"table", wet:"", hmr:"" });
+  pgTouch(); toast("Small tables added");
+}
+function pgDelAtt(ri,pos,ai){
+  const list = pgAtts(ri,pos), a = list[ai]; if(!a) return;
+  const used = a.type === "rack" ? a.boxes.some(function(v){ return !!v; }) : (a.wet || a.hmr);
+  const what = a.type === "rack" ? "silver rack" : "small tables";
+  if(used && !confirm("That " + what + " still has items on it. Remove anyway?")) return;
+  list.splice(ai,1); pgTouch(); toast("Removed " + what);
+}
+function pgRackSlots(ri,pos,ai,d){
+  const a = pgAtts(ri,pos)[ai]; if(!a || a.type !== "rack") return;
+  if(d > 0) a.boxes.push("");
+  else {
+    if(a.boxes.length <= 1) return;
+    if(a.boxes[a.boxes.length-1] && !confirm("That box still has an item. Remove anyway?")) return;
+    a.boxes.pop();
+  }
+  pgTouch();
+}
+
 /* ---- editor ---- */
 let pgCur = null;
-const PG_SPOT_LABEL = { pod1:"POD 1", pod2:"POD 2", mango:"POD 1 \u00b7 MANGO", run:"ENDCAP", lot:"CASE LOT" };
+const PG_SPOT_LABEL = { pod1:"POD 1", pod2:"POD 2", mango:"POD 1 \u00b7 MANGO", run:"ENDCAP", lot:"CASE LOT", rack:"SILVER RACK", table:"SMALL TABLE" };
 function pgSpotMeta(key){
+  /* att-<ri>-<pos>-<ai>-box-<n>  (silver rack)  |  att-<ri>-<pos>-<ai>-tbl-wet|hmr */
+  if(key.indexOf("att-") === 0){
+    const p = key.split("-"), ri = +p[1], pos = p[2], ai = +p[3], kind = p[4], last = p[5];
+    const a = pgAtts(ri,pos)[ai]; if(!a) return null;
+    const tag = PG_RUN_DEF[ri] ? PG_RUN_DEF[ri].tag : (ri+1);
+    const at = (pos === "b" ? "before" : "after") + " run " + tag;
+    if(kind === "box"){
+      const bi = +last;
+      return { type:"rack", spot:"rack-"+pos+ri+"-"+ai,
+               label:"Silver rack ("+(a.side === "hmr" ? "HMR" : "Wet cases")+") \u00b7 box "+(bi+1)+" \u00b7 "+at,
+               get:function(){ return a.boxes[bi] || ""; }, set:function(v){ a.boxes[bi] = v; } };
+    }
+    return { type:"table", spot:"tbl-"+pos+ri+"-"+ai+"-"+last,
+             label:"Small table \u00b7 "+(last === "wet" ? "Wet cases" : "HMR")+" \u00b7 "+at,
+             get:function(){ return a[last] || ""; }, set:function(v){ a[last] = v; } };
+  }
   if(key.indexOf("pod1-")===0){ const i=+key.split("-")[1]; return {type:"pod1", spot:"pod1-"+i, label:"Pod 1 spot", get:()=>pgState.pod1[i].name, set:v=>pgState.pod1[i].name=v}; }
   if(key.indexOf("mango-")===0){ const i=+key.split("-")[1]; return {type:"mango", spot:"mango", label:"Mango case", get:()=>pgState.mango[i], set:v=>pgState.mango[i]=v}; }
   if(key.indexOf("pod2-")===0){ const i=+key.split("-")[1]; return {type:"pod2", spot:"pod2-"+i, label:"Pod "+(i+1), get:()=>pgState.pod2[i], set:v=>pgState.pod2[i]=v}; }
@@ -12708,7 +12962,21 @@ function pgSpotIndex(){
   pgState.pod2.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Pod 2 #"+(i+1), c:"--r5"}); });
   PG_RUN_DEF.forEach((r,ri)=>{ const st=pgState.runs[ri]; if(!st) return;
     st.wet.forEach(v=>{ if(v) idx.push({name:v, loc:"Run "+r.tag+" Wet", c:r.c}); });
-    st.hmr.forEach(v=>{ if(v) idx.push({name:v, loc:"Run "+r.tag+" HMR", c:r.c}); }); });
+    st.hmr.forEach(v=>{ if(v) idx.push({name:v, loc:"Run "+r.tag+" HMR", c:r.c}); });
+    ["b","a"].forEach(function(pos){
+      if(pos === "b" && ri !== 0) return;
+      pgAtts(ri,pos).forEach(function(a){
+        const at = (pos === "b" ? "before" : "after") + " Run " + r.tag;
+        if(a.type === "rack"){
+          const sd = a.side === "hmr" ? "HMR" : "Wet";
+          a.boxes.forEach(function(v,bi){ if(v) idx.push({name:v, loc:"Silver Rack "+sd+" #"+(bi+1)+" \u00b7 "+at, c:r.c}); });
+        } else {
+          if(a.wet) idx.push({name:a.wet, loc:"Small Table Wet \u00b7 "+at, c:r.c});
+          if(a.hmr) idx.push({name:a.hmr, loc:"Small Table HMR \u00b7 "+at, c:r.c});
+        }
+      });
+    });
+  });
   pgState.lots.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Lot "+(i+1), c:"--muted"}); });
   return idx;
 }
@@ -12745,7 +13013,7 @@ async function pgSync(manual){
   pgSyncing = true; pgDock();
   try{
     const d = await callProxy({ action:"planogramSync", state: pgState });
-    if(d && d.ok && d.state){ pgState = d.state; if(!pgState.learn) pgState.learn={}; if(!Array.isArray(pgState.pinned)) pgState.pinned = pgDefault().pinned; pgSave(); }
+    if(d && d.ok && d.state){ pgState = pgNorm(d.state); pgSave(); }
     pgDirty = false; pgOffline = false;
     if(manual) toast("Planogram synced");
   }catch(err){
@@ -12761,7 +13029,7 @@ async function pgPull(){
     const d = await callProxy({ action:"planogramGet" });
     if(d && d.ok && d.state && Array.isArray(d.state.runs)){
       const theirs = d.state.updatedAt||"", mine = pgState.updatedAt||"";
-      if(theirs && theirs >= mine){ pgState = d.state; if(!pgState.learn) pgState.learn={}; if(!Array.isArray(pgState.pinned)) pgState.pinned = pgDefault().pinned; pgSave(); renderPlanogram(); }
+      if(theirs && theirs >= mine){ pgState = pgNorm(d.state); pgSave(); renderPlanogram(); }
     }
   }catch(e){}
 }

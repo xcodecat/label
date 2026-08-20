@@ -198,11 +198,11 @@
      starts after it), and — where a mic sits on the right — a short vertical
      divider the text tucks behind so a long query never runs onto the icon.
      Icon colour tracks the theme, matching the existing .rk-sw search field. */
-  #search,#saleSearch,#prodSearch,#ordSearch,#pgFind,#rkAsSearch{
+  #search,#saleSearch,#prodSearch,#ordSearch,#rkAsSearch{
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238A939C' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='16.5' y1='16.5' x2='21' y2='21'/%3E%3C/svg%3E");
     background-repeat:no-repeat;background-position:13px center;background-size:16px 16px;
     padding-left:38px!important}
-  body.light #search,body.light #saleSearch,body.light #prodSearch,body.light #ordSearch,body.light #pgFind,body.light #rkAsSearch{
+  body.light #search,body.light #saleSearch,body.light #prodSearch,body.light #ordSearch,body.light #rkAsSearch{
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B665A' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='16.5' y1='16.5' x2='21' y2='21'/%3E%3C/svg%3E")}
   .sbox button:not(.clr)::before{content:"";position:absolute;left:-5px;top:50%;transform:translateY(-50%);
     width:1px;height:20px;background:var(--line);border-radius:1px;pointer-events:none}
@@ -1632,7 +1632,11 @@
 </style>
 <style id="pg-style">
   /* ===== Planogram ===== reuses app tokens (--surface/--line/--laser…) */
-  #view-planogram{ --r1:#3ecf8e; --r2:#c0417a; --r3:#e8a13a; --r4:#4a90d9; --r5:#b07d3a; }
+  /* Endcap colours are the Restock table colours (RK_TABLES .tc), so a run
+     reads the same hue here as it does on the Restock board. With silver
+     racks + small tables landing between runs, colour is the fastest way to
+     tell what kind of thing you are looking at. Keep in step with RK_TABLES. */
+  #view-planogram{ --r1:#3ecf8e; --r2:#E85AA0; --r3:#F0912B; --r4:#4A90D9; --r5:#D9544D; }
   .pg-find{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);
     border-radius:12px;padding:0 14px;height:50px;margin-bottom:4px}
   .pg-find svg{width:18px;height:18px;stroke:var(--muted);fill:none;stroke-width:2;flex:none}
@@ -1762,7 +1766,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=131.8">
+  <link rel="manifest" href="./manifest.json?v=131.9">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2311,14 +2315,9 @@
 
     <!-- ============ PLANOGRAM VIEW ============ -->
   <section id="view-planogram" class="view">
-    <div class="rk-head">
-      <div><p class="rk-eyebrow">FLOOR · PLANOGRAM</p><h1>Planogram</h1></div>
-      <div class="rk-live"><span></span>SHARED</div>
-    </div>
-
     <div class="pg-find">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
-      <input id="pgFind" placeholder="Find any item → its spot on the floor" autocomplete="off" oninput="pgDoFind(this.value)">
+      <input id="pgFind" placeholder="Find an item's location on the floor" autocomplete="off" oninput="pgDoFind(this.value)">
     </div>
     <div class="pg-findres" id="pgFindRes"></div>
 
@@ -6336,7 +6335,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v131.8";
+const APP_VERSION = "v131.9";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is

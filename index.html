@@ -1647,6 +1647,11 @@
     display:flex;align-items:center;gap:10px;font-size:14px}
   .pg-findrow .pg-loc{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
   .pg-pin{font-family:var(--mono);font-size:9px;font-weight:700;border-radius:20px;padding:3px 8px;border:1px solid;white-space:nowrap}
+  .pg-pin[role="button"]{cursor:pointer}
+  .pg-pin.pg-off{color:var(--muted);border-color:var(--line)}
+  .pg-shorthint{color:#F0912B !important;border-color:#F0912B !important;font-size:12px;line-height:1.35}
+  @keyframes pgflash{0%{box-shadow:0 0 0 0 rgba(255,214,10,.9)}100%{box-shadow:0 0 0 7px rgba(255,214,10,0)}}
+  .pg-flash{animation:pgflash 1.4s ease-out 2;outline:2px solid #FFD60A;outline-offset:1px;border-radius:8px}
 
   .pg-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--muted);
     text-transform:uppercase;margin:20px 2px 9px;display:flex;align-items:center;gap:8px}
@@ -1777,6 +1782,9 @@
   .pg-chip .pg-plu{font-family:var(--mono);font-size:9px;color:var(--muted)}
   .pg-matchhdr{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);margin:14px 0 6px;text-transform:uppercase}
   .pg-sheet .pg-hint{font-size:12px;color:var(--muted);margin-top:12px}
+  .pg-nomatch{display:flex;flex-direction:column;gap:8px;margin:12px 0 2px;font-size:13px;color:var(--muted)}
+  .pg-addmiss{align-self:flex-start;font-weight:700;font-size:13px;padding:8px 14px;border-radius:10px;border:1px solid var(--laser);color:var(--laser);background:transparent;cursor:pointer}
+  .pg-hint2{font-size:11px;color:var(--muted)}
   .pg-sheet .pg-keep{margin-top:13px;width:100%;height:46px;border:1px dashed var(--line);background:none;color:var(--paper-dim);
     border-radius:12px;font-size:13px;font-weight:650;cursor:pointer}
 
@@ -1803,7 +1811,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=132.0">
+  <link rel="manifest" href="./manifest.json?v=133.0">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2416,8 +2424,6 @@
     <div id="pgMatches"></div>
     <div class="pg-matchhdr" id="pgSugHdr">Suggested for this spot</div>
     <div class="pg-chips" id="pgSug"></div>
-    <button class="pg-keep" id="pgKeepBtn" type="button" onclick="pgKeepTyped()">Keep what I typed</button>
-    <div class="pg-hint">Matches search the PLU + Barcode DB. Speak or type — no match keeps your text. Suggestions learn from what usually goes here.</div>
   </div>
   <div class="pg-menuscrim" id="pgMenuScrim" onclick="pgMenuClose()"></div>
   <div class="pg-menu" id="pgMenu"></div>
@@ -6374,7 +6380,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v132.0";
+const APP_VERSION = "v133.0";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6983,6 +6989,7 @@ document.getElementById("fabAdd").addEventListener("click", ()=>{
 function closeManual(){
   manOverlay.classList.add("hidden");
   document.body.style.overflow = "";
+  pgPendingSpot = null;   // abandon any planogram round-trip on cancel
 }
 document.getElementById("manClose").addEventListener("click", closeManual);
 document.getElementById("mCancel").addEventListener("click", closeManual);
@@ -7077,7 +7084,9 @@ document.getElementById("mSave").addEventListener("click", ()=>{
     return toast("Add a barcode or PLU to save it to the database");
   }
   rememberUnit({ article, code, name }, mKg);
+  const _pgRet = pgPendingSpot;   // capture before closeManual() clears it
   renderList(); closeManual();
+  if(_pgRet){ pgReturnFromAdd(_pgRet.key, name); }
 });
 
 function addItem(o){
@@ -12588,7 +12597,7 @@ function pgBannerLabel(b){ return b==="canada" ? "\ud83c\udf41 CANADA" : b==="no
 function pgRenderPod1(){
   const el = document.getElementById("pgPod1"); if(!el) return;
   el.innerHTML = pgState.pod1.map((p,i)=>`
-    <div class="pg-cell" onclick="pgEdit('pod1-${i}')">
+    <div class="pg-cell" id="pgspot-pod1-${i}" onclick="pgEdit('pod1-${i}')">
       <h3 class="${p.name?'':'pg-blank'}">${nmNameHtml(p.name)||'tap to add'}</h3>
       <button class="pg-banner ${p.banner||'none'}" type="button" onclick="event.stopPropagation();pgCycleBanner(${i})">${pgBannerLabel(p.banner)} \u25be</button>
     </div>`).join("");
@@ -12602,7 +12611,7 @@ function pgRenderPod2(){
   let h="";
   for(let i=0;i<pgState.podN;i++){
     const v = pgState.pod2[i]||"";
-    h += `<div class="pg-cell" onclick="pgEdit('pod2-${i}')"><div class="pg-podnum">${i+1}</div>
+    h += `<div class="pg-cell" id="pgspot-pod2-${i}" onclick="pgEdit('pod2-${i}')"><div class="pg-podnum">${i+1}</div>
           <h3 class="${v?'':'pg-blank'}">${nmNameHtml(v)||'Empty'}</h3></div>`;
   }
   el.innerHTML = h;
@@ -12619,7 +12628,7 @@ function pgAttHtml(ri,pos,ai,a){
   if(a.type === "rack"){
     const side = a.side === "hmr" ? "HMR side" : "Wet-case side";
     const boxes = a.boxes.map(function(v,bi){
-      return '<div class="pg-slot '+(v?'':'pg-blank')+'" onclick="pgEdit(\''+ctx+'-box-'+bi+'\')">'+(nmNameHtml(v)||'tap to add')+'</div>';
+      return '<div class="pg-slot '+(v?'':'pg-blank')+'" id="pgspot-'+ctx+'-box-'+bi+'" onclick="pgEdit(\''+ctx+'-box-'+bi+'\')">'+(nmNameHtml(v)||'tap to add')+'</div>';
     }).join("");
     return '<div class="pg-att" style="--ac:'+PG_ATT_C.rack+'">'
       + '<div class="pg-att-h"><span class="pg-att-tag">SILVER RACK</span>'
@@ -12633,9 +12642,9 @@ function pgAttHtml(ri,pos,ai,a){
     + '<button class="pg-menubtn" type="button" onclick="pgMenu(event,\''+ctx+'\')" aria-label="Small table options">'+PG_ICON_CAM+'</button></div>'
     + '<div class="pg-ends">'
     +   '<div class="pg-endcol"><h5>\u25b2 WET CASES</h5>'
-    +     '<div class="pg-slot '+(a.wet?'':'pg-blank')+'" onclick="pgEdit(\''+ctx+'-tbl-wet\')">'+(nmNameHtml(a.wet)||'tap to add')+'</div></div>'
+    +     '<div class="pg-slot '+(a.wet?'':'pg-blank')+'" id="pgspot-'+ctx+'-tbl-wet" onclick="pgEdit(\''+ctx+'-tbl-wet\')">'+(nmNameHtml(a.wet)||'tap to add')+'</div></div>'
     +   '<div class="pg-endcol"><h5>\u25bc HMR</h5>'
-    +     '<div class="pg-slot '+(a.hmr?'':'pg-blank')+'" onclick="pgEdit(\''+ctx+'-tbl-hmr\')">'+(nmNameHtml(a.hmr)||'tap to add')+'</div></div>'
+    +     '<div class="pg-slot '+(a.hmr?'':'pg-blank')+'" id="pgspot-'+ctx+'-tbl-hmr" onclick="pgEdit(\''+ctx+'-tbl-hmr\')">'+(nmNameHtml(a.hmr)||'tap to add')+'</div></div>'
     + '</div></div>';
 }
 function pgRenderRuns(){
@@ -12646,7 +12655,7 @@ function pgRenderRuns(){
     if(ri === 0) pgAtts(0,"b").forEach(function(a,ai){ out += pgAttHtml(0,"b",ai,a); });
     const col = function(end){
       return st[end].map(function(v,i){
-        return '<div class="pg-slot '+(v?'':'pg-blank')+'" onclick="pgEdit(\'run-'+ri+'-'+end+'-'+i+'\')">'+(nmNameHtml(v)||'tap to add')+'</div>';
+        return '<div class="pg-slot '+(v?'':'pg-blank')+'" id="pgspot-run-'+ri+'-'+end+'-'+i+'" onclick="pgEdit(\'run-'+ri+'-'+end+'-'+i+'\')">'+(nmNameHtml(v)||'tap to add')+'</div>';
       }).join("");
     };
     out += '<div class="pg-run" style="--rc:var('+r.c+')">'
@@ -12664,7 +12673,7 @@ function pgRenderRuns(){
 function pgRenderLots(){
   const el = document.getElementById("pgLots"); if(!el) return;
   el.innerHTML = pgState.lots.map((v,i)=>`
-    <div class="pg-lot" onclick="pgEdit('lot-${i}')">
+    <div class="pg-lot" id="pgspot-lot-${i}" onclick="pgEdit('lot-${i}')">
       <span class="pg-lt">Lot ${i+1}</span>
       <span class="pg-lv ${v?'':'pg-blank'}">${nmNameHtml(v)||'empty'}</span>
     </div>`).join("");
@@ -12813,6 +12822,7 @@ function pgRackSlots(ri,pos,ai,d){
 
 /* ---- editor ---- */
 let pgCur = null;
+let pgPendingSpot = null;   // planogram <-> Add round-trip (Pass C hard block)
 const PG_SPOT_LABEL = { pod1:"POD 1", pod2:"POD 2", mango:"POD 1 \u00b7 MANGO", run:"ENDCAP", lot:"CASE LOT", rack:"SILVER RACK", table:"SMALL TABLE" };
 function pgSpotMeta(key){
   /* att-<ri>-<pos>-<ai>-box-<n>  (silver rack)  |  att-<ri>-<pos>-<ai>-tbl-wet|hmr */
@@ -12876,15 +12886,55 @@ function pgOnType(v){
   const q = String(v||"").trim();
   const box = document.getElementById("pgMatches");
   if(!q){ box.innerHTML=""; return; }
+  // Unified PLU + Barcode search (same stream the Add tab uses), so barcode
+  // items surface here too. Hard block: only real DB records can be placed.
   const seen = new Set(); const hits = [];
-  pluSearch(q).forEach(e=>{ const nm = e.name.replace(/\s*\(Organic\)\s*$/i,""); if(seen.has(nm)) return; seen.add(nm); hits.push({name:nm, plu:e.plu}); });
-  const top = hits.slice(0,5);
-  box.innerHTML = top.length
-    ? `<div class="pg-matchhdr">PLU / Barcode DB</div>` + top.map(d=>`<button class="pg-chip" type="button" onclick='pgAssign(${JSON.stringify(d.name)})'>${esc(d.name)} ${d.plu?`<span class="pg-plu">${d.plu}</span>`:""}</button>`).join("")
-    : `<div class="pg-hint">No DB match \u2014 \u201cKeep what I typed\u201d files it as-is.</div>`;
+  searchEntries(q).forEach(e=>{
+    const nm = String(e.name||"").replace(/\s*\(Organic\)\s*$/i,"");
+    if(!nm) return; const k = nm.toLowerCase(); if(seen.has(k)) return; seen.add(k);
+    hits.push({ name:nm, plu:e.plu, code:e.code });
+  });
+  const top = hits.slice(0,6);
+  if(top.length){
+    box.innerHTML = `<div class="pg-matchhdr">PLU / Barcode DB</div>`
+      + top.map(d=>{
+          const badge = d.plu ? `<span class="pg-plu">${esc(d.plu)}</span>`
+                       : (d.code ? `<span class="pg-plu">${esc(d.code)}</span>` : "");
+          return `<button class="pg-chip" type="button" onclick='pgAssign(${JSON.stringify(d.name)})'>${esc(d.name)} ${badge}</button>`;
+        }).join("");
+  } else {
+    box.innerHTML = `<div class="pg-nomatch">No match in the PLU or Barcode DB.`
+      + `<button class="pg-addmiss" type="button" onclick="pgAddMissing()">Add \u201c${esc(q)}\u201d to the database</button>`
+      + `<span class="pg-hint2">Items must exist in the DB so the restock list can find them.</span></div>`;
+  }
 }
 function pgAssign(name){ name = nmShort(name); pgCur.set(name); pgRemember(pgCur.spot, name); pgCloseSheet(); pgTouch(); toast("Filed: "+name); }
-function pgKeepTyped(){ let v=document.getElementById("pgSheetInput").value.trim(); if(!v){ pgCloseSheet(); return; } v = nmShort(v); pgCur.set(v); pgRemember(pgCur.spot, v); pgCloseSheet(); pgTouch(); toast("Filed: "+v); }
+function pgAddMissing(){
+  const inp = document.getElementById("pgSheetInput"); const v = inp ? inp.value.trim() : "";
+  if(!v || !pgCur) return;
+  // Stash the spot so a successful Add-tab save can bounce back to it.
+  pgPendingSpot = { key: pgCur.key, typed: v };
+  pgCloseSheet();
+  showView("list");
+  const s = document.getElementById("search");
+  if(s){ s.value = v; renderList(); if(!matchMedia("(hover: none)").matches) s.focus({ preventScroll:true }); }
+  toast("Add \u201c"+v+"\u201d to the DB \u2014 you\u2019ll return to the spot after saving");
+}
+function pgReturnFromAdd(key, nm){
+  showView("planogram");
+  const meta = pgSpotMeta(key);
+  if(!meta){ toast("That spot changed on another phone \u2014 pick it again"); return; }
+  pgEdit(key);
+  const inp = document.getElementById("pgSheetInput");
+  if(inp){ inp.value = nm; pgOnType(nm); }   // re-run search so the new record is one tap away
+}
+function pgOnEnter(){
+  const inp = document.getElementById("pgSheetInput"); const v = inp ? inp.value.trim() : "";
+  if(!v) return;
+  const hits = searchEntries(v);
+  if(hits.length){ pgAssign(String(hits[0].name||"").replace(/\s*\(Organic\)\s*$/i,"")); }
+  else { pgAddMissing(); }
+}
 function pgCloseSheet(){ document.getElementById("pgScrim").classList.remove("show"); document.getElementById("pgSheet").classList.remove("show"); pgStopMic(); }
 
 /* ---- voice (same engine as Scrap/Restock) ---- */
@@ -12958,41 +13008,93 @@ function pgApplyOcr(section, end, items){
 /* ---- find item -> spot ---- */
 function pgSpotIndex(){
   const idx = [];
-  pgState.pod1.forEach(p=>{ if(p.name) idx.push({name:p.name, loc:"Pod 1", c:"--laser"}); });
-  pgState.pod2.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Pod 2 #"+(i+1), c:"--r5"}); });
+  pgState.pod1.forEach((p,i)=>{ if(p.name) idx.push({name:p.name, loc:"Pod 1", c:"--laser", key:"pod1-"+i}); });
+  pgState.pod2.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Pod 2 #"+(i+1), c:"--r5", key:"pod2-"+i}); });
   PG_RUN_DEF.forEach((r,ri)=>{ const st=pgState.runs[ri]; if(!st) return;
-    st.wet.forEach(v=>{ if(v) idx.push({name:v, loc:"Run "+r.tag+" Wet", c:r.c}); });
-    st.hmr.forEach(v=>{ if(v) idx.push({name:v, loc:"Run "+r.tag+" HMR", c:r.c}); });
+    st.wet.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Run "+r.tag+" Wet", c:r.c, key:"run-"+ri+"-wet-"+i}); });
+    st.hmr.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Run "+r.tag+" HMR", c:r.c, key:"run-"+ri+"-hmr-"+i}); });
     ["b","a"].forEach(function(pos){
       if(pos === "b" && ri !== 0) return;
-      pgAtts(ri,pos).forEach(function(a){
+      pgAtts(ri,pos).forEach(function(a,ai){
         const at = (pos === "b" ? "before" : "after") + " Run " + r.tag;
         if(a.type === "rack"){
           const sd = a.side === "hmr" ? "HMR" : "Wet";
-          a.boxes.forEach(function(v,bi){ if(v) idx.push({name:v, loc:"Silver Rack "+sd+" #"+(bi+1)+" \u00b7 "+at, c:r.c}); });
+          a.boxes.forEach(function(v,bi){ if(v) idx.push({name:v, loc:"Silver Rack "+sd+" #"+(bi+1)+" \u00b7 "+at, c:r.c, key:"att-"+ri+"-"+pos+"-"+ai+"-box-"+bi}); });
         } else {
-          if(a.wet) idx.push({name:a.wet, loc:"Small Table Wet \u00b7 "+at, c:r.c});
-          if(a.hmr) idx.push({name:a.hmr, loc:"Small Table HMR \u00b7 "+at, c:r.c});
+          if(a.wet) idx.push({name:a.wet, loc:"Small Table Wet \u00b7 "+at, c:r.c, key:"att-"+ri+"-"+pos+"-"+ai+"-tbl-wet"});
+          if(a.hmr) idx.push({name:a.hmr, loc:"Small Table HMR \u00b7 "+at, c:r.c, key:"att-"+ri+"-"+pos+"-"+ai+"-tbl-hmr"});
         }
       });
     });
   });
-  pgState.lots.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Lot "+(i+1), c:"--muted"}); });
+  pgState.lots.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Lot "+(i+1), c:"--muted", key:"lot-"+i}); });
   return idx;
 }
 function pgDoFind(q){
-  q = String(q||"").trim().toLowerCase();
+  q = String(q||"").trim();
   const box = document.getElementById("pgFindRes");
   if(!q){ box.innerHTML=""; return; }
+  const ql = q.toLowerCase();
   const groups = {};
-  pgSpotIndex().filter(x=>x.name.toLowerCase().includes(q)).forEach(x=>{ (groups[x.name]=groups[x.name]||[]).push(x); });
+  pgSpotIndex().filter(x=>x.name.toLowerCase().includes(ql)).forEach(x=>{ (groups[x.name]=groups[x.name]||[]).push(x); });
   const names = Object.keys(groups).slice(0,8);
-  box.innerHTML = names.length
-    ? names.map(name=>{
-        const pins = groups[name].map(x=>`<span class="pg-pin" style="color:var(${x.c});border-color:var(${x.c})">\ud83d\udccd ${esc(x.loc)}</span>`).join("");
-        return `<div class="pg-findrow">${esc(name)}<span class="pg-loc">${pins}</span></div>`;
-      }).join("")
-    : `<div class="pg-findrow" style="color:var(--muted)">No item matches \u201c${esc(q)}\u201d on the floor</div>`;
+  if(names.length){
+    box.innerHTML = names.map(name=>{
+      const pins = groups[name].map(x=>`<span class="pg-pin" role="button" tabindex="0" style="color:var(${x.c});border-color:var(${x.c})" onclick="pgFlash('${x.key}')">\ud83d\udccd ${esc(x.loc)}</span>`).join("");
+      return `<div class="pg-findrow">${esc(name)}<span class="pg-loc">${pins}</span></div>`;
+    }).join("");
+    return;
+  }
+  // Not on the floor — fall back to restock routing knowledge, then the short list.
+  const ri = pgRouteInfo(q, "");
+  let html = "";
+  if(ri.kind === "table"){
+    html = `<div class="pg-findrow">${esc(q)}<span class="pg-loc"><span class="pg-pin pg-off">\u27a1 ${esc(ri.label)}</span></span></div>`;
+  } else if(ri.kind === "none" || ri.kind === "carry"){
+    html = `<div class="pg-findrow" style="color:var(--muted)">${esc(q)} \u2014 ${esc(ri.label)}</div>`;
+  } else {
+    html = `<div class="pg-findrow" style="color:var(--muted)">No item matches \u201c${esc(q)}\u201d on the floor</div>`;
+  }
+  if(pgShortedToday(q)){
+    html += `<div class="pg-findrow pg-shorthint">\u26a0\ufe0f Today\u2019s short list mentions this \u2014 it may have been shorted. Confirm with a produce crew member.</div>`;
+  }
+  box.innerHTML = html;
+}
+function pgFlash(key){
+  const el = document.getElementById("pgspot-"+key);
+  if(!el) return;
+  try{ el.scrollIntoView({ behavior:"smooth", block:"center" }); }catch(e){ el.scrollIntoView(); }
+  el.classList.remove("pg-flash"); void el.offsetWidth; el.classList.add("pg-flash");
+  setTimeout(()=>el.classList.remove("pg-flash"), 1600);
+}
+/* Off-planogram routing: read the trainer's map directly (raw, not tableFor's
+   fridge fallback) so a genuinely-unknown item stays "unknown" and can trip the
+   short-list check. "fridge" is shown as "wet rack" here only. */
+function pgRouteInfo(name, plu){
+  const taught = rkRoutes()[rkRouteKey(name, plu)];
+  if(taught === "none") return { kind:"none", label:"Not carried at 0374" };
+  if(taught === "carry") return { kind:"carry", label:"Carried \u2014 no table trained yet" };
+  if(taught && RK_BY_ID[taught]){
+    const t = RK_BY_ID[taught];
+    const disp = (t.id === "fridge") ? "wet rack" : t.name;
+    return { kind:"table", table:t.id, label:"Restock \u00b7 " + disp };
+  }
+  return { kind:"unknown", label:"" };
+}
+/* Same-day short-list cross-check. Suggest only, never assert. */
+function pgShortedToday(name){
+  const q = String(name||"").trim().toLowerCase(); if(!q) return false;
+  const qt = q.split(/\s+/).filter(Boolean);
+  const d0 = new Date(); d0.setHours(0,0,0,0); const t0 = d0.getTime();
+  let any = false;
+  (orders()||[]).forEach(inv=>{ (inv.pages||[]).forEach(p=>{
+    if(!p.ts || p.ts < t0) return;   // pages photographed today only
+    (p.rows||[]).forEach(r=>{
+      const hay = [r.item,r.label,r.desc,r.art,r.brand,r.brandFull,r.size].filter(Boolean).join(" ").toLowerCase();
+      if(qt.every(t=>hay.includes(t))) any = true;
+    });
+  }); });
+  return any;
 }
 
 /* ---- dock + sync (whole board, last write wins) ---- */
@@ -13046,7 +13148,7 @@ document.addEventListener("visibilitychange", ()=>{
   const _pgCam = document.getElementById("pgCamInput");
   if(_pgCam) _pgCam.addEventListener("change", function(){ if(!this.files || !this.files.length){ pgShootJob=null; return; } if(pgShootJob) pgReadPhoto(this.files[0]); });
   const _pgIn = document.getElementById("pgSheetInput");
-  if(_pgIn) _pgIn.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); pgKeepTyped(); } });
+  if(_pgIn) _pgIn.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); pgOnEnter(); } });
 }
 
 /* Draw the dynamic nav + section pill for the opening view (Add). Without this

@@ -480,13 +480,6 @@
   .pick-btns .org span{color:#2e7d52}
   /* sync sits above the mic with a real gap — far enough that a thumb reaching
      for the mic can't catch it, and smaller so the two never feel alike */
-  .sync-fab{position:fixed;right:22px;bottom:calc(156px + env(safe-area-inset-bottom));
-    width:42px;height:42px;border-radius:50%;border:1px solid var(--line);z-index:40;
-    cursor:pointer;background:var(--surface-2);color:var(--muted);
-    display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.35)}
-  .sync-fab svg{width:18px;height:18px}
-  .sync-fab:active{transform:scale(.94)}
-  .sync-fab.busy svg{animation:spin 1s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   .sfab-badge{position:absolute;top:-4px;right:-4px;background:var(--laser);color:#fff;
     border-radius:9px;min-width:17px;height:17px;font-size:10px;font-family:var(--mono);
@@ -960,10 +953,11 @@
   .saved-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
   .sess-h .fromtag{font-size:9px;color:var(--laser);letter-spacing:.02em;margin-left:3px}
   .sess.shared{border-left:3px solid var(--laser)}
-  .sess:not(.open) .sess-h .brk{visibility:hidden}
-  .sess-share{background:var(--surface-2);border:1px solid var(--line);color:var(--paper);
-    font-size:10px;font-weight:600;letter-spacing:.04em;padding:4px 10px;border-radius:7px;cursor:pointer;flex:none}
-  .sess-share:active{transform:scale(.96)}
+  .sess-share{background:none;border:none;color:var(--muted);padding:3px;cursor:pointer;flex:none;
+    display:flex;align-items:center;justify-content:center}
+  .sess-share svg{width:17px;height:17px}
+  .sess-share:hover{color:var(--paper)}
+  .sess-share:active{transform:scale(.9)}
   .share-sub{font-size:12px;color:var(--muted);margin:2px 0 12px}
   .share-people{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
   .share-person{background:var(--surface-2);border:1px solid var(--line);color:var(--paper);
@@ -1768,7 +1762,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=131.7">
+  <link rel="manifest" href="./manifest.json?v=131.8">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2034,12 +2028,6 @@
         <p class="cd-src">A snapshot is sent now. If they can't finish it, they re-share it onward — edits you make here afterward don't follow.</p>
       </div>
     </div>
-    <button class="sync-fab" id="btnScrapSync" aria-label="Sync saved lists to the Sheet">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-7.5-4"/><path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 7.5 4"/>
-        <polyline points="19 3 19.5 7 15.5 7.5"/><polyline points="5 21 4.5 17 8.5 16.5"/></svg>
-      <span class="sfab-badge hidden" id="scrapBadge">0</span>
-    </button>
     <button class="mic-fab" id="btnMic" aria-label="Hold to talk">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
         <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/>
@@ -3737,7 +3725,7 @@ function showView(name){
   if(name === "settings") hoRenderDevInfo();
   if(name==="list"){ renderList(); dbAutoRefresh(false); }
   if(name==="sales"){ renderWeekTabs(); renderSales(); }
-  if(name==="scrap"){ maybeResumeWip(); renderLists(); scrapSharePull(); }
+  if(name==="scrap"){ maybeResumeWip(); renderLists(); scrapAutoSync(); scrapSharePull(); }
   if(name==="restock"){ renderRestock(); rkBumpItemViews(); rkPull(); rkStartPoll(); dbAutoRefresh(false); }
   if(name==="handoff"){ ensureBadgePermission(); hoMarkSeen(); renderHandoff(); hoPull(); hoStartPoll(); hoMaybePrompt(); renderHoIcon(); }
   if(name==="planogram"){ renderPlanogram(); pgPull(); pgStartPoll(); }
@@ -6348,7 +6336,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v131.7";
+const APP_VERSION = "v131.8";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -6872,44 +6860,38 @@ document.getElementById("mSay").addEventListener("click", e=>{
    the loss reporting — that part is deliberately left for another day.    */
 function unsyncedSessions(){ return sessions().filter(x=>!x.synced); }
 function scrapBadge(){
-  const n = unsyncedSessions().length;
   const b = document.getElementById("scrapBadge");
+  if(!b) return;                       // badge removed with the manual sync fab
+  const n = unsyncedSessions().length;
   b.textContent = n;
   b.classList.toggle("hidden", !n);
 }
-document.getElementById("btnScrapSync").addEventListener("click", async ()=>{
+/* Auto-sync finished scrap lists to the Loop/Flashfood log tabs. Fires on save,
+   on opening the scrap tab, and when the phone comes back online. Silent and
+   idempotent: only unsynced sessions go up, and they are marked synced on
+   success so nothing double-logs; a failure just leaves them to retry. */
+async function scrapAutoSync(){
   const pend = unsyncedSessions();
-  if(!pend.length) return toast("Nothing new to sync");
-  if(!proxyUrl()){ toast("Not set up yet — see Settings"); return showView("settings"); }
-  if(!navigator.onLine) return toast("Offline — it'll keep until you're back");
-
-  const btn = document.getElementById("btnScrapSync");
-  btn.classList.add("busy");
+  if(!pend.length) return;
+  if(!proxyUrl() || !navigator.onLine) return;
   const rows = [];
   pend.forEach(x=>x.rows.forEach(r=>rows.push({
     date: new Date(x.ts).toLocaleString(),
     session: new Date(x.ts).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"}),
     list: x.list, name: r.name, plu: r.plu || "", code: r.code || "",
     qty: r.kg ? kg3(parseFloat(r.qty)||0) : (parseInt(r.qty,10)||0),
-    unit: r.kg ? "kg" : "ea"          // "ea" to match the Sheet's Sold-as dropdown
+    unit: r.kg ? "kg" : "ea"
   })));
+  if(!rows.length) return;
   try{
     const d = await callProxy({ action:"scrap", rows });
-    if(!d || !d.ok) throw new Error((d && d.error) || "failed");
+    if(!d || !d.ok) return;
     const all = sessions();
     pend.forEach(p=>{ const f = all.find(v=>v.id===p.id); if(f) f.synced = true; });
     saveSessions(all);
     scrapBadge(); renderLists();
-    toast("Sent " + rows.length + " row(s) to the Sheet");
-  }catch(err){
-    // Not approved yet? The lists stay unsynced and the badge stays up, so they
-    // go through by themselves once the device is ticked. Losing a morning's
-    // scrap because a checkbox wasn't ticked would be unforgivable.
-    const a = authMessage(err);
-    toast(a || ("Sync failed: " + err.message));
-  }
-  btn.classList.remove("busy");
-});
+  }catch(err){ /* stays unsynced; retried on the next trigger */ }
+}
 
 /* ================= PLU picker: regular vs organic ================= */
 const pickOverlay = document.getElementById("pickOverlay");
@@ -7736,6 +7718,7 @@ document.getElementById("btnScrapSave").addEventListener("click", ()=>{
   lists[activeList] = [];
   openRow = null; justAdded.clear();
   renderLists();
+  scrapAutoSync();
   toast("Saved " + rows.length + " to " + LIST_META[activeList].label);
 });
 
@@ -7749,7 +7732,8 @@ function fmtQty(r){
    just a fresh snapshot to the next person. Roster = approved Devices names. */
 const KEY_ROSTER = "label_roster_v1";
 const KEY_SHARE_SEEN = "label_share_seen_v1";
-let _roster = null, _shareSid = null;
+let _roster = null, _shareSid = null, _shareBusy = false;
+function shareHash(str){ let h=0; for(let i=0;i<str.length;i++){ h=(h*31 + str.charCodeAt(i))|0; } return (h>>>0).toString(36); }
 let _sharePick = new Set(), _shareExtra = [];
 try{ const r = JSON.parse(localStorage.getItem(KEY_ROSTER)||"null"); if(Array.isArray(r)) _roster = r; }catch(e){}
 async function loadRoster(force){
@@ -7788,16 +7772,24 @@ function renderSharePeople(){
   if(ex) ex.innerHTML = _shareExtra.map(n=>`<span class="chip">${esc(n)} ✕</span>`).join("");
 }
 async function doShare(){
+  if(_shareBusy) return;
   const sess = sessions().find(x=>x.id === _shareSid);
   if(!sess) return closeShare();
   const to = [...Array.from(_sharePick), ..._shareExtra].filter(Boolean);
   if(!to.length) return toast("Pick at least one person");
   if(!proxyUrl()) return toast("Not set up yet — see Settings");
+  _shareBusy = true;
+  const g = document.getElementById("shareGo"); if(g) g.disabled = true;
+  // Stable id from the list contents: re-sending the SAME list to the SAME
+  // person is deduped server-side, so a double-tap can't double-send.
+  const sig = sess.id + "|" + sess.rows.map(r=>r.name+"~"+r.qty+"~"+(r.kg?"k":"e")).join(";");
+  const id = sess.id + "_" + shareHash(sig);
   try{
-    const d = await callProxy({ action:"scrapShareSend", from: rkMeName(), to, list: sess.list, rows: sess.rows });
-    if(d && d.ok){ toast("Shared to " + to.join(", ")); closeShare(); }
+    const d = await callProxy({ action:"scrapShareSend", id, from: rkMeName(), to, list: sess.list, rows: sess.rows });
+    if(d && d.ok){ toast(d.sent===0 ? "Already shared to them" : ("Shared to " + to.join(", "))); closeShare(); }
     else toast((d && d.error) || "Couldn't share");
   }catch(e){ toast("Couldn't reach the server"); }
+  finally{ _shareBusy = false; if(g) g.disabled = false; }
 }
 async function scrapSharePull(){
   if(!proxyUrl()) return;
@@ -7810,7 +7802,7 @@ async function scrapSharePull(){
     const rows = (sh.rows||[]).map(r=>({ name:String(r.name||""), plu:r.plu||"", code:r.code||"",
       qty: r.kg ? kg3(parseFloat(r.qty)||0) : (parseInt(r.qty,10)||0), kg: !!r.kg }));
     all.unshift({ id:"x"+Date.now()+"_"+Math.random().toString(36).slice(2,6), ts:Date.now(),
-      list: sh.list==="flashfood" ? "flashfood" : "loop", rows, from: sh.from||"", shared:true });
+      list: sh.list==="flashfood" ? "flashfood" : "loop", rows, from: sh.from||"", shared:true, synced:true });
     added++; from = sh.from || from;
   });
   if(added){
@@ -7870,7 +7862,6 @@ function renderSaved(){
     '<div class="saved-h"><span>Saved ' + LIST_META[activeList].label +
     '<button class="allsess" id="allSess">expand all</button></span>' +
     '<span class="daytot">Σ ' + kgStr(kg3(dayTotal)) + '</span></div>' +
-    '<div class="expiry">Kept 24 hours, then cleared. Sync to the Sheet to keep them.</div>' +
     Object.entries(days).map(([day, list])=>{
       const nice = new Date(list[0].ts).toLocaleDateString(undefined,
         { weekday:"short", month:"short", day:"numeric" });
@@ -7889,8 +7880,8 @@ function renderSaved(){
               <span class="tag ${LIST_META[x.list].cls}"></span>
               <span class="st">${esc(t)}${x.from?'<span class="fromtag">\u00b7 from '+esc(x.from)+'</span>':''}</span>
               <span class="brk">${x.rows.length} item${x.rows.length===1?"":"s"} · ${esc(brk)}</span>
-              <button class="sess-share" type="button" aria-label="Share this list">Share</button>
               <span class="sum">Σ ${kgStr(tally)}</span>
+              <button class="sess-share" type="button" aria-label="Share this list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 4 20 9 15 14"/><path d="M20 9H9a5 5 0 0 0-5 5v3"/></svg></button>
             </div>
             <div class="sess-b">
               ${x.rows.map((r,ri)=>{
@@ -12810,7 +12801,7 @@ window.addEventListener("online", ()=>{ hoPull(); });
    app returns to the foreground. Throttled so foregrounding doesn't hammer the
    Sheet; forced on launch / reconnect. Silent: pulls in the background and only
    the fab count moves. */
-let _dbAutoAt = 0;
+var _dbAutoAt = 0;
 async function dbAutoRefresh(force){
   if(!proxyUrl() || !navigator.onLine) return;
   const now = Date.now();
@@ -12822,6 +12813,7 @@ async function dbAutoRefresh(force){
 }
 if(proxyUrl() && navigator.onLine) dbAutoRefresh(true);
 window.addEventListener("online", ()=>dbAutoRefresh(true));
+window.addEventListener("online", ()=>scrapAutoSync());
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) dbAutoRefresh(false); });
 setInterval(()=>{ if(!document.hidden) dbAutoRefresh(false); }, 90000);
 

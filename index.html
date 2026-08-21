@@ -1846,7 +1846,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=133.4">
+  <link rel="manifest" href="./manifest.json?v=133.5">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6414,7 +6414,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v133.4";
+const APP_VERSION = "v133.5";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -9010,7 +9010,7 @@ function logClaim(c, n, how){
    line can't split it.                                                      */
 const KEY_ORDERS = "label_orders_v1";
 const KEY_GEMINI = "label_gemini_key_v1";       // device-local Gemini key (never synced)
-const GEMINI_MODEL = "gemini-2.5-flash";         // free-tier, multimodal vision
+const GEMINI_MODEL = "gemini-3.6-flash";         // free-tier, multimodal vision (dormant; backend is source of truth)
 function geminiKey(){ return (localStorage.getItem(KEY_GEMINI) || "").trim(); }
 const RE_ART  = /^\d{7,12}$/;
 const RE_SIZE = /^\d{1,3}\s*[xX]\s*[\d.]+(G|KG|ML|L|EA|LB|OZ|CT)$/i;

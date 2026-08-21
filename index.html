@@ -456,6 +456,27 @@
   .ocr-busy p{font-size:12px;color:var(--muted);font-family:var(--mono);margin-top:6px}
   .ocr-bar{height:3px;background:#e7e3d5;border-radius:2px;overflow:hidden}
   .ocr-bar i{display:block;height:100%;width:0;background:var(--laser);transition:width .25s}
+  /* Indeterminate bar for the AI read: a fetch to the model reports no progress,
+     so instead of a frozen 35% we slide a chunk across to show it is alive. */
+  .ocr-bar.indet{overflow:hidden}
+  .ocr-bar.indet i{width:40%;transition:none;animation:ocrIndet 1.15s ease-in-out infinite}
+  @keyframes ocrIndet{0%{margin-left:-42%}100%{margin-left:100%}}
+  /* Local upload queue (Gallery+/Camera+): drawn from job state above the
+     results, so a tab-switch or a minimise repaints it instead of losing it. */
+  .aiq{display:flex;flex-direction:column;gap:6px;margin:0 0 10px}
+  .aiq.hidden{display:none}
+  .aiq-item{display:flex;align-items:center;gap:10px;background:var(--surface);
+            border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+  .aiq-item.failed{border-color:var(--laser)}
+  .aiq-main{flex:1;min-width:0}
+  .aiq-name{font-size:12px;font-weight:600}
+  .aiq-msg{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:3px;
+           white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .aiq-item.failed .aiq-msg{color:var(--laser)}
+  .aiq-item .ocr-bar{margin-top:5px}
+  .aiq-btn{flex:none;font-size:12px;font-weight:600;padding:5px 10px;border-radius:7px;
+           border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+  .aiq-btn.ghost{border:none;background:transparent;color:var(--muted);font-size:16px;padding:2px 6px}
   .ocr-pick{display:block;width:100%;text-align:left;background:#fffdf6;border:1.5px solid #c9c4b4;
     border-radius:8px;padding:11px 12px;margin-bottom:8px;font-size:15px;font-family:var(--sans);
     color:var(--paper);cursor:pointer}
@@ -1846,7 +1867,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=133.6">
+  <link rel="manifest" href="./manifest.json?v=133.7">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2129,6 +2150,7 @@
       <div class="wtabs" id="ordTabs"></div>
     </div>
     <div class="tabpanel">
+      <div id="aiQueue" class="aiq hidden"></div>
       <div id="ordVerdict"></div>
       <div id="ordBody"></div>
     </div>
@@ -3825,7 +3847,7 @@ function showView(name){
       setTimeout(()=>b.classList.remove("armed"), 1400);
     }
   }
-  if(name==="order") renderOrder();
+  if(name==="order"){ renderOrder(); aiRenderQueue(); }
   if(name==="claims") renderClaims();
   if(name==="settings"){
     pluCountLabel(); renderAppearance();
@@ -6426,7 +6448,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v133.6";
+const APP_VERSION = "v133.7";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -9635,8 +9657,12 @@ const aiCam = document.createElement("input");
 aiCam.type = "file"; aiCam.accept = "image/*"; aiCam.capture = "environment";
 const aiGal = document.createElement("input");
 aiGal.type = "file"; aiGal.accept = "image/*";
-aiCam.addEventListener("change", e=>readOrderAI(e.target.files && e.target.files[0]));
-aiGal.addEventListener("change", e=>readOrderAI(e.target.files && e.target.files[0]));
+aiGal.multiple = true;   // pick several at once; each one queues locally
+aiCam.addEventListener("change", e=> aiEnqueue(e.target.files && e.target.files[0], "AI reader"));
+aiGal.addEventListener("change", e=>{
+  const fs = e.target.files ? Array.from(e.target.files) : [];
+  fs.forEach(f=> aiEnqueue(f, "AI reader"));
+});
 document.getElementById("apAIShot").addEventListener("click", ()=>{
   if(!aiReady()) return;
   closeAddPage(); aiCam.value=""; aiCam.click();
@@ -9678,88 +9704,175 @@ function aiRowToRow(a){
   };
 }
 
-async function aiIngest(opts){
+/* ---- AI read core + local upload queue -----------------------------------
+   aiRead1 does the network+parse and RETURNS a result; it never writes to the
+   order body, so the same core drives both the single-shot Read+ path and the
+   queue below. Every failure path still logs an AIREAD row (and flushErrors now
+   also fires on boot + foreground, so those rows actually leave the phone).
+
+   The queue lets you fire several photos back-to-back without waiting on each.
+   It is sequential on purpose -- one shared free-tier key, so parallel calls
+   would just trip the quota. Job state lives in memory and the strip is redrawn
+   from it on every order-view show and on foreground, so a tab-switch or a
+   minimise repaints the live bar (or a Retry chip) instead of a blank. */
+function aiMsgCycle(id, hasImage){
+  const msgs = hasImage
+    ? ["Uploading the page\u2026","AI is reading the columns\u2026","Matching the articles\u2026","Almost there\u2026"]
+    : ["Sending the text\u2026","AI is checking it\u2026","Almost there\u2026"];
+  let i = 0;
+  const t = setInterval(()=>{
+    const el = document.getElementById(id);
+    if(!el){ clearInterval(t); return; }
+    i = (i + 1) % msgs.length; el.textContent = msgs[i];
+  }, 2500);
+  return ()=>clearInterval(t);
+}
+
+async function aiRead1(opts){
   opts = opts || {};
   const f    = opts.imageFile || null;
   const text = String(opts.text || "").trim();
   const how  = opts.how || "AI reader";
-  if(!f && !text){ toast("Nothing to read"); return; }
-  if(!aiReady()) return;
-  const body = document.getElementById("ordBody");
-  body.innerHTML = '<div class="ocr-prog"><div class="ocr-bar"><i id="oBar" style="width:35%"></i></div>' +
-                   '<p id="oMsg">Uploading the page\u2026</p></div>';
+  if(!f && !text) return { status:"error", msg:"Nothing to read", retryable:false };
+  if(!aiReady())  return { status:"error", msg:"AI needs setup or a signal", retryable:false };
+  let shot = "", b64 = "";
   try{
-    let shot = "", b64 = "";
     if(f){
-      shot = await shrinkImg(f, 1100);            // kept with the page
-      const big = await shrinkImg(f, 1600);       // sent to the model
+      shot = await shrinkImg(f, 1100);
+      const big = await shrinkImg(f, 1600);
       b64 = big.replace(/^data:image\/[a-z]+;base64,/, "");
     }
-    // The key lives on the backend: callProxy adds the shared secret + device id,
-    // so aiRead rides the same write-gate as any other write. Send whatever we
-    // have \u2014 image, text, or both; the model reconciles both when both arrive.
-    let resp;
-    try{
-      const payload = { action:"aiRead" };
-      if(b64)  payload.image = b64;
-      if(text) payload.text  = text;
-      resp = await callProxy(payload, { timeoutMs: 90000 });   // vision is slow; give it room
-    }catch(err){
-      // "signal is aborted without reason" is the browser\'s stock text when the
-      // 90s ceiling trips. Turn it into something a user can act on, and log the
-      // real reason to the Sheet\'s Errors tab so slow-key days stay traceable.
-      const aborted = err && (err.name === "AbortError" || /abort/i.test(String((err && err.message) || "")));
-      const m = aborted
-        ? "The AI reader took too long \u2014 use Paste or the built-in reader"
-        : (authMessage(err) || (err && err.message) || "network error");
-      try{ queueError("AIREAD " + (aborted ? "timeout(90s)" : "fail") + " | " + ((err && err.message) ? String(err.message).slice(0,200) : "network error")); }catch(e){}
-      body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">' + esc(m) + '</b>' +
-        '<p>Your phone\'s own reader still works offline \u2014 tap + and choose Paste or Camera.</p></div>';
-      toast(m);
-      return;
-    }
-    if(!resp || resp.ok === false){
-      const status = resp && resp.aiStatus;
-      let msg = "AI reader failed" + (status ? " (" + status + ")" : "");
-      if(status === 429) msg = "AI quota used up for today \u2014 use Paste or the built-in reader";
-      else if(status === 400 || status === 401 || status === 403) msg = "AI key not accepted \u2014 check the key set on the Sheet";
-      else if(resp && resp.error) msg = resp.error;
-      try{ queueError("AIREAD fail | status=" + (status || "?") + ((resp && resp.error) ? " | " + String(resp.error).slice(0,200) : "")); }catch(e){}
-      body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">' + esc(msg) + '</b>' +
-        '<p>Your phone\'s own reader still works offline \u2014 tap + and choose Paste or Camera.</p></div>';
-      toast(msg);
-      return;
-    }
-    let parsed;
-    try{ parsed = JSON.parse(String(resp.text || "").replace(/^```json/i,"").replace(/^```/,"").replace(/```$/,"").trim()); }
-    catch(e){ parsed = null; }
-    if(!parsed || !Array.isArray(parsed.rows)){
-      try{ queueError("AIREAD noparse | " + String(resp.text || "").slice(0,160)); }catch(e){}
-      body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">The AI didn\'t return a readable table</b>' +
-        '<p>Try a flatter, brighter photo \u2014 or use Paste / the built-in reader.</p></div>';
-      return;
-    }
-    const rows = parsed.rows.map(aiRowToRow).filter(r=>r.art && r.art !== "?" && r.desc.length > 1);
-    const head = { inv:String(parsed.inv || "").replace(/\D/g,""), date:String(parsed.date || ""),
-                   cust:"", page:"", pages:"" };
-    if(!rows.length){
-      try{ queueError("AIREAD norows | inv=" + (head.inv || "?") + " date=" + (head.date || "?")); }catch(e){}
-      body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">No rows read</b>' +
-        '<p>Make sure the columns are in frame and the page is flat, then try again.</p></div>';
-      return;
-    }
-    ingestOrder(rows, head, shot, how, text || "");
   }catch(err){
-    try{ queueError("AIREAD outer | " + ((err && err.message) ? String(err.message).slice(0,200) : "network error")); }catch(e){}
-    body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">Couldn\'t reach the AI reader</b>' +
-      '<p>' + esc(err && err.message ? err.message : "network error") +
-      '. Use Paste or the built-in reader \u2014 they work offline.</p></div>';
+    try{ queueError("AIREAD outer | " + ((err && err.message) ? String(err.message).slice(0,200) : "image error")); }catch(e){}
+    return { status:"error", msg:(err && err.message) || "couldn't read the image", retryable:false };
   }
+  let resp;
+  try{
+    const payload = { action:"aiRead" };
+    if(b64)  payload.image = b64;
+    if(text) payload.text  = text;
+    resp = await callProxy(payload, { timeoutMs: 90000 });   // vision is slow; give it room
+  }catch(err){
+    const em = String((err && err.message) || "");
+    const aborted = err && (err.name === "AbortError" || /abort/i.test(em));
+    const netFail = /failed to fetch|networkerror|load failed|network error/i.test(em);
+    try{ queueError("AIREAD " + (aborted ? "timeout(90s)" : "fail") + " | " + (em ? em.slice(0,200) : "network error")); }catch(e){}
+    const msg = aborted ? "The AI reader took too long"
+              : (authMessage(err) || (netFail ? "Lost the connection mid-read" : (em || "network error")));
+    return { status: aborted ? "timeout" : "fail", msg, retryable:true };
+  }
+  if(!resp || resp.ok === false){
+    const status = resp && resp.aiStatus;
+    let msg = "AI reader failed" + (status ? " (" + status + ")" : "");
+    let retryable = true;
+    if(status === 429){ msg = "AI quota used up for today"; retryable = false; }
+    else if(status === 400 || status === 401 || status === 403){ msg = "AI key not accepted \u2014 check the key on the Sheet"; retryable = false; }
+    else if(resp && resp.error) msg = resp.error;
+    try{ queueError("AIREAD fail | status=" + (status || "?") + ((resp && resp.error) ? " | " + String(resp.error).slice(0,200) : "")); }catch(e){}
+    return { status:"fail", msg, retryable };
+  }
+  let parsed;
+  try{ parsed = JSON.parse(String(resp.text || "").replace(/^```json/i,"").replace(/^```/,"").replace(/```$/,"").trim()); }
+  catch(e){ parsed = null; }
+  if(!parsed || !Array.isArray(parsed.rows)){
+    try{ queueError("AIREAD noparse | " + String(resp.text || "").slice(0,160)); }catch(e){}
+    return { status:"noparse", msg:"The AI didn't return a readable table", retryable:true };
+  }
+  const rows = parsed.rows.map(aiRowToRow).filter(r=>r.art && r.art !== "?" && r.desc.length > 1);
+  const head = { inv:String(parsed.inv || "").replace(/\D/g,""), date:String(parsed.date || ""), cust:"", page:"", pages:"" };
+  if(!rows.length){
+    try{ queueError("AIREAD norows | inv=" + (head.inv || "?") + " date=" + (head.date || "?")); }catch(e){}
+    return { status:"norows", msg:"No rows read", retryable:true };
+  }
+  return { status:"ok", rows, head, shot, how };
 }
+
+/* Single-shot path (Read + / text, with an optional photo to reconcile). */
+async function aiIngest(opts){
+  opts = opts || {};
+  if(!opts.imageFile && !String(opts.text || "").trim()){ toast("Nothing to read"); return; }
+  if(!aiReady()) return;
+  const body = document.getElementById("ordBody");
+  body.innerHTML = '<div class="ocr-prog"><div class="ocr-bar indet"><i id="oBar"></i></div>' +
+                   '<p id="oMsg">Uploading the page\u2026</p></div>';
+  const stop = aiMsgCycle("oMsg", !!opts.imageFile);
+  const res = await aiRead1(opts);
+  stop();
+  if(res.status === "ok"){ ingestOrder(res.rows, res.head, res.shot, res.how, opts.text || ""); return; }
+  body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">' + esc(res.msg) + '</b>' +
+    '<p>Your phone\'s own reader still works offline \u2014 tap + and choose Paste or Camera.</p></div>';
+  toast(res.msg);
+}
+
+/* ---- the queue itself (sequential worker) ---- */
+const aiQ = [];
+let aiSeq = 0, aiBusy = false;
+
+function aiEnqueue(file, how){
+  if(!file) return;
+  if(!aiReady()) return;
+  aiQ.push({ id:"aj" + (++aiSeq), file, how: how || "AI reader", status:"queued", msg:"", retryable:true });
+  aiRenderQueue();
+  aiPump();
+}
+
+async function aiPump(){
+  if(aiBusy) return;
+  const job = aiQ.find(j=>j.status === "queued");
+  if(!job) return;
+  aiBusy = true;
+  job.status = "reading"; job.msg = "";
+  aiRenderQueue();
+  let res;
+  try{ res = await aiRead1({ imageFile: job.file, how: job.how }); }
+  catch(err){ res = { status:"error", msg:(err && err.message) || "error", retryable:true }; }
+  if(res.status === "ok"){
+    const i = aiQ.indexOf(job); if(i >= 0) aiQ.splice(i, 1);
+    aiRenderQueue();
+    ingestOrder(res.rows, res.head, res.shot, res.how, "");
+  }else{
+    job.status = "failed";
+    job.msg = res.msg || "Failed";
+    job.retryable = res.retryable !== false;
+    aiRenderQueue();
+    toast(res.msg || "AI read failed");
+  }
+  aiBusy = false;
+  aiPump();
+}
+
+function aiRenderQueue(){
+  const el = document.getElementById("aiQueue");
+  if(!el) return;
+  if(!aiQ.length){ el.classList.add("hidden"); el.innerHTML = ""; return; }
+  el.classList.remove("hidden");
+  const n = aiQ.length;
+  el.innerHTML = aiQ.map((j, idx)=>{
+    const label = "Photo " + (idx + 1) + (n > 1 ? " of " + n : "");
+    if(j.status === "reading")
+      return '<div class="aiq-item reading"><div class="aiq-main"><div class="aiq-name">' + esc(label) + '</div>' +
+             '<div class="ocr-bar indet"><i></i></div><div class="aiq-msg">Reading with AI\u2026</div></div></div>';
+    if(j.status === "failed")
+      return '<div class="aiq-item failed"><div class="aiq-main"><div class="aiq-name">' + esc(label) + '</div>' +
+             '<div class="aiq-msg">' + esc(j.msg || "Failed") + '</div></div>' +
+             (j.retryable !== false ? '<button class="aiq-btn" data-aj="' + j.id + '" data-act="retry">Retry</button>' : '') +
+             '<button class="aiq-btn ghost" data-aj="' + j.id + '" data-act="drop" aria-label="Remove">\u00d7</button></div>';
+    return '<div class="aiq-item queued"><div class="aiq-main"><div class="aiq-name">' + esc(label) + '</div>' +
+           '<div class="aiq-msg">Waiting\u2026</div></div>' +
+           '<button class="aiq-btn ghost" data-aj="' + j.id + '" data-act="drop" aria-label="Remove">\u00d7</button></div>';
+  }).join("");
+}
+
+document.getElementById("aiQueue").addEventListener("click", e=>{
+  const b = e.target.closest(".aiq-btn"); if(!b) return;
+  const j = aiQ.find(x=>x.id === b.dataset.aj); if(!j) return;
+  if(b.dataset.act === "retry"){ j.status = "queued"; j.msg = ""; aiRenderQueue(); aiPump(); }
+  else{ const i = aiQ.indexOf(j); if(i >= 0) aiQ.splice(i, 1); aiRenderQueue(); }
+});
 // Camera + / Gallery + stay image-only; they funnel through the shared helper.
 async function readOrderAI(f){
   if(!f) return;
-  return aiIngest({ imageFile:f, how:"AI reader" });
+  aiEnqueue(f, "AI reader");
 }
 document.getElementById("apPaste").addEventListener("click", ()=>{ closeAddPage(); openPaste(); });
 
@@ -13637,9 +13750,11 @@ async function dbAutoRefresh(force){
   try{ if(items.some(i=>!i.synced)) await doSync(true); }catch(e){}
 }
 if(proxyUrl() && navigator.onLine) dbAutoRefresh(true);
+flushErrors();   // send any errors that queued while offline last session
 window.addEventListener("online", ()=>dbAutoRefresh(true));
 window.addEventListener("online", ()=>scrapAutoSync());
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) dbAutoRefresh(false); });
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden){ aiRenderQueue(); flushErrors(); } });
 setInterval(()=>{ if(!document.hidden) dbAutoRefresh(false); }, 90000);
 
 /* ================= boot ================= */

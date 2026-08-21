@@ -512,6 +512,8 @@
   .route b{display:block;color:var(--paper);font-size:14px;margin-bottom:3px}
   .route small{color:var(--muted);font-size:11px;line-height:1.4}
   .route:active{border-color:var(--laser)}
+  .route-ai{background:color-mix(in srgb, var(--laser) 10%, var(--surface-2));border-color:color-mix(in srgb, var(--laser) 40%, var(--line))}
+  .route-ai b{color:var(--laser)}
   .readbar{position:fixed;left:12px;right:12px;bottom:calc(78px + env(safe-area-inset-bottom));
     z-index:45;background:var(--ok);color:#0d1a12;border-radius:10px;padding:10px 12px;
     display:flex;align-items:center;gap:10px;box-shadow:0 6px 18px rgba(0,0,0,.4)}
@@ -1844,7 +1846,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=133.2">
+  <link rel="manifest" href="./manifest.json?v=133.3">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2141,6 +2143,14 @@
     <div class="modal">
       <div class="modal-head"><h2>Add a page</h2>
         <button class="modal-close" id="apClose" aria-label="Close">✕</button></div>
+      <button class="route route-ai" id="apAIShot">
+        <b>✨ Read with AI · Camera</b>
+        <small>Shoot the page — AI reads the columns for you. Needs signal.</small>
+      </button>
+      <button class="route route-ai" id="apAIPick">
+        <b>✨ Read with AI · Gallery</b>
+        <small>Pick a photo you already took — AI reads it. Needs signal.</small>
+      </button>
       <button class="route" id="apPaste">
         <b>Paste text</b>
         <small>Sharpest. Your phone's own reader beats anything in here.</small>
@@ -2565,6 +2575,13 @@
       <input id="scriptUrl" placeholder="https://script.google.com/macros/s/…/exec">
       <button class="btn btn-primary" id="btnSync">Sync new items</button>
       <div class="status" id="syncStatus"></div>
+    </div>
+    <div class="panel dev-only">
+      <h3>AI invoice reader</h3>
+      <p>Reads a photographed invoice page — article number, description, pack, size, order and ship quantity — straight into the Invoice tab. Paste a free Google AI Studio key from <b>aistudio.google.com/apikey</b>. It stays on this phone only and never syncs. The free tier covers well over 50 pages a day.</p>
+      <input id="geminiKey" type="password" placeholder="AI Studio API key (AIza…)" autocomplete="off">
+      <button class="btn btn-primary" id="btnGeminiSave">Save AI key</button>
+      <div class="status" id="geminiStatus"></div>
     </div>
     <div class="panel dev-only">
       <h3>PLU &amp; barcode database</h3>
@@ -3820,6 +3837,7 @@ function showView(name){
   }
   if(name==="settings"){
     document.getElementById("scriptUrl").value = localStorage.getItem(KEY_URL) || BAKED_PROXY_URL;
+    const _gk = document.getElementById("geminiKey"); if(_gk) _gk.value = geminiKey();
     const _md = document.getElementById("micDbgToggle"); if(_md) _md.checked = micDbgOn();
     const _tb2 = document.getElementById("rkTopbarToggle"); if(_tb2) _tb2.checked = rkTopbarOn();
   }
@@ -6399,7 +6417,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v133.2";
+const APP_VERSION = "v133.3";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -8994,6 +9012,9 @@ function logClaim(c, n, how){
    An article number opens a row, so a description wrapping onto the next OCR
    line can't split it.                                                      */
 const KEY_ORDERS = "label_orders_v1";
+const KEY_GEMINI = "label_gemini_key_v1";       // device-local Gemini key (never synced)
+const GEMINI_MODEL = "gemini-2.5-flash";         // free-tier, multimodal vision
+function geminiKey(){ return (localStorage.getItem(KEY_GEMINI) || "").trim(); }
 const RE_ART  = /^\d{7,12}$/;
 const RE_SIZE = /^\d{1,3}\s*[xX]\s*[\d.]+(G|KG|ML|L|EA|LB|OZ|CT)$/i;
 // Phone readers mangle these constantly: "_1.000", "1-000", "-1-000", "0.00".
@@ -9517,6 +9538,151 @@ document.getElementById("btnOrdAdd").addEventListener("click", ()=>{
 document.getElementById("apClose").addEventListener("click", closeAddPage);
 document.getElementById("apShot").addEventListener("click", ()=>{ closeAddPage(); ordFile.value=""; ordFile.click(); });
 document.getElementById("apPick").addEventListener("click", ()=>{ closeAddPage(); ordPick.value=""; ordPick.click(); });
+
+/* ---- AI reader: photo -> Gemini vision -> structured rows ----
+   The phone's native OCR still beats any in-page OCR, but it can't STRUCTURE a
+   table -- that's what the brittle regex above fights. This path skips OCR and
+   hands the photo to a vision model, which reads AND structures in one shot.
+   Online only; Paste and the built-in reader stay as the offline fallback. The
+   key is device-local (never synced into the shared blob) and, being a free-tier
+   key, caps out at a daily quota rather than a bill. Numbers still get shown for
+   review -- an LLM can misread a digit, and these back credit claims. */
+const aiCam = document.createElement("input");
+aiCam.type = "file"; aiCam.accept = "image/*"; aiCam.capture = "environment";
+const aiGal = document.createElement("input");
+aiGal.type = "file"; aiGal.accept = "image/*";
+aiCam.addEventListener("change", e=>readOrderAI(e.target.files && e.target.files[0]));
+aiGal.addEventListener("change", e=>readOrderAI(e.target.files && e.target.files[0]));
+document.getElementById("apAIShot").addEventListener("click", ()=>{
+  if(!aiReady()) return;
+  closeAddPage(); aiCam.value=""; aiCam.click();
+});
+document.getElementById("apAIPick").addEventListener("click", ()=>{
+  if(!aiReady()) return;
+  closeAddPage(); aiGal.value=""; aiGal.click();
+});
+
+function aiReady(){
+  if(!geminiKey()){ toast("Add a free AI key in Settings first"); return false; }
+  if(!navigator.onLine){ toast("AI needs a signal \u2014 use Paste or the built-in reader"); return false; }
+  return true;
+}
+
+/* AI gives the columns straight, but the row must look exactly like a parsed one
+   so the same table, search and page-check code renders it. Reuse the same name
+   helpers finishRows uses, so an AI row and a pasted row are indistinguishable
+   downstream. */
+function aiRowToRow(a){
+  const desc = String(a.desc || "").replace(/\s+/g," ").trim();
+  const art  = (String(a.art || "").match(/\d/g) || []).join("") || "?";
+  const toN  = v => {
+    if(v === null || v === undefined) return null;
+    if(typeof v === "string" && v.trim() === "") return null;   // unreadable stays unknown, never 0
+    const n = Number(v);
+    return Number.isFinite(n) ? Math.round(n) : null;
+  };
+  const ord  = toN(a.ord), ship = toN(a.ship);
+  const b    = brandOf(desc);
+  return {
+    art, desc, item: produceName(desc), label: orderLabel(desc),
+    brand: b ? b.tag : "", brandFull: b ? b.full : "",
+    pack: String(a.pack || "").trim(), size: String(a.size || "").trim(),
+    ord, ship,
+    diff: (ord !== null && ship !== null) ? ord - ship : null,
+    reason: "", merged: false, conf: "ai",
+    ok: !!(art && art !== "?" && desc.length > 1 && ord !== null && ship !== null)
+  };
+}
+
+async function readOrderAI(f){
+  if(!f) return;
+  if(!aiReady()) return;
+  const body = document.getElementById("ordBody");
+  body.innerHTML = '<div class="ocr-prog"><div class="ocr-bar"><i id="oBar" style="width:35%"></i></div>' +
+                   '<p id="oMsg">Sending the page to the AI reader\u2026</p></div>';
+  try{
+    const shot = await shrinkImg(f, 1100);            // kept with the page
+    const big  = await shrinkImg(f, 1600);            // sent to the model
+    const b64  = big.replace(/^data:image\/[a-z]+;base64,/, "");
+    const schema = {
+      type:"OBJECT",
+      properties:{
+        inv:  { type:"STRING" },
+        date: { type:"STRING" },
+        rows: { type:"ARRAY", items:{
+          type:"OBJECT",
+          properties:{
+            art:  { type:"STRING" },
+            desc: { type:"STRING" },
+            pack: { type:"STRING" },
+            size: { type:"STRING" },
+            ord:  { type:"NUMBER" },
+            ship: { type:"NUMBER" }
+          },
+          required:["art","desc","ord","ship"]
+        }}
+      },
+      required:["rows"]
+    };
+    const prompt =
+      "You are reading a produce warehouse invoice / short-summary page. " +
+      "Extract EVERY line item. The columns run left to right in this exact order: " +
+      "article number, description, pack, size, order quantity, ship quantity. " +
+      "Any columns to the right of ship quantity are irrelevant \u2014 ignore them. " +
+      "article number is the 7-12 digit code at the start of the row. " +
+      "order quantity and ship quantity are whole numbers (either can be 0). " +
+      "If a number can't be read, use null. If pack or size is absent, use an empty string. " +
+      "Also read the invoice number (inv) and invoice date (date) from the page header if present. " +
+      "Return ONLY the JSON object.";
+    const res = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent",
+      {
+        method:"POST",
+        headers:{ "Content-Type":"application/json", "x-goog-api-key": geminiKey() },
+        body: JSON.stringify({
+          contents:[{ parts:[
+            { text: prompt },
+            { inline_data:{ mime_type:"image/jpeg", data:b64 } }
+          ]}],
+          generationConfig:{ temperature:0, responseMimeType:"application/json", responseSchema:schema }
+        })
+      }
+    );
+    if(!res.ok){
+      let msg = "AI reader failed (" + res.status + ")";
+      if(res.status === 429) msg = "AI quota used up for today \u2014 use Paste or the built-in reader";
+      else if(res.status === 400 || res.status === 403) msg = "AI key rejected \u2014 check it in Settings";
+      body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">' + esc(msg) + "</b>" +
+        '<p>Your phone\'s own reader still works offline \u2014 tap + and choose Paste or Camera.</p></div>';
+      toast(msg);
+      return;
+    }
+    const data = await res.json();
+    const parts = (((data.candidates || [])[0] || {}).content || {}).parts || [];
+    const raw = parts.map(p=>p.text || "").join("").trim();
+    let parsed;
+    try{ parsed = JSON.parse(raw.replace(/^```json/i,"").replace(/^```/,"").replace(/```$/,"").trim()); }
+    catch(e){ parsed = null; }
+    if(!parsed || !Array.isArray(parsed.rows)){
+      body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">The AI didn\'t return a readable table</b>' +
+        '<p>Try a flatter, brighter photo \u2014 or use Paste / the built-in reader.</p></div>';
+      return;
+    }
+    const rows = parsed.rows.map(aiRowToRow).filter(r=>r.art && r.art !== "?" && r.desc.length > 1);
+    const head = { inv:String(parsed.inv || "").replace(/\D/g,""), date:String(parsed.date || ""),
+                   cust:"", page:"", pages:"" };
+    if(!rows.length){
+      body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">No rows read</b>' +
+        '<p>Make sure the columns are in frame and the page is flat, then try again.</p></div>';
+      return;
+    }
+    ingestOrder(rows, head, shot, "AI reader", "");
+  }catch(err){
+    body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">Couldn\'t reach the AI reader</b>' +
+      '<p>' + esc(err && err.message ? err.message : "network error") +
+      '. Use Paste or the built-in reader \u2014 they work offline.</p></div>';
+  }
+}
 document.getElementById("apPaste").addEventListener("click", ()=>{ closeAddPage(); openPaste(); });
 
 /* Once you've opened the paste sheet, the app knows you went off to copy
@@ -9684,6 +9850,7 @@ function confBadge(r){
       '. Check the page.</b>';
   if(r.conf === "photo")
     return '<b class="warn">Only the photo saw this row — check it.</b>';
+  if(r.conf === "ai") return '<b class="dimtag">AI · verify</b>';
   return '<b class="dimtag">text only</b>';
 }
 
@@ -10581,6 +10748,15 @@ document.getElementById("btnSync").addEventListener("click", ()=>{
   }
   localStorage.setItem(KEY_URL, url);
   doSync();
+});
+
+document.getElementById("btnGeminiSave").addEventListener("click", ()=>{
+  const k = document.getElementById("geminiKey").value.trim();
+  const st = document.getElementById("geminiStatus");
+  localStorage.setItem(KEY_GEMINI, k);
+  st.className = "status ok";
+  st.textContent = k ? "Saved on this phone." : "Cleared.";
+  toast(k ? "AI key saved" : "AI key cleared");
 });
 
 async function doSync(quiet){

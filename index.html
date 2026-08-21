@@ -1846,7 +1846,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=133.3">
+  <link rel="manifest" href="./manifest.json?v=133.4">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2144,11 +2144,11 @@
       <div class="modal-head"><h2>Add a page</h2>
         <button class="modal-close" id="apClose" aria-label="Close">✕</button></div>
       <button class="route route-ai" id="apAIShot">
-        <b>✨ Read with AI · Camera</b>
+        <b>Camera +</b>
         <small>Shoot the page — AI reads the columns for you. Needs signal.</small>
       </button>
       <button class="route route-ai" id="apAIPick">
-        <b>✨ Read with AI · Gallery</b>
+        <b>Gallery +</b>
         <small>Pick a photo you already took — AI reads it. Needs signal.</small>
       </button>
       <button class="route" id="apPaste">
@@ -2187,7 +2187,8 @@
         </div>
       </div>
       <div class="btn-row">
-        <button class="btn btn-primary" id="pasteGo">Read it</button>
+        <button class="btn btn-ghost" id="pasteGo">Read it</button>
+        <button class="btn btn-primary" id="pasteAI">Read +</button>
       </div>
     </div>
   </div>
@@ -2578,10 +2579,7 @@
     </div>
     <div class="panel dev-only">
       <h3>AI invoice reader</h3>
-      <p>Reads a photographed invoice page — article number, description, pack, size, order and ship quantity — straight into the Invoice tab. Paste a free Google AI Studio key from <b>aistudio.google.com/apikey</b>. It stays on this phone only and never syncs. The free tier covers well over 50 pages a day.</p>
-      <input id="geminiKey" type="password" placeholder="AI Studio API key (AIza…)" autocomplete="off">
-      <button class="btn btn-primary" id="btnGeminiSave">Save AI key</button>
-      <div class="status" id="geminiStatus"></div>
+      <p>Reads a photographed invoice page — article number, description, pack, size, order and ship quantity — straight into the Invoice tab. The AI key now lives on the Sheet backend (set once via <b>CatCaddy → Set AI key…</b> in the Sheet menu), so no phone needs its own key. Any approved phone with the shared secret can use it. Online only; the free tier covers well over 50 pages a day.</p>
     </div>
     <div class="panel dev-only">
       <h3>PLU &amp; barcode database</h3>
@@ -3837,7 +3835,6 @@ function showView(name){
   }
   if(name==="settings"){
     document.getElementById("scriptUrl").value = localStorage.getItem(KEY_URL) || BAKED_PROXY_URL;
-    const _gk = document.getElementById("geminiKey"); if(_gk) _gk.value = geminiKey();
     const _md = document.getElementById("micDbgToggle"); if(_md) _md.checked = micDbgOn();
     const _tb2 = document.getElementById("rkTopbarToggle"); if(_tb2) _tb2.checked = rkTopbarOn();
   }
@@ -6417,7 +6414,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v133.3";
+const APP_VERSION = "v133.4";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -9511,6 +9508,81 @@ function saveOrders(v){
   catch(e){ toast("Storage full — delete an old invoice"); }
 }
 
+/* ---- Article memory: learn item identity per article number over time ----
+   Every confirmed read teaches a tally of description / pack / size against the
+   article number (the one field the reader nails). Majority vote means one
+   misread never wins. On the next read a known article's EMPTY fields get filled
+   from memory and PRESENT fields that disagree get flagged for review \u2014 never
+   silently overwritten, and article #, order and ship qty are never touched.
+   Accuracy climbs as the same items recur. Per-phone for now; a shared, merged
+   version is the next step (last-write-wins would erase learning). */
+const KEY_ARTMEM = "label_artmem_v1";
+function artMem(){ try{ const m = JSON.parse(localStorage.getItem(KEY_ARTMEM) || "{}"); return (m && typeof m === "object") ? m : {}; }catch(e){ return {}; } }
+function saveArtMem(m){ try{ localStorage.setItem(KEY_ARTMEM, JSON.stringify(m)); }catch(e){} }
+function _amArt(r){ const a = String(r && r.art || "").trim(); return (a && a !== "?") ? a : ""; }
+function _amWinner(tally){
+  if(!tally) return null;
+  let bv = null, bc = 0;
+  for(const k in tally){ if(tally[k] > bc){ bc = tally[k]; bv = k; } }
+  return bv === null ? null : { val: bv, count: bc };
+}
+function _amPrune(tally){
+  const keys = Object.keys(tally);
+  if(keys.length <= 5) return tally;
+  keys.sort((a,b)=>tally[b]-tally[a]);
+  const out = {}; keys.slice(0,5).forEach(k=>out[k]=tally[k]); return out;
+}
+function harvestArtMem(rows){
+  if(!Array.isArray(rows) || !rows.length) return;
+  const m = artMem(), now = Date.now();
+  rows.forEach(r=>{
+    const art = _amArt(r); if(!art) return;
+    const e = m[art] || (m[art] = { n:0, seen:0, desc:{}, pack:{}, size:{} });
+    e.n = (e.n||0) + 1; e.seen = now;
+    ["desc","pack","size"].forEach(f=>{
+      const v = String(r[f]||"").replace(/\s+/g," ").trim();
+      if(!v) return;
+      e[f] = e[f] || {};
+      e[f][v] = (e[f][v]||0) + 1;
+      e[f] = _amPrune(e[f]);
+    });
+  });
+  const arts = Object.keys(m);
+  if(arts.length > 4000){
+    arts.sort((a,b)=>(m[a].seen||0)-(m[b].seen||0));
+    arts.slice(0, arts.length - 4000).forEach(a=>{ delete m[a]; });
+  }
+  saveArtMem(m);
+}
+function applyArtMemory(rows){
+  const stat = { filled:0, flagged:0 };
+  if(!Array.isArray(rows) || !rows.length) return stat;
+  const m = artMem();
+  rows.forEach(r=>{
+    const art = _amArt(r); if(!art) return;
+    const e = m[art]; if(!e || (e.n||0) < 2) return;   // need a little history first
+    let descFilled = false;
+    ["desc","pack","size"].forEach(f=>{
+      const w = _amWinner(e[f]); if(!w) return;
+      const cur = String(r[f]||"").replace(/\s+/g," ").trim();
+      if(!cur){
+        r[f] = w.val; r.memFill = true; stat.filled++;
+        if(f === "desc") descFilled = true;
+      } else if(cur.toLowerCase() !== String(w.val).toLowerCase() && w.count >= 3){
+        r.memFlag = true; stat.flagged++;
+      }
+    });
+    if(descFilled){
+      try{
+        if(!r.item)  r.item  = produceName(r.desc);
+        if(!r.label) r.label = orderLabel(r.desc);
+        if(!r.brand){ const b = brandOf(r.desc); if(b){ r.brand = b.tag; r.brandFull = b.full; } }
+      }catch(e2){}
+    }
+  });
+  return stat;
+}
+
 let activeInv = null;
 
 /* ---- capture a page ---- */
@@ -9563,7 +9635,7 @@ document.getElementById("apAIPick").addEventListener("click", ()=>{
 });
 
 function aiReady(){
-  if(!geminiKey()){ toast("Add a free AI key in Settings first"); return false; }
+  if(!proxyUrl()){ toast("Finish setup in Settings first"); return false; }
   if(!navigator.onLine){ toast("AI needs a signal \u2014 use Paste or the built-in reader"); return false; }
   return true;
 }
@@ -9594,74 +9666,52 @@ function aiRowToRow(a){
   };
 }
 
-async function readOrderAI(f){
-  if(!f) return;
+async function aiIngest(opts){
+  opts = opts || {};
+  const f    = opts.imageFile || null;
+  const text = String(opts.text || "").trim();
+  const how  = opts.how || "AI reader";
+  if(!f && !text){ toast("Nothing to read"); return; }
   if(!aiReady()) return;
   const body = document.getElementById("ordBody");
   body.innerHTML = '<div class="ocr-prog"><div class="ocr-bar"><i id="oBar" style="width:35%"></i></div>' +
                    '<p id="oMsg">Sending the page to the AI reader\u2026</p></div>';
   try{
-    const shot = await shrinkImg(f, 1100);            // kept with the page
-    const big  = await shrinkImg(f, 1600);            // sent to the model
-    const b64  = big.replace(/^data:image\/[a-z]+;base64,/, "");
-    const schema = {
-      type:"OBJECT",
-      properties:{
-        inv:  { type:"STRING" },
-        date: { type:"STRING" },
-        rows: { type:"ARRAY", items:{
-          type:"OBJECT",
-          properties:{
-            art:  { type:"STRING" },
-            desc: { type:"STRING" },
-            pack: { type:"STRING" },
-            size: { type:"STRING" },
-            ord:  { type:"NUMBER" },
-            ship: { type:"NUMBER" }
-          },
-          required:["art","desc","ord","ship"]
-        }}
-      },
-      required:["rows"]
-    };
-    const prompt =
-      "You are reading a produce warehouse invoice / short-summary page. " +
-      "Extract EVERY line item. The columns run left to right in this exact order: " +
-      "article number, description, pack, size, order quantity, ship quantity. " +
-      "Any columns to the right of ship quantity are irrelevant \u2014 ignore them. " +
-      "article number is the 7-12 digit code at the start of the row. " +
-      "order quantity and ship quantity are whole numbers (either can be 0). " +
-      "If a number can't be read, use null. If pack or size is absent, use an empty string. " +
-      "Also read the invoice number (inv) and invoice date (date) from the page header if present. " +
-      "Return ONLY the JSON object.";
-    const res = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/models/" + GEMINI_MODEL + ":generateContent",
-      {
-        method:"POST",
-        headers:{ "Content-Type":"application/json", "x-goog-api-key": geminiKey() },
-        body: JSON.stringify({
-          contents:[{ parts:[
-            { text: prompt },
-            { inline_data:{ mime_type:"image/jpeg", data:b64 } }
-          ]}],
-          generationConfig:{ temperature:0, responseMimeType:"application/json", responseSchema:schema }
-        })
-      }
-    );
-    if(!res.ok){
-      let msg = "AI reader failed (" + res.status + ")";
-      if(res.status === 429) msg = "AI quota used up for today \u2014 use Paste or the built-in reader";
-      else if(res.status === 400 || res.status === 403) msg = "AI key rejected \u2014 check it in Settings";
-      body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">' + esc(msg) + "</b>" +
+    let shot = "", b64 = "";
+    if(f){
+      shot = await shrinkImg(f, 1100);            // kept with the page
+      const big = await shrinkImg(f, 1600);       // sent to the model
+      b64 = big.replace(/^data:image\/[a-z]+;base64,/, "");
+    }
+    // The key lives on the backend: callProxy adds the shared secret + device id,
+    // so aiRead rides the same write-gate as any other write. Send whatever we
+    // have \u2014 image, text, or both; the model reconciles both when both arrive.
+    let resp;
+    try{
+      const payload = { action:"aiRead" };
+      if(b64)  payload.image = b64;
+      if(text) payload.text  = text;
+      resp = await callProxy(payload);
+    }catch(err){
+      const m = authMessage(err) || (err && err.message) || "network error";
+      body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">' + esc(m) + '</b>' +
+        '<p>Your phone\'s own reader still works offline \u2014 tap + and choose Paste or Camera.</p></div>';
+      toast(m);
+      return;
+    }
+    if(!resp || resp.ok === false){
+      const status = resp && resp.aiStatus;
+      let msg = "AI reader failed" + (status ? " (" + status + ")" : "");
+      if(status === 429) msg = "AI quota used up for today \u2014 use Paste or the built-in reader";
+      else if(status === 400 || status === 401 || status === 403) msg = "AI key not accepted \u2014 check the key set on the Sheet";
+      else if(resp && resp.error) msg = resp.error;
+      body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">' + esc(msg) + '</b>' +
         '<p>Your phone\'s own reader still works offline \u2014 tap + and choose Paste or Camera.</p></div>';
       toast(msg);
       return;
     }
-    const data = await res.json();
-    const parts = (((data.candidates || [])[0] || {}).content || {}).parts || [];
-    const raw = parts.map(p=>p.text || "").join("").trim();
     let parsed;
-    try{ parsed = JSON.parse(raw.replace(/^```json/i,"").replace(/^```/,"").replace(/```$/,"").trim()); }
+    try{ parsed = JSON.parse(String(resp.text || "").replace(/^```json/i,"").replace(/^```/,"").replace(/```$/,"").trim()); }
     catch(e){ parsed = null; }
     if(!parsed || !Array.isArray(parsed.rows)){
       body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">The AI didn\'t return a readable table</b>' +
@@ -9676,12 +9726,17 @@ async function readOrderAI(f){
         '<p>Make sure the columns are in frame and the page is flat, then try again.</p></div>';
       return;
     }
-    ingestOrder(rows, head, shot, "AI reader", "");
+    ingestOrder(rows, head, shot, how, text || "");
   }catch(err){
     body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">Couldn\'t reach the AI reader</b>' +
       '<p>' + esc(err && err.message ? err.message : "network error") +
       '. Use Paste or the built-in reader \u2014 they work offline.</p></div>';
   }
+}
+// Camera + / Gallery + stay image-only; they funnel through the shared helper.
+async function readOrderAI(f){
+  if(!f) return;
+  return aiIngest({ imageFile:f, how:"AI reader" });
 }
 document.getElementById("apPaste").addEventListener("click", ()=>{ closeAddPage(); openPaste(); });
 
@@ -9797,6 +9852,22 @@ document.getElementById("pasteGo").addEventListener("click", async ()=>{
   pasteShot = null;
 });
 
+/* Read + : hand the pasted text and/or the attached photo to the AI, which
+   reconciles the two when both are present. Text-only and photo-only both work.
+   The offline "Read it" above is untouched, so a dead signal still has a path. */
+document.getElementById("pasteAI").addEventListener("click", async ()=>{
+  const t = document.getElementById("pasteBox").value;
+  const hasText = !!t.trim();
+  if(!hasText && !pasteShot) return toast("Add text or a photo first");
+  if(hasText) lastPaste = t;
+  document.getElementById("pasteOverlay").classList.add("hidden");
+  document.body.style.overflow = "";
+  const how = (hasText && pasteShot) ? "AI \u00b7 text + photo" : (hasText ? "AI \u00b7 text" : "AI reader");
+  const shot = pasteShot;
+  pasteShot = null;
+  await aiIngest({ text: hasText ? t : "", imageFile: shot || null, how });
+});
+
 
 ordPick.addEventListener("change", e=>readOrderPage(e.target.files && e.target.files[0]));
 
@@ -9843,15 +9914,20 @@ async function readOrderPage(f){
    readable, or whether the quantities were. Show the working instead: the same
    move that found the Devices bug in one shot. */
 function confBadge(r){
-  if(!r.conf || r.conf === "both") return "";
-  if(r.conf === "differs")
-    return '<b class="warn">Readers disagree — photo says ' +
+  let base = "";
+  if(!r.conf || r.conf === "both") base = "";
+  else if(r.conf === "differs")
+    base = '<b class="warn">Readers disagree \u2014 photo says ' +
       esc(String(r.alt && r.alt.ord)) + "/" + esc(String(r.alt && r.alt.ship)) +
       '. Check the page.</b>';
-  if(r.conf === "photo")
-    return '<b class="warn">Only the photo saw this row — check it.</b>';
-  if(r.conf === "ai") return '<b class="dimtag">AI · verify</b>';
-  return '<b class="dimtag">text only</b>';
+  else if(r.conf === "photo")
+    base = '<b class="warn">Only the photo saw this row \u2014 check it.</b>';
+  else if(r.conf === "ai") base = '<b class="dimtag">AI \u00b7 verify</b>';
+  else base = '<b class="dimtag">text only</b>';
+  let mem = "";
+  if(r.memFlag) mem = '<b class="warn">Differs from usual \u2014 check.</b>';
+  else if(r.memFill) mem = '<b class="dimtag">filled from memory</b>';
+  return [mem, base].filter(Boolean).join(" ");
 }
 
 function parseReport(text){
@@ -9982,6 +10058,7 @@ function ingestOrder(rows, head, img, how, rawText){
       '</div>';
     return;
   }
+  const memStat = applyArtMemory(rows);
   const all = orders();
   const key = head.inv || ("unknown-" + new Date().toISOString().slice(0,10));
   let inv = all.find(x=>x.inv === key);
@@ -10003,10 +10080,13 @@ function ingestOrder(rows, head, img, how, rawText){
   });
   inv.pages.sort((a,b)=>(parseInt(a.page,10)||0) - (parseInt(b.page,10)||0));
   saveOrders(all);
+  harvestArtMem(rows);
   activeInv = key;
   renderOrder();
   const bad = rows.filter(r=>!r.ok).length;
-  toast("Read " + rows.length + " row(s) via " + how + (bad ? " · " + bad + " need a look" : ""));
+  toast("Read " + rows.length + " row(s) via " + how + (bad ? " · " + bad + " need a look" : "") +
+    (memStat && memStat.filled  ? " · " + memStat.filled  + " filled from memory" : "") +
+    (memStat && memStat.flagged ? " · " + memStat.flagged + " differ from usual" : ""));
 }
 
 function shrinkImg(file, maxW){
@@ -10748,15 +10828,6 @@ document.getElementById("btnSync").addEventListener("click", ()=>{
   }
   localStorage.setItem(KEY_URL, url);
   doSync();
-});
-
-document.getElementById("btnGeminiSave").addEventListener("click", ()=>{
-  const k = document.getElementById("geminiKey").value.trim();
-  const st = document.getElementById("geminiStatus");
-  localStorage.setItem(KEY_GEMINI, k);
-  st.className = "status ok";
-  st.textContent = k ? "Saved on this phone." : "Cleared.";
-  toast(k ? "AI key saved" : "AI key cleared");
 });
 
 async function doSync(quiet){

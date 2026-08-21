@@ -1846,7 +1846,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=133.5">
+  <link rel="manifest" href="./manifest.json?v=133.6">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4929,7 +4929,8 @@ function AuthError(msg, code){
   const e = new Error(msg); e.code = code; e.auth = true; return e;
 }
 
-async function callProxy(payload){
+async function callProxy(payload, opts){
+  opts = opts || {};
   const url = proxyUrl();
   if(!url) throw new Error("no proxy configured");
   const dev = deviceInfo();
@@ -4937,13 +4938,24 @@ async function callProxy(payload){
     secret: secret(), deviceId: dev.id, deviceName: dev.name
   });
   const ctrl = new AbortController();
-  setTimeout(()=>ctrl.abort(), 25000);
-  const r = await fetch(url, {
-    method:"POST",
-    headers:{ "Content-Type":"text/plain;charset=utf-8" },
-    body: JSON.stringify(payload),
-    signal: ctrl.signal
-  });
+  // Vision reads legitimately take far longer than a sync write, so the caller
+  // can raise the ceiling via opts.timeoutMs. Default stays short so a dead
+  // signal in a walk-in fails fast instead of hanging. The timer is cleared the
+  // moment the request settles, so a late abort can never fire after a good
+  // response has already come back.
+  const ms = opts.timeoutMs || 25000;
+  const timer = setTimeout(()=>ctrl.abort(), ms);
+  let r;
+  try{
+    r = await fetch(url, {
+      method:"POST",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+      signal: ctrl.signal
+    });
+  }finally{
+    clearTimeout(timer);
+  }
   const d = await r.json();
   if(d && d.ok === false && d.code){
     // PENDING / SECRET / NOSECRET are all "not allowed", not "failed" — the
@@ -6414,7 +6426,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v133.5";
+const APP_VERSION = "v133.6";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -9675,7 +9687,7 @@ async function aiIngest(opts){
   if(!aiReady()) return;
   const body = document.getElementById("ordBody");
   body.innerHTML = '<div class="ocr-prog"><div class="ocr-bar"><i id="oBar" style="width:35%"></i></div>' +
-                   '<p id="oMsg">Sending the page to the AI reader\u2026</p></div>';
+                   '<p id="oMsg">Uploading the page\u2026</p></div>';
   try{
     let shot = "", b64 = "";
     if(f){
@@ -9691,9 +9703,16 @@ async function aiIngest(opts){
       const payload = { action:"aiRead" };
       if(b64)  payload.image = b64;
       if(text) payload.text  = text;
-      resp = await callProxy(payload);
+      resp = await callProxy(payload, { timeoutMs: 90000 });   // vision is slow; give it room
     }catch(err){
-      const m = authMessage(err) || (err && err.message) || "network error";
+      // "signal is aborted without reason" is the browser\'s stock text when the
+      // 90s ceiling trips. Turn it into something a user can act on, and log the
+      // real reason to the Sheet\'s Errors tab so slow-key days stay traceable.
+      const aborted = err && (err.name === "AbortError" || /abort/i.test(String((err && err.message) || "")));
+      const m = aborted
+        ? "The AI reader took too long \u2014 use Paste or the built-in reader"
+        : (authMessage(err) || (err && err.message) || "network error");
+      try{ queueError("AIREAD " + (aborted ? "timeout(90s)" : "fail") + " | " + ((err && err.message) ? String(err.message).slice(0,200) : "network error")); }catch(e){}
       body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">' + esc(m) + '</b>' +
         '<p>Your phone\'s own reader still works offline \u2014 tap + and choose Paste or Camera.</p></div>';
       toast(m);
@@ -9705,6 +9724,7 @@ async function aiIngest(opts){
       if(status === 429) msg = "AI quota used up for today \u2014 use Paste or the built-in reader";
       else if(status === 400 || status === 401 || status === 403) msg = "AI key not accepted \u2014 check the key set on the Sheet";
       else if(resp && resp.error) msg = resp.error;
+      try{ queueError("AIREAD fail | status=" + (status || "?") + ((resp && resp.error) ? " | " + String(resp.error).slice(0,200) : "")); }catch(e){}
       body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">' + esc(msg) + '</b>' +
         '<p>Your phone\'s own reader still works offline \u2014 tap + and choose Paste or Camera.</p></div>';
       toast(msg);
@@ -9714,6 +9734,7 @@ async function aiIngest(opts){
     try{ parsed = JSON.parse(String(resp.text || "").replace(/^```json/i,"").replace(/^```/,"").replace(/```$/,"").trim()); }
     catch(e){ parsed = null; }
     if(!parsed || !Array.isArray(parsed.rows)){
+      try{ queueError("AIREAD noparse | " + String(resp.text || "").slice(0,160)); }catch(e){}
       body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">The AI didn\'t return a readable table</b>' +
         '<p>Try a flatter, brighter photo \u2014 or use Paste / the built-in reader.</p></div>';
       return;
@@ -9722,12 +9743,14 @@ async function aiIngest(opts){
     const head = { inv:String(parsed.inv || "").replace(/\D/g,""), date:String(parsed.date || ""),
                    cust:"", page:"", pages:"" };
     if(!rows.length){
+      try{ queueError("AIREAD norows | inv=" + (head.inv || "?") + " date=" + (head.date || "?")); }catch(e){}
       body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">No rows read</b>' +
         '<p>Make sure the columns are in frame and the page is flat, then try again.</p></div>';
       return;
     }
     ingestOrder(rows, head, shot, how, text || "");
   }catch(err){
+    try{ queueError("AIREAD outer | " + ((err && err.message) ? String(err.message).slice(0,200) : "network error")); }catch(e){}
     body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">Couldn\'t reach the AI reader</b>' +
       '<p>' + esc(err && err.message ? err.message : "network error") +
       '. Use Paste or the built-in reader \u2014 they work offline.</p></div>';

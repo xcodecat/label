@@ -1701,13 +1701,15 @@
   .pg-ends{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:11px}
   .pg-run .pg-ends{background:color-mix(in srgb,var(--rc) 8%,transparent)}
   .pg-att .pg-ends{background:color-mix(in srgb,var(--ac) 8%,transparent)}
-  .pg-endcol h5{margin:0;font-family:var(--mono);font-size:10px;letter-spacing:.06em;font-weight:800;
+  .pg-ends>h5{margin:0;font-family:var(--mono);font-size:10px;letter-spacing:.06em;font-weight:800;
     display:flex;align-items:center;justify-content:center;gap:5px;
     border:1px solid var(--line);border-radius:8px;padding:6px 8px;color:var(--muted);background:var(--surface-2)}
-  .pg-endcol h5.pg-eh-w{color:#4A90D9;border-color:color-mix(in srgb,#4A90D9 45%,transparent);background:color-mix(in srgb,#4A90D9 15%,transparent)}
-  .pg-endcol h5.pg-eh-h{color:#E08A3B;border-color:color-mix(in srgb,#E08A3B 45%,transparent);background:color-mix(in srgb,#E08A3B 15%,transparent)}
-  .pg-endcol h5 .nm-bdg.ec{width:15px;height:15px;font-size:9px;flex:none}
-  .pg-endcol h5 .pg-eh-ar{font-size:9px;opacity:.85;flex:none}
+  .pg-ends>h5.pg-eh-w{color:#4A90D9;border-color:color-mix(in srgb,#4A90D9 45%,transparent);background:color-mix(in srgb,#4A90D9 15%,transparent)}
+  .pg-ends>h5.pg-eh-h{color:#E08A3B;border-color:color-mix(in srgb,#E08A3B 45%,transparent);background:color-mix(in srgb,#E08A3B 15%,transparent)}
+  .pg-ends>h5 .nm-bdg.ec{width:15px;height:15px;font-size:9px;flex:none}
+  .pg-ends>h5 .pg-eh-ar{font-size:9px;opacity:.85;flex:none}
+  .pg-ends>.pg-slot{margin-top:0}
+  .pg-void{}
   .pg-slot{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:9px;
     min-height:44px;cursor:pointer;display:flex;align-items:center;font-size:14px;font-weight:560}
   .pg-slot:active{border-color:var(--muted)}
@@ -1821,12 +1823,28 @@
     padding:0 18px;font-weight:800;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:7px}
   .pg-dock .pg-syncbtn svg{width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2}
   .pg-dock .pg-syncbtn.pg-spin svg{animation:pg-sp 1s linear infinite}
+  /* section cards: Pod 1 / Pod 2 / Case Lots, endcap-style, lightly tinted */
+  .pg-seccard{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:11px}
+  .pg-secbody{padding:11px;background:color-mix(in srgb,var(--rc) 8%,transparent)}
+  .pg-secbody .pg-mango{margin-top:9px}
+  .pg-secbody .pg-podcount{margin:0 0 9px}
+  /* short-list suggestions in the planogram finder */
+  .pg-shorthdr{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin:11px 2px 5px}
+  .pg-shortrow{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:7px;cursor:pointer}
+  .pg-shortrow:active{border-color:var(--muted)}
+  .pg-shorttop{display:flex;align-items:center;gap:9px}
+  .pg-shortnm{font-weight:640;font-size:14px;flex:1}
+  .pg-shortbadge{font-family:var(--mono);font-size:11px;font-weight:800;border-radius:20px;padding:3px 9px;white-space:nowrap}
+  .pg-shortbadge.short{background:color-mix(in srgb,#D9544D 15%,transparent);color:#D9544D}
+  .pg-shortbadge.over{background:color-mix(in srgb,#E08A3B 15%,transparent);color:#E08A3B}
+  .pg-shortdet{display:none;margin-top:8px;font-size:12.5px;color:var(--muted);line-height:1.45}
+  .pg-shortrow.open .pg-shortdet{display:block}
 </style>
   <!-- The ?v is not decoration. A service worker caches manifest.json, and if an
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=133.1">
+  <link rel="manifest" href="./manifest.json?v=133.2">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2381,37 +2399,19 @@
     </div>
     <div class="pg-findres" id="pgFindRes"></div>
 
-    <div class="pg-eyebrow">POD 1 — AS IT SITS ON THE FLOOR
-      <button class="pg-menubtn" type="button" onclick="pgMenu(event,'sec-pod1')" aria-label="Pod 1 options"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></button>
-    </div>
-    <div class="pg-grid2" id="pgPod1"></div>
-    <div class="pg-mango" id="pgMango"></div>
+    <div class="pg-seccard" style="--rc:#9C7CE0"><div class="pg-run-h"><span class="pg-run-tag">POD <b>1</b></span><span class="pg-run-name">As it sits</span><button class="pg-menubtn" type="button" onclick="pgMenu(event,'sec-pod1')" aria-label="Pod 1 options"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></button></div><div class="pg-secbody"><div class="pg-grid2" id="pgPod1"></div><div class="pg-mango" id="pgMango"></div></div></div>
 
-    <div class="pg-eyebrow">POD 2 — NUMBERED PODS
-      <button class="pg-menubtn" type="button" onclick="pgMenu(event,'sec-pod2')" aria-label="Pod 2 options"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></button>
-      <button class="pg-toggle" type="button" style="display:none" onclick="document.getElementById('pgPodCount').classList.toggle('open')" aria-label="Pod count"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button>
-    </div>
-    <div class="pg-podcount" id="pgPodCount">
-      <button data-n="4" type="button" onclick="pgSetPods(4)">4 pods</button>
-      <button data-n="6" type="button" onclick="pgSetPods(6)">6 pods</button>
-      <button data-n="8" type="button" onclick="pgSetPods(8)">8 pods</button>
-    </div>
-    <div class="pg-podgrid" id="pgPod2"></div>
+    <div class="pg-seccard" style="--rc:#A9CC3E"><div class="pg-run-h"><span class="pg-run-tag">POD <b>2</b></span><span class="pg-run-name">Numbered pods</span><button class="pg-toggle" type="button" style="display:none" onclick="document.getElementById('pgPodCount').classList.toggle('open')" aria-label="Pod count"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button><button class="pg-menubtn" type="button" onclick="pgMenu(event,'sec-pod2')" aria-label="Pod 2 options"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></button></div><div class="pg-secbody"><div class="pg-podcount" id="pgPodCount"><button data-n="4" type="button" onclick="pgSetPods(4)">4 pods</button><button data-n="6" type="button" onclick="pgSetPods(6)">6 pods</button><button data-n="8" type="button" onclick="pgSetPods(8)">8 pods</button></div><div class="pg-podgrid" id="pgPod2"></div></div></div>
 
     <div class="pg-eyebrow">ENDCAPS</div>
     <div id="pgRuns"></div>
 
-    <div class="pg-eyebrow">CASE LOTS
-      <button class="pg-menubtn" type="button" onclick="pgMenu(event,'sec-lots')" aria-label="Case Lots options"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></button>
-    </div>
-    <div id="pgLots"></div>
+    <div class="pg-seccard" style="--rc:#2FC0C0"><div class="pg-run-h"><span class="pg-run-tag">CASE <b>LOTS</b></span><span class="pg-run-name">Bulk floor</span><button class="pg-menubtn" type="button" onclick="pgMenu(event,'sec-lots')" aria-label="Case Lots options"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></button></div><div class="pg-secbody"><div id="pgLots"></div></div></div>
 
     <div class="pg-dock" id="pgDock">
       <span class="pg-sd"></span>
       <div><strong id="pgDockTitle">All synced</strong><small id="pgDockSub">Nothing to send yet</small></div>
-      <button class="pg-syncbtn" id="pgSyncBtn" type="button" onclick="pgSync(true)">
-        <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><polyline points="21 3 21 9 15 9"/></svg>Sync
-      </button>
+      
     </div>
   </section>
 
@@ -6399,7 +6399,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v133.1";
+const APP_VERSION = "v133.2";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -12668,6 +12668,14 @@ const PG_ATT_C = { rack:"#A8B0BA", table:"#C39B5E" };
 /* Shared wet/HMR column heading: HMR sits on the LEFT (arrow points left, out
    to the HMR side), Wet Cases on the RIGHT (arrow points right). The leading
    letter is the same round badge used on the Restock endcap chips. */
+function pgEndsAligned(hmrArr, wetArr){
+  var n = Math.max(hmrArr.length, wetArr.length), cells = pgEndHead("hmr") + pgEndHead("wet"), i;
+  for(i=0;i<n;i++){
+    cells += (hmrArr[i] || '<div class="pg-void"></div>');
+    cells += (wetArr[i] || '<div class="pg-void"></div>');
+  }
+  return '<div class="pg-ends">' + cells + '</div>';
+}
 function pgEndHead(side){
   if(side === "hmr") return '<h5 class="pg-eh-h"><span class="pg-eh-ar">\u25c0</span><span class="nm-bdg ec h">H</span>MR</h5>';
   return '<h5 class="pg-eh-w"><span class="nm-bdg ec w">W</span>ET CASES<span class="pg-eh-ar">\u25b6</span></h5>';
@@ -12681,27 +12689,23 @@ function pgAttHtml(ri,pos,ai,a){
       const arr = side === "hmr" ? a.hmr : a.wet;
       return (arr||[]).map(function(v,bi){
         return '<div class="pg-slot '+(v?'':'pg-blank')+'" id="pgspot-'+ctx+'-box-'+side+'-'+bi+'" onclick="pgEdit(\''+ctx+'-box-'+side+'-'+bi+'\')">'+(nmNameHtml(v)||'tap to add')+'</div>';
-      }).join("");
+      });
     };
     return '<div class="pg-att" style="--ac:'+PG_ATT_C.rack+'">'
       + '<div class="pg-att-h"><span class="pg-att-tag">SILVER RACK</span>'
       + '<span class="pg-att-sub">'+esc(where)+'</span>'
       + '<button class="pg-menubtn" type="button" onclick="pgMenu(event,\''+ctx+'\')" aria-label="Silver rack options">'+PG_ICON_GRID+'</button></div>'
-      + '<div class="pg-ends">'
-      +   '<div class="pg-endcol">'+pgEndHead("hmr")+colR("hmr")+'</div>'
-      +   '<div class="pg-endcol">'+pgEndHead("wet")+colR("wet")+'</div>'
-      + '</div></div>';
+      + pgEndsAligned(colR("hmr"), colR("wet"))
+      + '</div>';
   }
+  const tHmr = '<div class="pg-slot '+(a.hmr?'':'pg-blank')+'" id="pgspot-'+ctx+'-tbl-hmr" onclick="pgEdit(\''+ctx+'-tbl-hmr\')">'+(nmNameHtml(a.hmr)||'tap to add')+'</div>';
+  const tWet = '<div class="pg-slot '+(a.wet?'':'pg-blank')+'" id="pgspot-'+ctx+'-tbl-wet" onclick="pgEdit(\''+ctx+'-tbl-wet\')">'+(nmNameHtml(a.wet)||'tap to add')+'</div>';
   return '<div class="pg-att" style="--ac:'+PG_ATT_C.table+'">'
     + '<div class="pg-att-h"><span class="pg-att-tag">SMALL TABLE</span>'
     + '<span class="pg-att-sub">pair \u00b7 '+esc(where)+'</span>'
     + '<button class="pg-menubtn" type="button" onclick="pgMenu(event,\''+ctx+'\')" aria-label="Small table options">'+PG_ICON_GRID+'</button></div>'
-    + '<div class="pg-ends">'
-    +   '<div class="pg-endcol">'+pgEndHead("hmr")
-    +     '<div class="pg-slot '+(a.hmr?'':'pg-blank')+'" id="pgspot-'+ctx+'-tbl-hmr" onclick="pgEdit(\''+ctx+'-tbl-hmr\')">'+(nmNameHtml(a.hmr)||'tap to add')+'</div></div>'
-    +   '<div class="pg-endcol">'+pgEndHead("wet")
-    +     '<div class="pg-slot '+(a.wet?'':'pg-blank')+'" id="pgspot-'+ctx+'-tbl-wet" onclick="pgEdit(\''+ctx+'-tbl-wet\')">'+(nmNameHtml(a.wet)||'tap to add')+'</div></div>'
-    + '</div></div>';
+    + pgEndsAligned([tHmr], [tWet])
+    + '</div>';
 }
 function pgRenderRuns(){
   const el = document.getElementById("pgRuns"); if(!el) return;
@@ -12712,16 +12716,14 @@ function pgRenderRuns(){
     const col = function(end){
       return st[end].map(function(v,i){
         return '<div class="pg-slot '+(v?'':'pg-blank')+'" id="pgspot-run-'+ri+'-'+end+'-'+i+'" onclick="pgEdit(\'run-'+ri+'-'+end+'-'+i+'\')">'+(nmNameHtml(v)||'tap to add')+'</div>';
-      }).join("");
+      });
     };
     out += '<div class="pg-run" style="--rc:var('+r.c+')">'
       + '<div class="pg-run-h"><span class="pg-run-tag">RUN <b>'+r.tag+'</b></span>'
       + '<span class="pg-run-name">'+esc(r.name)+'</span>'
       + '<button class="pg-menubtn" type="button" onclick="pgMenu(event,\'run-'+ri+'\')" aria-label="Run '+r.tag+' options">'+PG_ICON_GRID+'</button></div>'
-      + '<div class="pg-ends">'
-      +   '<div class="pg-endcol">'+pgEndHead("hmr")+col("hmr")+'</div>'
-      +   '<div class="pg-endcol">'+pgEndHead("wet")+col("wet")+'</div>'
-      + '</div></div>';
+      + pgEndsAligned(col("hmr"), col("wet"))
+      + '</div>';
     pgAtts(ri,"a").forEach(function(a,ai){ out += pgAttHtml(ri,"a",ai,a); });
   });
   el.innerHTML = out;
@@ -13127,30 +13129,47 @@ function pgDoFind(q){
   const box = document.getElementById("pgFindRes");
   if(!q){ box.innerHTML=""; return; }
   const ql = q.toLowerCase();
+  let html = "";
+  // 1) where it lives on the floor right now — tap a pin to jump + flash it.
   const groups = {};
   pgSpotIndex().filter(x=>x.name.toLowerCase().includes(ql)).forEach(x=>{ (groups[x.name]=groups[x.name]||[]).push(x); });
   const names = Object.keys(groups).slice(0,8);
   if(names.length){
-    box.innerHTML = names.map(name=>{
+    html += names.map(name=>{
       const pins = groups[name].map(x=>`<span class="pg-pin" role="button" tabindex="0" style="color:var(${x.c});border-color:var(${x.c})" onclick="pgFlash('${x.key}')">\ud83d\udccd ${esc(x.loc)}</span>`).join("");
       return `<div class="pg-findrow">${esc(name)}<span class="pg-loc">${pins}</span></div>`;
     }).join("");
-    return;
-  }
-  // Not on the floor — fall back to restock routing knowledge, then the short list.
-  const ri = pgRouteInfo(q, "");
-  let html = "";
-  if(ri.kind === "table"){
-    html = `<div class="pg-findrow">${esc(q)}<span class="pg-loc"><span class="pg-pin pg-off">\u27a1 ${esc(ri.label)}</span></span></div>`;
-  } else if(ri.kind === "none" || ri.kind === "carry"){
-    html = `<div class="pg-findrow" style="color:var(--muted)">${esc(q)} \u2014 ${esc(ri.label)}</div>`;
   } else {
+    const ri = pgRouteInfo(q, "");
+    if(ri.kind === "table"){
+      html += `<div class="pg-findrow">${esc(q)}<span class="pg-loc"><span class="pg-pin pg-off">\u27a1 ${esc(ri.label)}</span></span></div>`;
+    } else if(ri.kind === "none" || ri.kind === "carry"){
+      html += `<div class="pg-findrow" style="color:var(--muted)">${esc(q)} \u2014 ${esc(ri.label)}</div>`;
+    }
+  }
+  // 2) today's short list — google-style ranked suggestions, tap a row to expand.
+  const sm = pgShortMatches(q);
+  if(sm.length){
+    html += `<div class="pg-shorthdr">On today\u2019s short list</div>`;
+    html += sm.map((r,i)=>{
+      const over = r.diff < 0;
+      const nm = r.item || r.desc || "";
+      const badge = over ? ("OVER "+Math.abs(r.diff)) : ("SHORT "+r.diff);
+      const det = "Ordered "+r.ord+" \u00b7 shipped "+r.ship+(r.reason?(" \u00b7 "+esc(r.reason)):"")+(r.brandFull?("<br>"+esc(r.brandFull)):"");
+      return '<div class="pg-shortrow" id="pgshort-'+i+'" onclick="pgShortToggle('+i+')">'
+        + '<div class="pg-shorttop"><span class="pg-shortnm">'+esc(nm)+'</span>'
+        + '<span class="pg-shortbadge '+(over?"over":"short")+'">'+badge+'</span></div>'
+        + '<div class="pg-shortdet">'+det+'</div></div>';
+    }).join("");
+  }
+  if(!html){
     html = `<div class="pg-findrow" style="color:var(--muted)">No item matches \u201c${esc(q)}\u201d on the floor</div>`;
   }
-  if(pgShortedToday(q)){
-    html += `<div class="pg-findrow pg-shorthint">\u26a0\ufe0f Today\u2019s short list mentions this \u2014 it may have been shorted. Confirm with a produce crew member.</div>`;
-  }
   box.innerHTML = html;
+}
+function pgShortToggle(i){
+  const el = document.getElementById("pgshort-"+i);
+  if(el) el.classList.toggle("open");
 }
 function pgFlash(key){
   const el = document.getElementById("pgspot-"+key);
@@ -13178,6 +13197,75 @@ function pgRouteInfo(name, plu){
     return { kind:"table", table:t.id, label:"Restock \u00b7 " + disp };
   }
   return { kind:"unknown", label:"" };
+}
+function pgStem(w){
+  w = String(w||"").toLowerCase();
+  if(w.length > 4 && w.slice(-3) === "ies") return w.slice(0,-3)+"y";      // berries->berry
+  if(w.length > 4 && w.slice(-3) === "oes") return w.slice(0,-2);          // tomatoes->tomato
+  if(w.length > 4 && /(s|x|z|ch|sh)es$/.test(w)) return w.slice(0,-2);     // boxes->box, dishes->dish
+  if(w.length > 3 && w.slice(-1) === "s" && w.slice(-2) !== "ss") return w.slice(0,-1); // apples->apple
+  return w;
+}
+function pgLev(a,b){
+  a = String(a); b = String(b);
+  const m = a.length, n = b.length;
+  if(Math.abs(m-n) > 2) return 3;
+  let prev = []; for(let j=0;j<=n;j++) prev[j]=j;
+  for(let i=1;i<=m;i++){
+    let cur = [i];
+    for(let j=1;j<=n;j++) cur[j] = Math.min(prev[j]+1, cur[j-1]+1, prev[j-1]+(a[i-1]===b[j-1]?0:1));
+    prev = cur;
+  }
+  return prev[n];
+}
+/* Graduated match score: exact > whole-prefix > word-prefix > substring >
+   token (prefix / singular-plural / small typo). Returns 0 for no match so the
+   caller can filter, and higher = closer for ranking. */
+function pgMatchScore(q, name){
+  const ql = String(q||"").toLowerCase().trim(); if(!ql) return 0;
+  const nl = String(name||"").toLowerCase().trim(); if(!nl) return 0;
+  if(nl === ql) return 100;
+  if(nl.indexOf(ql) === 0) return 92;
+  const ntok = nl.split(/\s+/).filter(Boolean);
+  if(ntok.some(w=>w.indexOf(ql) === 0)) return 84;
+  if(nl.indexOf(ql) >= 0) return 74;
+  const qtok = ql.split(/\s+/).filter(Boolean);
+  let bonus = 0;
+  for(const qt of qtok){
+    let best = 0;
+    for(const wt of ntok){
+      if(wt === qt){ best = Math.max(best,10); continue; }
+      if(wt.indexOf(qt) === 0 || qt.indexOf(wt) === 0){ best = Math.max(best,8); continue; }
+      const sq = pgStem(qt), sw = pgStem(wt);
+      if(sq === sw){ best = Math.max(best,7); continue; }
+      if(qt.length >= 4 && wt.length >= 4){
+        let d = pgLev(qt, wt); if(sq!==qt || sw!==wt) d = Math.min(d, pgLev(sq, sw));
+        if(d <= 1) best = Math.max(best,6);
+        else if(d === 2 && Math.max(qt.length,wt.length) >= 6) best = Math.max(best,4);
+      }
+    }
+    if(best === 0) return 0;
+    bonus += best;
+  }
+  return 40 + Math.min(bonus, 30);
+}
+/* Ranked matches from TODAY's short list (dedup by item name, best score wins,
+   top 5). Replaces the old boolean pgShortedToday for the finder. */
+function pgShortMatches(q){
+  const d0 = new Date(); d0.setHours(0,0,0,0); const t0 = d0.getTime();
+  const seen = {};
+  (orders()||[]).forEach(inv=>{ (inv.pages||[]).forEach(p=>{
+    if(!p.ts || p.ts < t0) return;
+    (p.rows||[]).forEach(r=>{
+      const nm = String(r.item || r.desc || "").trim(); if(!nm) return;
+      const alt = [nm, r.brandFull, r.brand, r.size].filter(Boolean).join(" ");
+      const sc = Math.max(pgMatchScore(q, nm), pgMatchScore(q, alt) - 15);
+      if(sc <= 0) return;
+      const key = nm.toLowerCase();
+      if(!seen[key] || sc > seen[key].sc) seen[key] = { sc:sc, r:r, nm:nm };
+    });
+  }); });
+  return Object.keys(seen).map(k=>seen[k]).sort((a,b)=> b.sc - a.sc || a.nm.localeCompare(b.nm)).slice(0,5).map(x=>x.r);
 }
 /* Same-day short-list cross-check. Suggest only, never assert. */
 function pgShortedToday(name){

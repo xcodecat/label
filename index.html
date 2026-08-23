@@ -877,6 +877,11 @@
   .wtab.active[data-kind="shorted"]{color:var(--laser);border-top-color:var(--laser)}
   .wtab.active[data-kind="shipped"]{color:var(--ok);border-top-color:var(--ok)}
   #view-order .sticky-bar .wtabs + .wtabs{margin-top:2px}
+  /* invoice-number tabs read as part of the card: no red bar, no red number,
+     just a neutral connected tab. Kind tabs keep their Loop/Flashfood colour. */
+  #view-order #ordTabs .wtab.active{color:var(--paper);border-top-color:var(--line)}
+  .vb-jump{margin-top:6px;font-size:13px;font-weight:600;color:var(--laser);
+    cursor:pointer;display:inline-block}
   .ord-none{padding:22px 14px;text-align:center;color:var(--muted);font-size:14px;line-height:1.5}
   .tabpanel{background:var(--surface);border:1px solid var(--line);border-radius:0 0 10px 10px;
     margin-top:-1px;position:relative;z-index:1;padding:12px}
@@ -1885,7 +1890,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=134.0">
+  <link rel="manifest" href="./manifest.json?v=134.1">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6473,7 +6478,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v134.0";
+const APP_VERSION = "v134.1";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -9707,10 +9712,10 @@ aiCam.type = "file"; aiCam.accept = "image/*"; aiCam.capture = "environment";
 const aiGal = document.createElement("input");
 aiGal.type = "file"; aiGal.accept = "image/*";
 aiGal.multiple = true;   // pick several at once; each one queues locally
-aiCam.addEventListener("change", e=> aiEnqueue(e.target.files && e.target.files[0], "AI reader"));
+aiCam.addEventListener("change", e=> aiEnqueue(e.target.files && e.target.files[0], "AI reader", activeKind));
 aiGal.addEventListener("change", e=>{
   const fs = e.target.files ? Array.from(e.target.files) : [];
-  fs.forEach(f=> aiEnqueue(f, "AI reader"));
+  fs.forEach(f=> aiEnqueue(f, "AI reader", activeKind));
 });
 document.getElementById("apAIShot").addEventListener("click", ()=>{
   if(!aiReady()) return;
@@ -9854,11 +9859,28 @@ async function aiIngest(opts){
 /* ---- the queue itself (sequential worker) ---- */
 const aiQ = [];
 let aiSeq = 0, aiBusy = false;
+/* growing back-off before each auto-retry (seconds): 30, 40, 50, 60, 70.
+   Longer each round gives Gemini more room to recover before we try again. */
+const AI_BACKOFF = [30, 40, 50, 60, 70];
+let aiTicker = null;
+function aiEnsureTicker(){
+  if(aiTicker) return;
+  aiTicker = setInterval(()=>{
+    const now = Date.now();
+    let woke = false;
+    aiQ.forEach(j=>{ if(j.status === "cooldown" && now >= j.cooldownUntil){ j.status = "queued"; j.msg = ""; woke = true; } });
+    aiRenderQueue();
+    if(!aiQ.some(j=>j.status === "cooldown")){ clearInterval(aiTicker); aiTicker = null; }
+    if(woke) aiPump();
+  }, 1000);
+}
 
-function aiEnqueue(file, how){
+function aiEnqueue(file, how, kind){
   if(!file) return;
   if(!aiReady()) return;
-  aiQ.push({ id:"aj" + (++aiSeq), file, how: how || "AI reader", status:"queued", msg:"", retryable:true });
+  const pk = ((kind || activeKind) === "shipped") ? "shipped" : "shorted";
+  aiQ.push({ id:"aj" + (++aiSeq), file, how: how || "AI reader", kind: pk,
+             status:"queued", msg:"", retryable:true, tries:0 });
   aiRenderQueue();
   aiPump();
 }
@@ -9881,13 +9903,25 @@ async function aiPump(){
   if(res.status === "ok"){
     const i = aiQ.indexOf(job); if(i >= 0) aiQ.splice(i, 1);
     aiRenderQueue();
-    ingestOrder(res.rows, res.head, res.shot, res.how, "");
+    ingestOrder(res.rows, res.head, res.shot, res.how, "", job.kind);
   }else{
-    job.status = "failed";
-    job.msg = res.msg || "Failed";
     job.retryable = res.retryable !== false;
-    aiRenderQueue();
-    toast(res.msg || "AI read failed");
+    // 90s timeout / transient fail -> abort this attempt, wait a growing gap, retry.
+    if(job.retryable && job.tries < AI_BACKOFF.length){
+      const wait = AI_BACKOFF[job.tries];      // 30, 40, 50, 60, 70
+      job.tries++;
+      job.status = "cooldown";
+      job.cooldownUntil = Date.now() + wait * 1000;
+      job.msg = res.msg || "Read failed";
+      aiRenderQueue();
+      aiEnsureTicker();
+    }else{
+      // out of auto-retries (or a hard error like quota/bad key) -> manual Retry.
+      job.status = "failed";
+      job.msg = res.msg || "Failed";
+      aiRenderQueue();
+      toast(res.msg || "AI read failed");
+    }
   }
   aiBusy = false;
   aiPump();
@@ -9896,15 +9930,22 @@ async function aiPump(){
 function aiRenderQueue(){
   const el = document.getElementById("aiQueue");
   if(!el) return;
-  if(!aiQ.length){ el.classList.add("hidden"); el.innerHTML = ""; return; }
+  const mine = aiQ.filter(j=>j.kind === activeKind);   // each tab shows only its own jobs
+  if(!mine.length){ el.classList.add("hidden"); el.innerHTML = ""; return; }
   el.classList.remove("hidden");
-  const n = aiQ.length;
-  el.innerHTML = aiQ.map((j, idx)=>{
+  const n = mine.length;
+  el.innerHTML = mine.map((j, idx)=>{
     const label = "Photo " + (idx + 1) + (n > 1 ? " of " + n : "");
     if(j.status === "reading")
       return '<div class="aiq-item reading"><div class="aiq-main"><div class="aiq-name">' + esc(label) + '</div>' +
              '<div class="ocr-bar indet"><i></i></div><div class="aiq-msg">Uploading\u2026</div></div>' +
              '<button class="aiq-btn ghost" data-aj="' + j.id + '" data-act="cancel" aria-label="Cancel">\u00d7</button></div>';
+    if(j.status === "cooldown"){
+      const secs = Math.max(0, Math.ceil((j.cooldownUntil - Date.now()) / 1000));
+      return '<div class="aiq-item cooldown"><div class="aiq-main"><div class="aiq-name">' + esc(label) + '</div>' +
+             '<div class="aiq-msg">Retrying in ' + secs + 's\u2026 \u00b7 try ' + j.tries + ' of ' + AI_BACKOFF.length + '</div></div>' +
+             '<button class="aiq-btn ghost" data-aj="' + j.id + '" data-act="drop" aria-label="Cancel retry">\u00d7</button></div>';
+    }
     if(j.status === "failed")
       return '<div class="aiq-item failed"><div class="aiq-main"><div class="aiq-name">' + esc(label) + '</div>' +
              '<div class="aiq-msg">' + esc(j.msg || "Failed") + '</div></div>' +
@@ -9919,14 +9960,14 @@ function aiRenderQueue(){
 document.getElementById("aiQueue").addEventListener("click", e=>{
   const b = e.target.closest(".aiq-btn"); if(!b) return;
   const j = aiQ.find(x=>x.id === b.dataset.aj); if(!j) return;
-  if(b.dataset.act === "retry"){ j.status = "queued"; j.msg = ""; aiRenderQueue(); aiPump(); }
+  if(b.dataset.act === "retry"){ j.status = "queued"; j.msg = ""; j.tries = 0; aiRenderQueue(); aiPump(); }
   else if(b.dataset.act === "cancel"){ j.cancelled = true; if(j.ctrl) try{ j.ctrl.abort(); }catch(e){} const i = aiQ.indexOf(j); if(i >= 0) aiQ.splice(i, 1); aiRenderQueue(); }
   else{ const i = aiQ.indexOf(j); if(i >= 0) aiQ.splice(i, 1); aiRenderQueue(); }
 });
 // Camera + / Gallery + stay image-only; they funnel through the shared helper.
 async function readOrderAI(f){
   if(!f) return;
-  aiEnqueue(f, "AI reader");
+  aiEnqueue(f, "AI reader", activeKind);
 }
 document.getElementById("apPaste").addEventListener("click", ()=>{ closeAddPage(); openPaste(); });
 
@@ -10233,7 +10274,10 @@ function crossCheck(textRows, shotRows){
   return out;
 }
 
-function ingestOrder(rows, head, img, how, rawText){
+function ingestOrder(rows, head, img, how, rawText, kind){
+  // which sub-tab this page belongs to (queue jobs pass their own kind;
+  // everything else defaults to the tab you're on)
+  const pk = (kind === "shipped") ? "shipped" : (kind === "shorted" ? "shorted" : activeKind);
   const body = document.getElementById("ordBody");
   if(!rows.length){
     const r = rawText ? parseReport(rawText) : null;
@@ -10250,13 +10294,15 @@ function ingestOrder(rows, head, img, how, rawText){
   }
   const memStat = applyArtMemory(rows);
   const all = orders();
-  const key = head.inv || ("unknown-" + new Date().toISOString().slice(0,10));
+  let key = head.inv;
+  if(!key){ key = (activeInv && all.some(x=>x.inv === activeInv))
+            ? activeInv : ("unknown-" + new Date().toISOString().slice(0,10)); }
   let inv = all.find(x=>x.inv === key);
   if(!inv){ inv = { inv:key, date:head.date, cust:head.cust, pages:[] }; all.unshift(inv); }
   if(head.date && !inv.date){ inv.date = head.date; inv.dateGuess = !!head.dateGuess; }
 
   const fp = rows.map(r=>r.art).sort().join(",");
-  const dupe = inv.pages.find(p=>p.fp === fp && pageKind(p) === activeKind);
+  const dupe = inv.pages.find(p=>p.fp === fp && pageKind(p) === pk);
   if(dupe){
     const replace = confirm("This looks like page " + dupe.page + " again — the same " +
       rows.length + " article numbers are already stored.\n\nReplace it, or Cancel to " +
@@ -10265,8 +10311,8 @@ function ingestOrder(rows, head, img, how, rawText){
     inv.pages = inv.pages.filter(p=>p.fp !== fp);
   }
   inv.pages.push({
-    fp, id: "p" + Date.now(), page: head.page || String(pagesOfKind(inv, activeKind).length + 1),
-    of: head.pages || "", img: img || "", rows, ts: Date.now(), src: how, kind: activeKind
+    fp, id: "p" + Date.now(), page: head.page || String(pagesOfKind(inv, pk).length + 1),
+    of: head.pages || "", img: img || "", rows, ts: Date.now(), src: how, kind: pk
   });
   inv.pages.sort((a,b)=>(parseInt(a.page,10)||0) - (parseInt(b.page,10)||0));
   saveOrders(all);
@@ -10362,6 +10408,7 @@ document.getElementById("ordKindTabs").addEventListener("click", e=>{
   document.querySelectorAll("#ordKindTabs .wtab").forEach(x=>x.classList.toggle("active", x===b));
   document.getElementById("ordSearch").placeholder =
     activeKind === "shipped" ? "Did it arrive? Search an item\u2026" : "Was it shorted? Search an item\u2026";
+  aiRenderQueue();
   renderOrder();
 });
 let pgIdx = 0;
@@ -10511,26 +10558,41 @@ function ordSearchRun(){
   const inv = all.find(x=>x.inv === activeInv);
   if(!inv){ v.innerHTML = ""; return; }
   const qt = q.split(/\s+/).filter(Boolean);
-  // Collect matches WITH the page each sits on, so the card can point to it.
-  const hits = [];
-  pagesOfKind(inv, activeKind).forEach(p=>{
-    p.rows.forEach(r=>{
-      const hay = [r.item, r.label, r.desc, r.art, r.brand, r.brandFull, r.size]
-                    .filter(Boolean).join(" ").toLowerCase();
-      if(qt.every(t=>hay.includes(t))) hits.push({ r, page:p.page });
+  // Collect matches per kind so search spans both lists; the card points to the page.
+  const matchIn = (kind)=>{
+    const out = [];
+    pagesOfKind(inv, kind).forEach(p=>{
+      p.rows.forEach(r=>{
+        const hay = [r.item, r.label, r.desc, r.art, r.brand, r.brandFull, r.size]
+                      .filter(Boolean).join(" ").toLowerCase();
+        if(qt.every(t=>hay.includes(t))) out.push({ r, page:p.page });
+      });
     });
-  });
+    return out;
+  };
+  const hits = matchIn(activeKind);
   if(!hits.length){
+    // nothing on this tab — but the same item may sit on the other list
+    const other = activeKind === "shipped" ? "shorted" : "shipped";
+    if(matchIn(other).length){
+      const msg = activeKind === "shipped"
+        ? "On the shorted list \u2014 came up short"
+        : "Not shorted. Found on the shipped list";
+      v.innerHTML = '<div class="verdict ok"><h4>' + esc(msg) + '</h4>' +
+        '<div class="vb-jump" role="button" tabindex="0" onclick="ordJumpKind(\'' + other + '\')">' +
+        'Tap to see it on the ' + (other === "shipped" ? "Shipped" : "Shorted") + ' tab \u2192</div></div>';
+      return;
+    }
     if(activeKind === "shipped"){
       v.innerHTML = '<div class="verdict short"><h4>Not on the shipped list</h4>' +
         '<div class="big">NOT RECEIVED \u2014 CHECK</div>' +
         '<p>The shipped pages list what did arrive, so an item that isn\'t here wasn\'t ' +
         'recorded as received \u2014 as long as every shipped page has been photographed.</p></div>';
     } else {
-      v.innerHTML = '<div class="verdict ok"><h4>Not on the short list</h4>' +
-        '<div class="big">SHIPPED COMPLETE</div>' +
-        '<p>This page only lists what didn\'t arrive, so anything absent came in full \u2014 ' +
-        'as long as every page of the summary has been photographed.</p></div>';
+      v.innerHTML = '<div class="verdict ok"><h4>Not on the shorted list</h4>' +
+        '<div class="big">CHECK THE SHIPPED TAB</div>' +
+        '<p>The shorted list only shows what didn\'t arrive, so anything absent should have ' +
+        'come in full \u2014 open the Shipped tab to confirm it was received.</p></div>';
     }
     return;
   }
@@ -10558,6 +10620,14 @@ function ordSearchRun(){
   highlightOrdRows(hits.map(h=>h.r.art));
 }
 document.getElementById("ordSearch").addEventListener("input", ordSearchRun);
+function ordJumpKind(kind){
+  activeKind = kind === "shipped" ? "shipped" : "shorted";
+  document.querySelectorAll("#ordKindTabs .wtab").forEach(x=>x.classList.toggle("active", x.dataset.kind === activeKind));
+  document.getElementById("ordSearch").placeholder =
+    activeKind === "shipped" ? "Did it arrive? Search an item\u2026" : "Was it shorted? Search an item\u2026";
+  aiRenderQueue();
+  renderOrder();
+}
 
 /* ================= invoice cross-device sync =================
    The whole board rides to the backend, which MERGES (unions pages by fp per

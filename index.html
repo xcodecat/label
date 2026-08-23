@@ -873,6 +873,11 @@
   /* each list keeps its own colour: red Loop / green Flashfood */
   .wtab.active[data-list="flashfood"]{color:var(--ok);border-top-color:var(--ok)}
   .wtab.active[data-list="loop"]{color:var(--laser);border-top-color:var(--laser)}
+  /* invoice sub-tabs: amber Shorted / green Shipped, mirroring Loop/Flashfood */
+  .wtab.active[data-kind="shorted"]{color:var(--laser);border-top-color:var(--laser)}
+  .wtab.active[data-kind="shipped"]{color:var(--ok);border-top-color:var(--ok)}
+  #view-order .sticky-bar .wtabs + .wtabs{margin-top:2px}
+  .ord-none{padding:22px 14px;text-align:center;color:var(--muted);font-size:14px;line-height:1.5}
   .tabpanel{background:var(--surface);border:1px solid var(--line);border-radius:0 0 10px 10px;
     margin-top:-1px;position:relative;z-index:1;padding:12px}
   .tabpanel > :first-child{margin-top:0}
@@ -1880,7 +1885,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=133.8">
+  <link rel="manifest" href="./manifest.json?v=134.0">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2159,6 +2164,10 @@
     <div class="sticky-bar">
       <div class="sales-head">
         <input id="ordSearch" placeholder="Was it shorted? Search an item…" autocomplete="off">
+      </div>
+      <div class="wtabs" id="ordKindTabs">
+        <button class="wtab active" data-kind="shorted">Shorted</button>
+        <button class="wtab" data-kind="shipped">Shipped</button>
       </div>
       <div class="wtabs" id="ordTabs"></div>
     </div>
@@ -3827,6 +3836,7 @@ function showView(name){
   if(name !== "restock") rkStopPoll();   // only poll while the board is on screen
   if(name !== "handoff") hoStopPoll();
   if(name !== "planogram") pgStopPoll();
+  if(name !== "order") invStopPoll();
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
@@ -3860,7 +3870,7 @@ function showView(name){
       setTimeout(()=>b.classList.remove("armed"), 1400);
     }
   }
-  if(name==="order"){ renderOrder(); aiRenderQueue(); }
+  if(name==="order"){ renderOrder(); aiRenderQueue(); invPull(); invStartPoll(); }
   if(name==="claims") renderClaims();
   if(name==="settings"){
     pluCountLabel(); renderAppearance();
@@ -6463,7 +6473,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v133.8";
+const APP_VERSION = "v134.0";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -9567,6 +9577,17 @@ function saveOrders(v){
   catch(e){ toast("Storage full — delete an old invoice"); }
 }
 
+/* ---- cross-device invoice sync: shared tombstones so a page/invoice deleted
+   on one phone is not resurrected by another that still holds it (same idea
+   as the restock board). Photos never sync — see the invoice-sync module. */
+const KEY_INV_TOMB = "label_inv_tomb_v1";
+let invDirty = false, invSyncing = false, invPollTimer = null, invSyncTimer = null;
+function invTombs(){ try{ const t = JSON.parse(localStorage.getItem(KEY_INV_TOMB) || "{}"); return { inv:(t.inv||{}), pg:(t.pg||{}) }; }catch(e){ return { inv:{}, pg:{} }; } }
+function saveInvTombs(t){ try{ localStorage.setItem(KEY_INV_TOMB, JSON.stringify(t)); }catch(e){} }
+function invTombInvoice(inv){ const t = invTombs(); t.inv[inv] = Date.now(); saveInvTombs(t); }
+function invTombPage(inv, fp){ const t = invTombs(); t.pg[inv + "|" + fp] = Date.now(); saveInvTombs(t); }
+function invMarkDirty(){ invDirty = true; invAutoSync(); }
+
 /* ---- Article memory: learn item identity per article number over time ----
    Every confirmed read teaches a tally of description / pack / size against the
    article number (the one field the reader nails). Majority vote means one
@@ -9643,6 +9664,9 @@ function applyArtMemory(rows){
 }
 
 let activeInv = null;
+let activeKind = "shorted";                       // which sub-tab (shorted|shipped) is showing
+function pageKind(p){ return (p && p.kind === "shipped") ? "shipped" : "shorted"; }
+function pagesOfKind(inv, kind){ return ((inv && inv.pages) || []).filter(p=>pageKind(p) === kind); }
 
 /* ---- capture a page ---- */
 const ordFile = document.createElement("input");
@@ -10232,7 +10256,7 @@ function ingestOrder(rows, head, img, how, rawText){
   if(head.date && !inv.date){ inv.date = head.date; inv.dateGuess = !!head.dateGuess; }
 
   const fp = rows.map(r=>r.art).sort().join(",");
-  const dupe = inv.pages.find(p=>p.fp === fp);
+  const dupe = inv.pages.find(p=>p.fp === fp && pageKind(p) === activeKind);
   if(dupe){
     const replace = confirm("This looks like page " + dupe.page + " again — the same " +
       rows.length + " article numbers are already stored.\n\nReplace it, or Cancel to " +
@@ -10241,12 +10265,13 @@ function ingestOrder(rows, head, img, how, rawText){
     inv.pages = inv.pages.filter(p=>p.fp !== fp);
   }
   inv.pages.push({
-    fp, id: "p" + Date.now(), page: head.page || String(inv.pages.length + 1),
-    of: head.pages || "", img: img || "", rows, ts: Date.now(), src: how
+    fp, id: "p" + Date.now(), page: head.page || String(pagesOfKind(inv, activeKind).length + 1),
+    of: head.pages || "", img: img || "", rows, ts: Date.now(), src: how, kind: activeKind
   });
   inv.pages.sort((a,b)=>(parseInt(a.page,10)||0) - (parseInt(b.page,10)||0));
   saveOrders(all);
   harvestArtMem(rows);
+  invMarkDirty();
   activeInv = key;
   renderOrder();
   const bad = rows.filter(r=>!r.ok).length;
@@ -10287,8 +10312,8 @@ function renderOrder(){
   if(!all.length){
     tabs.innerHTML = "";
     document.getElementById("ordVerdict").innerHTML = "";
-    body.innerHTML = '<div class="sea-empty">No invoice yet. Tap the camera and ' +
-      'photograph the SHORT SUMMARY page — the one listing what didn\'t ship.</div>';
+    body.innerHTML = '<div class="sea-empty">No invoice yet. Tap \uFF0B and photograph a ' +
+      'page — the app files it under the <b>' + activeKind + '</b> tab you\'re on.</div>';
     return;
   }
   if(!activeInv || !all.some(x=>x.inv === activeInv)) activeInv = all[0].inv;
@@ -10297,12 +10322,21 @@ function renderOrder(){
       esc(x.inv.length > 10 ? "…" + x.inv.slice(-6) : x.inv)}</button>`).join("");
 
   const inv = all.find(x=>x.inv === activeInv);
-  const rows = inv.pages.flatMap(p=>p.rows);
+  const pgs = pagesOfKind(inv, activeKind);
+  const rows = pgs.flatMap(p=>p.rows);
   const bad = rows.filter(r=>!r.ok).length;
+
+  if(!pgs.length){
+    document.getElementById("ordVerdict").innerHTML = "";
+    body.innerHTML =
+      `<div class="inv-date">${esc(inv.date || todayNice())}</div>` +
+      `<div class="ord-none">No ${activeKind} page for this invoice yet.<br>Tap \uFF0B to add one.</div>`;
+    return;
+  }
 
   body.innerHTML =
     `<div class="inv-date">${esc(inv.date || todayNice())}</div>` +
-    '<div class="pgrow">' + inv.pages.map(p=>`<button class="pgdot${
+    '<div class="pgrow">' + pgs.map(p=>`<button class="pgdot${
         p.rows.some(r=>!r.ok)?" bad":""}" data-pg="${p.id}"
         aria-label="Page ${esc(p.page)}, ${p.rows.length} rows">${esc(p.page)}</button>`).join("") +
     '</div>' +
@@ -10322,18 +10356,28 @@ document.getElementById("ordTabs").addEventListener("click", e=>{
   const b = e.target.closest(".wtab"); if(!b) return;
   activeInv = b.dataset.inv; renderOrder();
 });
+document.getElementById("ordKindTabs").addEventListener("click", e=>{
+  const b = e.target.closest(".wtab"); if(!b) return;
+  activeKind = b.dataset.kind === "shipped" ? "shipped" : "shorted";
+  document.querySelectorAll("#ordKindTabs .wtab").forEach(x=>x.classList.toggle("active", x===b));
+  document.getElementById("ordSearch").placeholder =
+    activeKind === "shipped" ? "Did it arrive? Search an item\u2026" : "Was it shorted? Search an item\u2026";
+  renderOrder();
+});
 let pgIdx = 0;
 document.getElementById("ordBody").addEventListener("click", e=>{
   const c = e.target.closest(".pgdot"); if(!c) return;
   const inv = orders().find(x=>x.inv === activeInv); if(!inv) return;
-  pgIdx = inv.pages.findIndex(p=>p.id === c.dataset.pg);
+  const pgs = pagesOfKind(inv, activeKind);
+  pgIdx = pgs.findIndex(p=>p.id === c.dataset.pg);
   if(pgIdx < 0) return;
   openPage();
 });
 
 function openPage(){
   const inv = orders().find(x=>x.inv === activeInv); if(!inv) return;
-  const pg = inv.pages[pgIdx]; if(!pg) return;
+  const pgs = pagesOfKind(inv, activeKind);
+  const pg = pgs[pgIdx]; if(!pg) return;
   document.getElementById("pgTitle").textContent =
     "Page " + pg.page + (pg.of ? " of " + pg.of : "") + " — " + pg.rows.length + " rows";
   const cap = document.querySelector("#pageOverlay .cd-src");
@@ -10341,9 +10385,9 @@ function openPage(){
     ? "Pinch or double-tap to zoom, drag to move. This photo is the truth when a number looks wrong."
     : "Pasted from " + (pg.src || "text") + " — no photo kept for this page.";
   document.getElementById("pgWhich").textContent =
-    (pgIdx+1) + " / " + inv.pages.length + " photographed";
+    (pgIdx+1) + " / " + pgs.length + " photographed";
   document.getElementById("pgPrev").disabled = pgIdx <= 0;
-  document.getElementById("pgNext").disabled = pgIdx >= inv.pages.length - 1;
+  document.getElementById("pgNext").disabled = pgIdx >= pgs.length - 1;
   const img = document.getElementById("pgImg");
   const stage = document.getElementById("pgStage");
   if(pg.img){
@@ -10359,8 +10403,11 @@ function openPage(){
   document.getElementById("pgDel").onclick = ()=>{
     const all = orders();
     const i = all.find(x=>x.inv === activeInv);
+    invTombPage(i.inv, pg.fp);
     i.pages = i.pages.filter(p=>p.id !== pg.id);
-    saveOrders(i.pages.length ? all : all.filter(x=>x.inv !== activeInv));
+    if(!i.pages.length){ invTombInvoice(i.inv); saveOrders(all.filter(x=>x.inv !== activeInv)); }
+    else saveOrders(all);
+    invMarkDirty();
     closePage(); renderOrder();
   };
 }
@@ -10466,7 +10513,7 @@ function ordSearchRun(){
   const qt = q.split(/\s+/).filter(Boolean);
   // Collect matches WITH the page each sits on, so the card can point to it.
   const hits = [];
-  inv.pages.forEach(p=>{
+  pagesOfKind(inv, activeKind).forEach(p=>{
     p.rows.forEach(r=>{
       const hay = [r.item, r.label, r.desc, r.art, r.brand, r.brandFull, r.size]
                     .filter(Boolean).join(" ").toLowerCase();
@@ -10474,22 +10521,36 @@ function ordSearchRun(){
     });
   });
   if(!hits.length){
-    v.innerHTML = '<div class="verdict ok"><h4>Not on the short list</h4>' +
-      '<div class="big">SHIPPED COMPLETE</div>' +
-      '<p>This page only lists what didn\'t arrive, so anything absent came in full \u2014 ' +
-      'as long as every page of the summary has been photographed.</p></div>';
+    if(activeKind === "shipped"){
+      v.innerHTML = '<div class="verdict short"><h4>Not on the shipped list</h4>' +
+        '<div class="big">NOT RECEIVED \u2014 CHECK</div>' +
+        '<p>The shipped pages list what did arrive, so an item that isn\'t here wasn\'t ' +
+        'recorded as received \u2014 as long as every shipped page has been photographed.</p></div>';
+    } else {
+      v.innerHTML = '<div class="verdict ok"><h4>Not on the short list</h4>' +
+        '<div class="big">SHIPPED COMPLETE</div>' +
+        '<p>This page only lists what didn\'t arrive, so anything absent came in full \u2014 ' +
+        'as long as every page of the summary has been photographed.</p></div>';
+    }
     return;
   }
   v.innerHTML = hits.map(h=>{
-    const r = h.r, over = r.diff < 0;
+    const r = h.r, over = r.diff < 0, shipMode = (activeKind === "shipped");
     const bdg = r.brand ? '<b class="vb-bdg" title="' + esc(r.brandFull || "") + '">' + esc(r.brand) + '</b>' : "";
-    const amt = over ? "OVER " + Math.abs(r.diff) : "SHORT " + r.diff;
-    return '<div class="verdict compact ' + (over ? "over" : "short") + '">' +
+    // Shorted: how far short/over. Shipped: how many actually arrived.
+    const amt = shipMode
+      ? (r.ship == null ? "RECEIVED" : "RECEIVED " + r.ship)
+      : (over ? "OVER " + Math.abs(r.diff) : "SHORT " + r.diff);
+    const cls = shipMode ? "ok" : (over ? "over" : "short");
+    const note = shipMode
+      ? (r.diff > 0 ? " \u00b7 short " + r.diff : (r.diff < 0 ? " \u00b7 over " + Math.abs(r.diff) : ""))
+      : "";
+    return '<div class="verdict compact ' + cls + '">' +
       '<div class="vb-top">' + bdg +
         '<span class="vb-name">' + esc(r.item || r.desc) + '</span>' +
         '<span class="vb-amt">' + amt + '</span></div>' +
       '<div class="vb-sub">' + esc(r.art) +
-        ' \u00b7 ord ' + (r.ord == null ? "?" : r.ord) + " / ship " + (r.ship == null ? "?" : r.ship) +
+        ' \u00b7 ord ' + (r.ord == null ? "?" : r.ord) + " / ship " + (r.ship == null ? "?" : r.ship) + note +
         (r.reason ? ' \u00b7 ' + esc(r.reason) : "") +
         ' \u00b7 p.' + esc(String(h.page)) + '</div>' +
       '</div>';
@@ -10497,6 +10558,90 @@ function ordSearchRun(){
   highlightOrdRows(hits.map(h=>h.r.art));
 }
 document.getElementById("ordSearch").addEventListener("input", ordSearchRun);
+
+/* ================= invoice cross-device sync =================
+   The whole board rides to the backend, which MERGES (unions pages by fp per
+   invoice) instead of last-write-wins — two phones shooting different pages of
+   the same delivery must not wipe each other. Photos never leave the phone that
+   shot them (a base64 page dwarfs a Sheet cell); the shared truth is the parsed
+   rows. Mirrors the restock sync: debounced auto-push, a guard against
+   clobbering unsent local edits, a poll while the tab is open, and shared
+   tombstones so a deleted page isn't resurrected. */
+function invStripForSync(list){
+  return (list||[]).map(iv=>({
+    inv: iv.inv, date: iv.date||"", dateGuess: !!iv.dateGuess, cust: iv.cust||"",
+    pages: (iv.pages||[]).map(p=>({
+      fp:p.fp, id:p.id, page:p.page, of:p.of||"",
+      kind: pageKind(p), rows:p.rows||[], ts:p.ts||0, src:p.src||""
+    }))
+  }));
+}
+/* Fold the merged server board back into local orders, KEEPING our own photos
+   (the server copy has none). Shared tombstones drop anything deleted anywhere. */
+function invMergeShared(shared){
+  if(!shared || !Array.isArray(shared.invoices)) return;
+  const localImg = {};   // "inv|fp" -> the photo we already hold locally
+  orders().forEach(iv=>(iv.pages||[]).forEach(p=>{ if(p.img) localImg[iv.inv + "|" + p.fp] = p.img; }));
+  const tInv = (shared.tombInv||{}), tPg = (shared.tombPg||{});
+  const out = [];
+  shared.invoices.forEach(iv=>{
+    if(tInv[iv.inv] != null) return;                         // whole invoice deleted somewhere
+    const pages = (iv.pages||[]).filter(p=>{
+      const tt = tPg[iv.inv + "|" + p.fp];
+      return !(tt != null && (p.ts||0) <= tt);               // page deleted (and not re-added newer)
+    }).map(p=>({
+      fp:p.fp, id:p.id, page:p.page, of:p.of||"",
+      kind: (p.kind==="shipped")?"shipped":"shorted",
+      img: localImg[iv.inv + "|" + p.fp] || "",
+      rows:p.rows||[], ts:p.ts||0, src:p.src||""
+    }));
+    if(pages.length) out.push({ inv:iv.inv, date:iv.date||"", dateGuess:!!iv.dateGuess, cust:iv.cust||"", pages });
+  });
+  saveOrders(out);
+}
+async function invSync(manual){
+  if(invSyncing) return;
+  if(!proxyUrl()){ if(manual) toast("Not set up yet \u2014 see Settings"); return; }
+  invSyncing = true;
+  try{
+    const t = invTombs();
+    const state = { invoices: invStripForSync(orders()), tombInv:t.inv, tombPg:t.pg,
+                    updatedBy: (localStorage.getItem(KEY_ME_NAME)||""), updatedAt: new Date().toISOString() };
+    const d = await callProxy({ action:"invoicesSync", state });
+    if(d && d.ok && d.state){
+      invMergeShared(d.state);
+      saveInvTombs({ inv:{}, pg:{} });     // the server now carries the tombstones for everyone
+      invDirty = false;
+      if(document.getElementById("view-order").classList.contains("active")) renderOrder();
+    }
+    if(manual) toast("Invoices synced");
+  }catch(err){
+    if(err && err.auth){ if(manual) toast(authMessage(err)); }
+    // else: stay dirty and retry on the next edit / foreground / online
+  }finally{
+    invSyncing = false;
+  }
+}
+function invAutoSync(){
+  clearTimeout(invSyncTimer);
+  invSyncTimer = setTimeout(()=>invSync(false), 1200);
+}
+async function invPull(){
+  if(!proxyUrl() || !navigator.onLine) return;
+  if(invDirty || invSyncing) return;                          // never clobber unsent local edits
+  try{
+    const d = await callProxy({ action:"invoicesGet" });
+    if(d && d.ok && d.state && Array.isArray(d.state.invoices)){
+      invMergeShared(d.state);
+      if(document.getElementById("view-order").classList.contains("active")) renderOrder();
+    }
+  }catch(e){ /* offline / not approved yet — the local board keeps working */ }
+}
+function invStartPoll(){
+  invStopPoll();
+  invPollTimer = setInterval(()=>{ if(!document.hidden) invPull(); }, 30000);
+}
+function invStopPoll(){ if(invPollTimer){ clearInterval(invPollTimer); invPollTimer = null; } }
 
 /* Tesseract is ~3MB and only downloads the first time you read a page */
 let tessReady = null;
@@ -13817,6 +13962,8 @@ window.addEventListener("online", ()=>dbAutoRefresh(true));
 window.addEventListener("online", ()=>scrapAutoSync());
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) dbAutoRefresh(false); });
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden){ aiRenderQueue(); flushErrors(); } });
+window.addEventListener("online", ()=>{ if(invDirty) invSync(false); });
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && document.getElementById("view-order").classList.contains("active")) invPull(); });
 setInterval(()=>{ if(!document.hidden) dbAutoRefresh(false); }, 90000);
 
 /* ================= boot ================= */

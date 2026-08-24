@@ -635,10 +635,13 @@
   .inv-date{font-family:var(--mono);font-size:14px;color:var(--muted);
     margin:2px 0 8px;letter-spacing:.04em}
   .pgrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
-  .pgdot{min-width:38px;height:32px;border-radius:6px;border:none;background:var(--laser);
+  .pgdot{position:relative;min-width:38px;height:32px;border-radius:6px;border:none;background:var(--laser);
     color:#fff;font-family:var(--mono);font-size:13px;font-weight:600;cursor:pointer;
     display:flex;align-items:center;justify-content:center;padding:0 8px}
   .pgdot:active{transform:scale(.94)}
+  .pgdot .prov{position:absolute;top:-5px;right:-6px;font-size:8px;font-weight:800;line-height:1;padding:1px 3px;border-radius:4px;font-family:var(--mono);letter-spacing:.02em}
+  .pgdot .prov.ge{background:#20344f;color:#bcd6ff}
+  .pgdot .prov.gr{background:#4d2f1c;color:#ffc9a0}
   .pgdot.bad{background:#8a6d1f}
   .ocr-prog{background:var(--surface);border:1px solid var(--line);border-radius:8px;
     padding:12px;margin-bottom:12px}
@@ -1379,6 +1382,8 @@
     background:var(--surface-2);color:var(--ok);font-size:20px;line-height:1;font-weight:700;
     cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
   .cat-plus:active{background:var(--ok);color:#fff}
+  .cat-plus.pl{border-color:var(--laser);color:var(--laser)}
+  .cat-plus.pl:active{background:var(--laser);color:#fff}
   /* Muted rows: dim the text/codes but keep the + fully live (no parent opacity,
      which would clamp the child and grey the + too). */
   .cat-row2.dim .cat-nm{opacity:.5}
@@ -1918,7 +1923,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=135.0">
+  <link rel="manifest" href="./manifest.json?v=135.1">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2482,20 +2487,23 @@
     <!-- ============ PLANOGRAM VIEW ============ -->
   <section id="view-picklist" class="view">
     <div class="pl-wrap">
-      <div class="pl-addcard">
-        <div class="pl-inputrow">
-          <input id="plInput" placeholder="Scan, say, or type an item" autocomplete="off">
-          <button class="pl-iconbtn" id="plMic" type="button" aria-label="Say an item">
+      <div class="toolbar">
+        <div class="sbox">
+          <input id="plSearch" placeholder="Scan, say, or find an item" autocomplete="off">
+          <button id="plMic" type="button" aria-label="Say an item">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
           </button>
-          <button class="pl-iconbtn" id="plScan" type="button" aria-label="Scan a barcode">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5v14M7 5v14M11 5v14M15 5v14M19 5v14"/></svg>
+        </div>
+      </div>
+      <div class="pl-hint">Items another department could not find on the floor. Scan or search to add it, then fill it or reset it in SAP.</div>
+      <div id="plBody"></div>
+      <div class="fabs" id="plFabs">
+        <div class="fab-stack">
+          <button class="fab scan" id="plScan" type="button" aria-label="Scan a barcode" title="Scan">
+            <svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
           </button>
         </div>
-        <button class="pl-addbtn" id="plAdd" type="button">Add to pick list</button>
-        <div class="pl-hint">Items another department couldn\u2019t find on the floor. Find and fill it, or reset it in SAP.</div>
       </div>
-      <div id="plBody"></div>
     </div>
   </section>
 
@@ -3925,7 +3933,7 @@ function showView(name){
     }
   }
   if(name==="order"){ renderOrder(); aiRenderQueue(); invPull(); invStartPoll(); }
-  if(name==="picklist"){ renderPickList(); plPull(); plStartPoll(); dbAutoRefresh(false); }
+  if(name==="picklist"){ const s=document.getElementById("plSearch"); if(s) s.value=""; renderPickList(); plPull(); plStartPoll(); dbAutoRefresh(false); }
   if(name==="claims") renderClaims();
   if(name==="settings"){
     pluCountLabel(); renderAppearance();
@@ -4136,13 +4144,10 @@ function onScanSuccess(text){
 
   if(target && target.type === "picklist"){
     const c = String(text).replace(/\D/g, "");
+    const s = document.getElementById("plSearch"); if(s) s.value = c;
+    plRenderSuggest();
     const hit = catalogByCode(c);
-    if(hit){ plAddResolved(hit.name, hit.plu || "", c); }
-    else {
-      const inp = document.getElementById("plInput");
-      if(inp) inp.value = c;
-      toast("No match \u2014 tap Add to put it on the list");
-    }
+    toast(hit ? (hit.name + " \u2014 tap + to add") : "No match \u2014 add it to the database below");
     return;
   }
   if(target && target.type === "manual"){
@@ -5568,20 +5573,27 @@ function pluBoxes(plu, mine){
     + (hasTwin ? '<div class="look-code org">9'+esc(plu)+'<small>organic</small></div>' : '')
     + '</div>';
 }
+let catPlusMode = "store";   // "store" = Add tab (unchanged); "picklist" = Pick List
 function catRow2(o, dim){
   const pw = o.packWt ? '<span class="nm-bdg pack">'+esc(cleanWt(o.packWt))+'</span>' : "";
   const badge = o.store ? '<span class="own">store</span>' : "";
   const dbadge = o.deck ? '<span class="deck">5 DECK</span>' : "";
   const nm = nmNameHtml((o.brand?o.brand+" ":"")+o.name);
   // muted catalogue rows get an explicit + (the whole row still opens the form too)
-  const plus = dim
-    ? '<button class="cat-plus" aria-label="Add to store" onclick="event.stopPropagation();openEntry('+o._i+')">+</button>'
-    : "";
+  // Pick-list mode: in-store rows get a laser + that adds to the pick list;
+  // not-carried rows keep the green + that adds to the DB (same as the Add tab).
+  const _pl = (catPlusMode === "picklist");
+  const plus = (_pl && !dim)
+    ? '<button class="cat-plus pl" aria-label="Add to pick list" onclick="event.stopPropagation();plAddFromEntry('+o._i+')">+</button>'
+    : (dim
+      ? '<button class="cat-plus" aria-label="Add to store" onclick="event.stopPropagation();openEntry('+o._i+')">+</button>'
+      : "");
+  const _rowClick = (_pl && !dim) ? 'plAddFromEntry('+o._i+')' : 'openEntry('+o._i+')';
   // PLU boxes ride on the RIGHT of the name to keep rows compact; a barcode's
   // scannable image is wide, so it stays on its own line below.
   const codesRight = (!o.code && o.plu) ? pluBoxes(o.plu, !!o.store) : "";
   const bcBelow = o.code ? '<div class="cat-bcimg"><svg class="cat-bc" data-code="'+esc(o.code)+'"></svg></div>' : "";
-  return '<div class="cat-row2 tappable'+(dim?' dim':'')+'" onclick="openEntry('+o._i+')">'
+  return '<div class="cat-row2 tappable'+(dim?' dim':'')+'" onclick="'+_rowClick+'">'
     + '<div class="cat-rowtop"><div class="cat-nm">'+nm+badge+dbadge+pw+'</div>'+codesRight+plus+'</div>'
     + bcBelow + '</div>';
 }
@@ -6539,7 +6551,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v135.0";
+const APP_VERSION = "v135.1";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -9841,6 +9853,7 @@ function aiMsgCycle(id, hasImage){
   return ()=>clearInterval(t);
 }
 
+const AI_PROVIDERS = ["gemini","groq"];
 async function aiRead1(opts){
   opts = opts || {};
   const f    = opts.imageFile || null;
@@ -9859,17 +9872,29 @@ async function aiRead1(opts){
     try{ queueError("AIREAD outer | " + ((err && err.message) ? String(err.message).slice(0,200) : "image error")); }catch(e){}
     return { status:"error", msg:(err && err.message) || "couldn't read the image", retryable:false };
   }
+  // Fire BOTH providers in parallel and take the first SUCCESSFUL read. A fast
+  // failure from one (e.g. Gemini 429/timeout) never wins the race — we wait on
+  // the other; only if BOTH fail do we surface an error. Same latency as a single
+  // call on the happy path. The winner tags res.provider so the page shows ge/gr.
+  const attempts = AI_PROVIDERS.map(p => aiReadProvider(p, b64, text, shot, how, opts.signal));
+  return await aiRaceFirstOk(attempts);
+}
+
+/* One provider: network + parse, returns the same result shape aiRead1 used to,
+   plus .provider on success. No image shrink here — aiRead1 does that once and
+   hands both providers the same bytes. */
+async function aiReadProvider(provider, b64, text, shot, how, signal){
   let resp;
   try{
-    const payload = { action:"aiRead" };
+    const payload = { action:"aiRead", provider };
     if(b64)  payload.image = b64;
     if(text) payload.text  = text;
-    resp = await callProxy(payload, { timeoutMs: 90000, signal: opts.signal });   // vision is slow; give it room
+    resp = await callProxy(payload, { timeoutMs: 90000, signal });   // vision is slow; give it room
   }catch(err){
     const em = String((err && err.message) || "");
     const aborted = err && (err.name === "AbortError" || /abort/i.test(em));
     const netFail = /failed to fetch|networkerror|load failed|network error/i.test(em);
-    try{ queueError("AIREAD " + (aborted ? "timeout(90s)" : "fail") + " | " + (em ? em.slice(0,200) : "network error")); }catch(e){}
+    try{ queueError("AIREAD " + provider + " " + (aborted ? "timeout(90s)" : "fail") + " | " + (em ? em.slice(0,200) : "network error")); }catch(e){}
     const msg = aborted ? "The AI reader took too long"
               : (authMessage(err) || (netFail ? "Lost the connection mid-read" : (em || "network error")));
     return { status: aborted ? "timeout" : "fail", msg, retryable:true };
@@ -9881,23 +9906,39 @@ async function aiRead1(opts){
     if(status === 429){ msg = "AI quota used up for today"; retryable = false; }
     else if(status === 400 || status === 401 || status === 403){ msg = "AI key not accepted \u2014 check the key on the Sheet"; retryable = false; }
     else if(resp && resp.error) msg = resp.error;
-    try{ queueError("AIREAD fail | status=" + (status || "?") + ((resp && resp.error) ? " | " + String(resp.error).slice(0,200) : "")); }catch(e){}
+    try{ queueError("AIREAD " + provider + " fail | status=" + (status || "?") + ((resp && resp.error) ? " | " + String(resp.error).slice(0,200) : "")); }catch(e){}
     return { status:"fail", msg, retryable };
   }
   let parsed;
   try{ parsed = JSON.parse(String(resp.text || "").replace(/^```json/i,"").replace(/^```/,"").replace(/```$/,"").trim()); }
   catch(e){ parsed = null; }
   if(!parsed || !Array.isArray(parsed.rows)){
-    try{ queueError("AIREAD noparse | " + String(resp.text || "").slice(0,160)); }catch(e){}
-    return { status:"noparse", msg:"The AI didn't return a readable table", retryable:true };
+    try{ queueError("AIREAD " + provider + " noparse | " + String(resp.text || "").slice(0,160)); }catch(e){}
+    return { status:"noparse", msg:"The AI didn\u2019t return a readable table", retryable:true };
   }
   const rows = parsed.rows.map(aiRowToRow).filter(r=>r.art && r.art !== "?" && r.desc.length > 1);
   const head = { inv:String(parsed.inv || "").replace(/\D/g,""), date:String(parsed.date || ""), cust:"", page:"", pages:"" };
   if(!rows.length){
-    try{ queueError("AIREAD norows | inv=" + (head.inv || "?") + " date=" + (head.date || "?")); }catch(e){}
+    try{ queueError("AIREAD " + provider + " norows | inv=" + (head.inv || "?") + " date=" + (head.date || "?")); }catch(e){}
     return { status:"norows", msg:"No rows read", retryable:true };
   }
-  return { status:"ok", rows, head, shot, how };
+  return { status:"ok", rows, head, shot, how, provider:(resp.provider || provider) };
+}
+
+/* Resolve with the first attempt that returns status:"ok". A non-ok result never
+   wins; we keep it only to surface if EVERY provider fails (preferring a hard,
+   non-retryable error like quota/bad-key so the queue stops instead of looping). */
+function aiRaceFirstOk(promises){
+  return new Promise(resolve=>{
+    let remaining = promises.length, firstFail = null, done = false;
+    const settle = (r)=>{
+      if(done) return;
+      if(r && r.status === "ok"){ done = true; resolve(r); return; }
+      if(!firstFail || (r && r.retryable === false && firstFail.retryable !== false)) firstFail = r || firstFail;
+      if(--remaining <= 0){ done = true; resolve(firstFail || { status:"fail", msg:"AI reader failed", retryable:true }); }
+    };
+    promises.forEach(pr=> Promise.resolve(pr).then(settle, err=> settle({ status:"fail", msg:(err&&err.message)||"network error", retryable:true })));
+  });
 }
 
 /* Single-shot path (Read + / text, with an optional photo to reconcile). */
@@ -9911,7 +9952,7 @@ async function aiIngest(opts){
   const stop = aiMsgCycle("oMsg", !!opts.imageFile);
   const res = await aiRead1(opts);
   stop();
-  if(res.status === "ok"){ ingestOrder(res.rows, res.head, res.shot, res.how, opts.text || ""); return; }
+  if(res.status === "ok"){ ingestOrder(res.rows, res.head, res.shot, res.how, opts.text || "", undefined, res.provider); return; }
   body.innerHTML = '<div class="ocr-prog"><b style="color:var(--laser)">' + esc(res.msg) + '</b>' +
     '<p>Your phone\'s own reader still works offline \u2014 tap + and choose Paste or Camera.</p></div>';
   toast(res.msg);
@@ -9964,7 +10005,7 @@ async function aiPump(){
   if(res.status === "ok"){
     const i = aiQ.indexOf(job); if(i >= 0) aiQ.splice(i, 1);
     aiRenderQueue();
-    ingestOrder(res.rows, res.head, res.shot, res.how, "", job.kind);
+    ingestOrder(res.rows, res.head, res.shot, res.how, "", job.kind, res.provider);
   }else{
     job.retryable = res.retryable !== false;
     // 90s timeout / transient fail -> abort this attempt, wait a growing gap, retry.
@@ -10335,7 +10376,7 @@ function crossCheck(textRows, shotRows){
   return out;
 }
 
-function ingestOrder(rows, head, img, how, rawText, kind){
+function ingestOrder(rows, head, img, how, rawText, kind, prov){
   // which sub-tab this page belongs to (queue jobs pass their own kind;
   // everything else defaults to the tab you're on)
   const pk = (kind === "shipped") ? "shipped" : (kind === "shorted" ? "shorted" : activeKind);
@@ -10373,7 +10414,7 @@ function ingestOrder(rows, head, img, how, rawText, kind){
   }
   inv.pages.push({
     fp, id: "p" + Date.now(), page: head.page || String(pagesOfKind(inv, pk).length + 1),
-    of: head.pages || "", img: img || "", rows, ts: Date.now(), src: how, kind: pk
+    of: head.pages || "", img: img || "", rows, ts: Date.now(), src: how, kind: pk, prov: prov || ""
   });
   inv.pages.sort((a,b)=>(parseInt(a.page,10)||0) - (parseInt(b.page,10)||0));
   saveOrders(all);
@@ -10445,7 +10486,7 @@ function renderOrder(){
     `<div class="inv-date">${esc(inv.date || todayNice())}</div>` +
     '<div class="pgrow">' + pgs.map(p=>`<button class="pgdot${
         p.rows.some(r=>!r.ok)?" bad":""}" data-pg="${p.id}"
-        aria-label="Page ${esc(p.page)}, ${p.rows.length} rows">${esc(p.page)}</button>`).join("") +
+        aria-label="Page ${esc(p.page)}, ${p.rows.length} rows">${esc(p.page)}${p.prov?`<span class="prov ${p.prov==='groq'?'gr':'ge'}">${p.prov==='groq'?'gr':'ge'}</span>`:""}</button>`).join("") +
     '</div>' +
     (bad ? `<p class="cd-src">${bad} row(s) didn't read cleanly — tap a page to check them
             against the photo.</p>` : "") +
@@ -12669,6 +12710,50 @@ function plAddResolved(name, plu, barcode){
   plTouch();
   toast("Added \u201C" + name + "\u201D");
 }
+function plRenderSuggest(){
+  const s = document.getElementById("plSearch");
+  const q = s ? s.value.trim() : "";
+  const body = document.getElementById("plBody"); if(!body) return;
+  if(!q){ renderPickList(); return; }                 // empty box -> today’s list
+  catPlusMode = "picklist";
+  _searchEnts = searchEntries(q);
+  const carried = [], cat = [];
+  _searchEnts.forEach((o,i)=>{ const r = Object.assign({ _i:i }, o); (o.store?carried:cat).push(r); });
+  let html = "";
+  if(carried.length){
+    html += '<div class="cat-h">On the floor <span class="cat-hint">tap + to add</span></div>';
+    html += carried.map(o=>catRow2(o,false)).join("");
+  }
+  if(cat.length){
+    html += '<div class="cat-h" style="margin-top:12px">Also in the catalogue</div>'
+      + '<p class="cat-catnote">not carried at 0374 \u2014 tap + to add it to the database</p>'
+      + cat.map(o=>catRow2(o,true)).join("");
+  }
+  if(!carried.length && !cat.length){
+    html += '<div class="pg-nomatch">No match in the PLU or Barcode DB. '
+      + '<button class="pg-addmiss" type="button" onclick="plAddMissing()">Add \u201C'+esc(q)+'\u201D to the database</button>'
+      + '<span class="pg-hint2">Items must exist in the DB so pickers can find them.</span></div>';
+  }
+  catPlusMode = "store";
+  body.innerHTML = html;
+  if(typeof drawCatBarcodes === "function") drawCatBarcodes(body);
+}
+/* Tap the laser + on an in-store result -> straight onto the pick list (syncs
+   via plTouch), then clear the box so the list shows the item just added. */
+function plAddFromEntry(i){
+  const o = _searchEnts[i]; if(!o) return;
+  plAddResolved((o.brand?o.brand+" ":"")+o.name, o.plu || "", o.code || "");
+  const s = document.getElementById("plSearch"); if(s) s.value = "";
+  plRenderSuggest();
+}
+/* No catalogue match -> open the Add form pre-filled, so a picker can add the
+   item to the DB without leaving the Pick List (mirrors the planogram flow). */
+function plAddMissing(){
+  const s = document.getElementById("plSearch"); const v = s ? s.value.trim() : "";
+  if(!v) return;
+  openManualPrefilled({ name: v });
+  toast("Add \u201C"+v+"\u201D to the DB");
+}
 function plAddFromText(txt){
   txt = String(txt||"").trim(); if(!txt) return;
   const digits = txt.replace(/\D/g,"");
@@ -12731,8 +12816,8 @@ function renderPickList(){
 }
 
 /* ---- add-bar wiring ---- */
-document.getElementById("plAdd").addEventListener("click", ()=>{ plAddFromText(document.getElementById("plInput").value); });
-document.getElementById("plInput").addEventListener("keydown", e=>{ if(e.key === "Enter"){ e.preventDefault(); plAddFromText(e.target.value); } });
+document.getElementById("plSearch").addEventListener("input", plRenderSuggest);
+
 document.getElementById("plScan").addEventListener("click", ()=>{ if(typeof openScanner === "function") openScanner({ type:"picklist" }); });
 
 /* ---- voice (same engine as Scrap/Restock/Planogram) ---- */
@@ -12746,7 +12831,7 @@ function plStartMic(){
   plRec.onresult = ev=>{
     const all = (typeof joinResults === "function") ? joinResults(ev.results, false)
               : Array.from(ev.results).map(r=>r[0].transcript).join(" ");
-    const inp = document.getElementById("plInput"); if(inp) inp.value = all;
+    const inp = document.getElementById("plSearch"); if(inp){ inp.value = all; plRenderSuggest(); }
   };
   plRec.onend = ()=>{ plStopMic(); };
   plRec.onerror = ()=>{};

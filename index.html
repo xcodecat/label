@@ -882,6 +882,34 @@
   #view-order #ordTabs .wtab.active{color:var(--paper);border-top-color:var(--line)}
   .vb-jump{margin-top:6px;font-size:13px;font-weight:600;color:var(--laser);
     cursor:pointer;display:inline-block}
+  /* ---- Pick List (Floor) ---- */
+  .pl-wrap{padding:12px;max-width:640px;margin:0 auto}
+  .pl-addcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px}
+  .pl-inputrow{display:flex;gap:8px;align-items:center}
+  .pl-inputrow input{flex:1;min-width:0;background:#0b0d0f;border:1px solid var(--line);border-radius:9px;color:var(--paper);font-size:15px;padding:11px 12px;font-family:var(--sans)}
+  .pl-iconbtn{width:44px;height:44px;flex:0 0 44px;border:1px solid var(--line);background:#0b0d0f;color:var(--paper);border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .pl-iconbtn svg{width:22px;height:22px}
+  .pl-iconbtn.live{color:var(--laser);border-color:var(--laser)}
+  .pl-addbtn{margin-top:10px;width:100%;background:var(--laser);color:#fff;border:none;border-radius:9px;padding:12px;font-weight:700;font-size:15px;cursor:pointer;font-family:var(--sans)}
+  .pl-addbtn:active{transform:scale(.99)}
+  .pl-hint{margin-top:8px;font-size:12px;color:var(--muted);line-height:1.4}
+  .pl-sec{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:16px 2px 8px}
+  .pl-empty{padding:26px 14px;text-align:center;color:var(--muted);font-size:14px;line-height:1.6}
+  .pl-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  .pl-row .pl-main{flex:1;min-width:0}
+  .pl-row .pl-name{font-size:15px;font-weight:600;color:var(--paper);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pl-row .pl-sub{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+  .pl-acts{display:flex;gap:6px;flex:0 0 auto;align-items:center}
+  .pl-act{border:1px solid var(--line);background:#0b0d0f;color:var(--paper);border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans)}
+  .pl-act.filled{border-color:var(--ok);color:var(--ok)}
+  .pl-act.reset{border-color:var(--laser);color:var(--laser)}
+  .pl-del{border:none;background:none;color:var(--muted);font-size:20px;cursor:pointer;flex:0 0 auto;line-height:1;padding:0 2px}
+  .pl-row.done{opacity:.55}
+  .pl-row.done .pl-name{text-decoration:line-through}
+  .pl-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;flex:0 0 auto}
+  .pl-badge.filled{background:color-mix(in srgb,var(--ok) 22%,transparent);color:var(--ok)}
+  .pl-badge.reset{background:color-mix(in srgb,var(--laser) 22%,transparent);color:var(--laser)}
+  .pl-undo{border:none;background:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;flex:0 0 auto}
   .ord-none{padding:22px 14px;text-align:center;color:var(--muted);font-size:14px;line-height:1.5}
   .tabpanel{background:var(--surface);border:1px solid var(--line);border-radius:0 0 10px 10px;
     margin-top:-1px;position:relative;z-index:1;padding:12px}
@@ -1890,7 +1918,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=134.1">
+  <link rel="manifest" href="./manifest.json?v=135.0">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2452,6 +2480,25 @@
   </section>
 
     <!-- ============ PLANOGRAM VIEW ============ -->
+  <section id="view-picklist" class="view">
+    <div class="pl-wrap">
+      <div class="pl-addcard">
+        <div class="pl-inputrow">
+          <input id="plInput" placeholder="Scan, say, or type an item" autocomplete="off">
+          <button class="pl-iconbtn" id="plMic" type="button" aria-label="Say an item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+          </button>
+          <button class="pl-iconbtn" id="plScan" type="button" aria-label="Scan a barcode">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5v14M7 5v14M11 5v14M15 5v14M19 5v14"/></svg>
+          </button>
+        </div>
+        <button class="pl-addbtn" id="plAdd" type="button">Add to pick list</button>
+        <div class="pl-hint">Items another department couldn\u2019t find on the floor. Find and fill it, or reset it in SAP.</div>
+      </div>
+      <div id="plBody"></div>
+    </div>
+  </section>
+
   <section id="view-planogram" class="view">
     <div class="pg-find">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
@@ -3791,6 +3838,7 @@ updateCount();
    bottom nav into line — even when code jumps straight to a view (the gear to
    settings, a toast that opens Claims, and so on).                          */
 const NAV_ICON = {
+  picklist:'<svg viewBox="0 0 24 24"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><path d="M9 12.5l2 2 4-4"/></svg>',
   list:'<svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>',
   sales:'<svg viewBox="0 0 24 24"><path d="M20.6 13.4 12.4 21.6a2 2 0 0 1-2.8 0l-7.2-7.2a2 2 0 0 1-.6-1.4V4a2 2 0 0 1 2-2h9a2 2 0 0 1 1.4.6l6.4 6.4a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/></svg>',
   scrap:'<svg viewBox="0 0 24 24"><path d="M3 9a2 2 0 0 1 2-2h1.6a2 2 0 0 0 1.7-.9l.9-1.3a2 2 0 0 1 1.7-.8h2.2a2 2 0 0 1 1.7.8l.9 1.3a2 2 0 0 0 1.7.9H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="12.5" r="3.2"/></svg>',
@@ -3803,7 +3851,7 @@ const NAV_ICON = {
 };
 const NAV = {
   store:   { label:"Store",     tabs:[["list","Add"],["sales","Sales"],["scrap","Scrap"],["product","Info"]] },
-  floor:   { label:"Floor",     tabs:[["planogram","Planogram"],["restock","Restock List"]], open:"restock" },
+  floor:   { label:"Floor",     tabs:[["picklist","Pick List"],["planogram","Planogram"],["restock","Restock List"]], open:"restock" },
   handoff: { label:"Handoff",   tabs:[["handoff","Handoff"]] },
   inv:     { label:"Inventory", tabs:[["order","Invoice"],["claims","Claim"]] }
 };
@@ -3842,6 +3890,7 @@ function showView(name){
   if(name !== "handoff") hoStopPoll();
   if(name !== "planogram") pgStopPoll();
   if(name !== "order") invStopPoll();
+  if(name !== "picklist") plStopPoll();
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
   document.getElementById("view-"+name).classList.add("active");
@@ -3876,6 +3925,7 @@ function showView(name){
     }
   }
   if(name==="order"){ renderOrder(); aiRenderQueue(); invPull(); invStartPoll(); }
+  if(name==="picklist"){ renderPickList(); plPull(); plStartPoll(); dbAutoRefresh(false); }
   if(name==="claims") renderClaims();
   if(name==="settings"){
     pluCountLabel(); renderAppearance();
@@ -4084,6 +4134,17 @@ function onScanSuccess(text){
   const target = scanFor;
   closeScanner();
 
+  if(target && target.type === "picklist"){
+    const c = String(text).replace(/\D/g, "");
+    const hit = catalogByCode(c);
+    if(hit){ plAddResolved(hit.name, hit.plu || "", c); }
+    else {
+      const inp = document.getElementById("plInput");
+      if(inp) inp.value = c;
+      toast("No match \u2014 tap Add to put it on the list");
+    }
+    return;
+  }
   if(target && target.type === "manual"){
     document.getElementById("mCode").value = text;
     const hit = catalogByCode(text);
@@ -6478,7 +6539,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v134.1";
+const APP_VERSION = "v135.0";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -12560,6 +12621,177 @@ function rkStartPoll(){
 }
 function rkStopPoll(){ if(rkPollTimer){ clearInterval(rkPollTimer); rkPollTimer = null; } }
 
+/* ================= PICK LIST — Floor, shared daily "find it or reset it" ==========
+   Items another department couldn't find on the floor, handed to produce. Add by
+   scan / voice / type; tap Filled or Reset; completed rows drop to a Completed
+   section with who did it (tap to undo). Clears itself daily. Syncs cross-device
+   with a proper MERGE (union by id + tombstones), same family as Invoices. */
+const KEY_PICKLIST = "label_picklist_v1";
+let plState = plLoad();
+let plDirty = false, plSyncing = false, plOffline = false;
+let plSyncTimer = null, plPollTimer = null;
+let plTombs = {};   // local pending deletes {id: ts}, cleared after a good sync
+
+function plToday(){
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+function plLoad(){
+  try{
+    const s = JSON.parse(localStorage.getItem(KEY_PICKLIST) || "null");
+    if(s && Array.isArray(s.items)){ s.tombs = s.tombs || {}; return s; }
+  }catch(e){}
+  return { items:[], tombs:{}, updatedBy:"", updatedAt:"" };
+}
+function plSave(){ try{ localStorage.setItem(KEY_PICKLIST, JSON.stringify(plState)); }catch(e){} }
+function plNewId(){ return "pl" + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function plActiveToday(){ const t = plToday(); return (plState.items||[]).filter(x=>x.day === t); }
+function plTouch(){
+  plState.updatedBy = rkMeName();
+  plState.updatedAt = new Date().toISOString();
+  plState.tombs = Object.assign({}, plState.tombs || {}, plTombs);
+  plDirty = true; plSave(); renderPickList(); plAutoSync();
+}
+function plDupKey(name, plu, barcode){
+  if(barcode) return "b:" + String(barcode).replace(/\D/g,"");
+  if(plu)     return "p:" + String(plu);
+  return "n:" + String(name||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+}
+function plAddResolved(name, plu, barcode){
+  name = String(name||"").trim();
+  if(!name) return;
+  const key = plDupKey(name, plu, barcode);
+  if(plActiveToday().some(x=>!x.status && plDupKey(x.name, x.plu, x.barcode) === key)){ toast("Already on the list"); return; }
+  const now = Date.now();
+  plState.items.unshift({ id:plNewId(), day:plToday(), name:name,
+    plu:String(plu||""), barcode:String(barcode||"").replace(/\D/g,""),
+    status:"", by:"", ts:now, createdAt:now });
+  plTouch();
+  toast("Added \u201C" + name + "\u201D");
+}
+function plAddFromText(txt){
+  txt = String(txt||"").trim(); if(!txt) return;
+  const digits = txt.replace(/\D/g,"");
+  if(digits.length >= 6){                         // looks like a barcode
+    const hit = catalogByCode(digits);
+    plAddResolved(hit ? hit.name : txt, (hit && hit.plu) || "", digits);
+  } else if(/^\d{3,5}$/.test(txt)){               // looks like a PLU
+    const nm = (typeof nameForPlu === "function") ? nameForPlu(txt) : "";
+    plAddResolved(nm || txt, txt, "");
+  } else {
+    plAddResolved(txt, "", "");
+  }
+  const inp = document.getElementById("plInput"); if(inp) inp.value = "";
+}
+function plSetStatus(id, status){
+  const it = (plState.items||[]).find(x=>x.id === id); if(!it) return;
+  it.status = (it.status === status) ? "" : status;    // tap the same option again -> undo
+  it.by = it.status ? rkMeName() : "";
+  it.ts = Date.now();
+  plTouch();
+}
+function plRemove(id){
+  plTombs[id] = Date.now();
+  plState.items = (plState.items||[]).filter(x=>x.id !== id);
+  plTouch();
+}
+function renderPickList(){
+  const body = document.getElementById("plBody"); if(!body) return;
+  const today = plActiveToday();
+  const active = today.filter(x=>!x.status);
+  const done   = today.filter(x=>x.status).sort((a,b)=>b.ts - a.ts);
+  let html = "";
+  if(!active.length && !done.length){
+    html = '<div class="pl-empty">Nothing on today\u2019s pick list yet.<br>Scan, say, or type an item to add it.</div>';
+  }
+  if(active.length){
+    html += active.map(it=>{
+      const sub = [it.plu && ("PLU " + esc(it.plu)), it.barcode && esc(it.barcode)].filter(Boolean).join(" \u00b7 ");
+      return '<div class="pl-row"><div class="pl-main"><div class="pl-name">' + esc(it.name) + '</div>' +
+        (sub ? '<div class="pl-sub">' + sub + '</div>' : '') + '</div>' +
+        '<div class="pl-acts">' +
+          '<button class="pl-act filled" onclick="plSetStatus(\'' + it.id + '\',\'filled\')">Filled</button>' +
+          '<button class="pl-act reset" onclick="plSetStatus(\'' + it.id + '\',\'reset\')">Reset</button>' +
+          '<button class="pl-del" onclick="plRemove(\'' + it.id + '\')" aria-label="Remove">\u00d7</button>' +
+        '</div></div>';
+    }).join("");
+  }
+  if(done.length){
+    html += '<div class="pl-sec">Completed</div>';
+    html += done.map(it=>{
+      const lab = it.status === "filled" ? "Filled" : "Reset";
+      return '<div class="pl-row done"><div class="pl-main"><div class="pl-name">' + esc(it.name) + '</div>' +
+        '<div class="pl-sub">' + lab + (it.by ? (" \u00b7 by " + esc(it.by)) : "") + '</div></div>' +
+        '<span class="pl-badge ' + it.status + '">' + lab + '</span>' +
+        '<button class="pl-undo" onclick="plSetStatus(\'' + it.id + '\',\'' + it.status + '\')">undo</button>' +
+        '</div>';
+    }).join("");
+  }
+  body.innerHTML = html;
+}
+
+/* ---- add-bar wiring ---- */
+document.getElementById("plAdd").addEventListener("click", ()=>{ plAddFromText(document.getElementById("plInput").value); });
+document.getElementById("plInput").addEventListener("keydown", e=>{ if(e.key === "Enter"){ e.preventDefault(); plAddFromText(e.target.value); } });
+document.getElementById("plScan").addEventListener("click", ()=>{ if(typeof openScanner === "function") openScanner({ type:"picklist" }); });
+
+/* ---- voice (same engine as Scrap/Restock/Planogram) ---- */
+let plRec = null, plMicLive = false;
+function plToggleMic(){ plMicLive ? plStopMic() : plStartMic(); }
+function plStartMic(){
+  if(!SR){ toast("No speech support here \u2014 use Chrome on Android or Safari on iOS"); return; }
+  try{ if(typeof stopMic === "function") stopMic(); }catch(e){}
+  plRec = new SR();
+  plRec.lang = "en-CA"; plRec.interimResults = true; plRec.continuous = false; plRec.maxAlternatives = 1;
+  plRec.onresult = ev=>{
+    const all = (typeof joinResults === "function") ? joinResults(ev.results, false)
+              : Array.from(ev.results).map(r=>r[0].transcript).join(" ");
+    const inp = document.getElementById("plInput"); if(inp) inp.value = all;
+  };
+  plRec.onend = ()=>{ plStopMic(); };
+  plRec.onerror = ()=>{};
+  try{ plRec.start(); plMicLive = true; document.getElementById("plMic").classList.add("live"); }catch(e){}
+}
+function plStopMic(){ plMicLive = false; const m = document.getElementById("plMic"); if(m) m.classList.remove("live"); if(plRec){ try{ plRec.stop(); }catch(e){} plRec = null; } }
+document.getElementById("plMic").addEventListener("click", plToggleMic);
+
+/* ---- sync (merge backend; mirrors invoice/restock discipline) ---- */
+async function plSync(manual){
+  if(plSyncing) return;
+  if(!proxyUrl()){ if(manual) toast("Not set up yet \u2014 see Settings"); return; }
+  plSyncing = true;
+  try{
+    const d = await callProxy({ action:"pickListSync", state: plState });
+    if(d && d.ok && d.state){ plState = d.state; plState.tombs = plState.tombs || {}; plSave(); }
+    plTombs = {}; plDirty = false; plOffline = false;
+    if(manual) toast("Pick list synced");
+    renderPickList();
+  }catch(err){
+    if(err && err.auth){ plOffline = false; if(manual) toast(authMessage(err)); }
+    else plOffline = true;              // keep plDirty so it retries
+  }finally{ plSyncing = false; }
+}
+function plAutoSync(){ clearTimeout(plSyncTimer); plSyncTimer = setTimeout(()=>plSync(false), 1200); }
+async function plPull(){
+  if(!proxyUrl() || !navigator.onLine) return;
+  if(plDirty) return;                    // never clobber unsent local edits
+  try{
+    const d = await callProxy({ action:"pickListGet" });
+    if(d && d.ok && d.state && Array.isArray(d.state.items)){
+      const theirs = d.state.updatedAt || "", mine = plState.updatedAt || "";
+      if(theirs && theirs >= mine){ plState = d.state; plState.tombs = plState.tombs || {}; plSave(); renderPickList(); }
+    }
+  }catch(e){ /* offline / not approved yet — local list keeps working */ }
+}
+function plStartPoll(){ plStopPoll(); plPollTimer = setInterval(()=>{ if(!document.hidden) plPull(); }, 30000); }
+function plStopPoll(){ if(plPollTimer){ clearInterval(plPollTimer); plPollTimer = null; } }
+window.addEventListener("online", ()=>{ if(plDirty) plSync(false); });
+document.addEventListener("visibilitychange", ()=>{
+  if(document.hidden) return;
+  const v = document.getElementById("view-picklist");
+  if(v && v.classList.contains("active")){ if(plDirty) plSync(false); else plPull(); }
+});
+
 /* ===== ROUTING TRAINER ===== */
 let rkPendingRoutes = {};
 let rkRoutesTimer = null;
@@ -13762,12 +13994,12 @@ function pgSpotIndex(){
   pgState.pod1.forEach((p,i)=>{ if(p.name) idx.push({name:p.name, loc:"Pod 1", c:"--laser", key:"pod1-"+i}); });
   pgState.pod2.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Pod 2 #"+(i+1), c:"--r5", key:"pod2-"+i}); });
   PG_RUN_DEF.forEach((r,ri)=>{ const st=pgState.runs[ri]; if(!st) return;
-    st.wet.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Run "+r.tag+" Wet", c:r.c, key:"run-"+ri+"-wet-"+i}); });
-    st.hmr.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Run "+r.tag+" HMR", c:r.c, key:"run-"+ri+"-hmr-"+i}); });
+    st.wet.forEach((v,i)=>{ if(v) idx.push({name:v, loc:r.name+" table \u00b7 wet cases", c:r.c, key:"run-"+ri+"-wet-"+i}); });
+    st.hmr.forEach((v,i)=>{ if(v) idx.push({name:v, loc:r.name+" table \u00b7 HMR", c:r.c, key:"run-"+ri+"-hmr-"+i}); });
     ["b","a"].forEach(function(pos){
       if(pos === "b" && ri !== 0) return;
       pgAtts(ri,pos).forEach(function(a,ai){
-        const at = (pos === "b" ? "before" : "after") + " Run " + r.tag;
+        const at = "next to the " + r.name + " table";
         if(a.type === "rack"){
           ["hmr","wet"].forEach(function(side){
             const arr = side === "hmr" ? a.hmr : a.wet; if(!Array.isArray(arr)) return;
@@ -13781,7 +14013,7 @@ function pgSpotIndex(){
       });
     });
   });
-  pgState.lots.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Lot "+(i+1), c:"--muted", key:"lot-"+i}); });
+  pgState.lots.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"next to the "+((PG_RUN_DEF[4]&&PG_RUN_DEF[4].name)||"Root veg & Onions")+" table", c:"--muted", key:"lot-"+i}); });
   return idx;
 }
 function pgDoFind(q){
@@ -13854,7 +14086,7 @@ function pgRouteInfo(name, plu){
   if(tid && RK_BY_ID[tid]){
     const t = RK_BY_ID[tid];
     const disp = (t.id === "fridge") ? "wet rack" : t.name;
-    return { kind:"table", table:t.id, label:"Restock \u00b7 " + disp };
+    return { kind:"table", table:t.id, label:disp };
   }
   return { kind:"unknown", label:"" };
 }

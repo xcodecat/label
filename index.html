@@ -182,7 +182,8 @@
   .sbox input{flex:1;padding-right:40px!important;transition:border-color .25s,box-shadow .25s}
   /* the two boxes with a mic carry ✕ + divider + mic on the right, so text clips
      further in; the others only have a ✕ and don't need the extra room */
-  #search,#prodSearch{padding-right:80px!important}
+  #search,#prodSearch,#plSearch{padding-right:80px!important}
+  #rkAsSearch{padding-right:34px}
   /* a brief glow says "start typing here" without stealing the screen */
   .sbox input.armed{border-color:var(--laser);box-shadow:0 0 0 3px rgba(214,64,44,.16)}
   /* :not(.clr) matters. ".sbox button" is one class heavier than ".clr", so it
@@ -886,7 +887,7 @@
   .vb-jump{margin-top:6px;font-size:13px;font-weight:600;color:var(--laser);
     cursor:pointer;display:inline-block}
   /* ---- Pick List (Floor) ---- */
-  .pl-wrap{padding:12px;max-width:640px;margin:0 auto}
+  .pl-wrap{padding:12px 0;max-width:560px;margin:0 auto}
   .pl-addcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:14px}
   .pl-inputrow{display:flex;gap:8px;align-items:center}
   .pl-inputrow input{flex:1;min-width:0;background:#0b0d0f;border:1px solid var(--line);border-radius:9px;color:var(--paper);font-size:15px;padding:11px 12px;font-family:var(--sans)}
@@ -1363,6 +1364,11 @@
   .cat-row.tappable:active{background:var(--surface-2)}
   .cat-add{color:var(--ok);font-weight:700;margin-left:8px}
   .cat-row2{display:block;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .cat-row2.hl{background:rgba(232,68,46,.09);box-shadow:inset 0 0 0 2px rgba(232,68,46,.55);border-radius:9px;padding-left:8px;padding-right:8px;animation:catHlGlow 1.1s ease-in-out 2}
+  @keyframes catHlGlow{0%,100%{box-shadow:inset 0 0 0 2px rgba(232,68,46,.3)}50%{box-shadow:inset 0 0 0 3px rgba(232,68,46,.65)}}
+  .pl-catbtn{margin-top:12px;width:100%;background:var(--laser);color:#fff;border:none;border-radius:9px;padding:12px;font-weight:700;font-size:15px;cursor:pointer;font-family:var(--sans)}
+  .pl-catbtn:active{filter:brightness(.92)}
+  .pl-catnote{color:var(--muted);font-size:11px;margin:6px 2px 0;line-height:1.4}
   .cat-row2:active{background:var(--surface-2)}
   .cat-bcimg{background:#fff;border-radius:6px;padding:6px 8px;margin-top:7px;display:inline-block;max-width:100%}
   .cat-bcimg svg{display:block;max-width:100%;height:auto}
@@ -1923,7 +1929,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=135.1">
+  <link rel="manifest" href="./manifest.json?v=135.2">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4769,6 +4775,13 @@ function lineAsLine(cx, cy, w){
   Object.assign(b.style, { left:(cx-w/2)+"px", top:(cy-2)+"px", width:w+"px", height:"4px",
     borderRadius:"3px", background:"var(--laser)", border:"0 solid var(--laser)" });
 }
+// iOS: a fixed element's top is measured from the LAYOUT viewport, but
+// getBoundingClientRect() is relative to the VISUAL viewport \u2014 with the keyboard
+// up they differ, which threw the morphing line to the top of the screen instead of
+// onto the password box. Correct by the visual-viewport offset; off iOS both are 0.
+function vvOff(){ const vv = window.visualViewport; return { x: vv ? vv.offsetLeft : 0, y: vv ? vv.offsetTop : 0 }; }
+function vvRect(el){ const r = el.getBoundingClientRect(), o = vvOff();
+  return { left:r.left+o.x, top:r.top+o.y, width:r.width, height:r.height, right:r.right+o.x, bottom:r.bottom+o.y }; }
 // bottom rim of the disc, measured LIVE (only call once the cat has settled)
 function lockRimBottom(){
   const rc = document.getElementById("lockRing").getBoundingClientRect();
@@ -4880,13 +4893,14 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
   resetLockFx();
   setCatSrc(CAT_IDLE);
   input.blur();                                   // dismiss the keyboard
+  await lockRaf();                                // let iOS finish retracting the keyboard so the box measures true
   document.getElementById("lockGreet").textContent = "";   // prior one-liner clears on Enter
 
   // Forward morph: the box becomes a red line, rises to the STILL-SMALL cat and
   // draws a ring around it (so you actually see it circle), THEN the cat + ring
   // grow together and centre.
   async function forwardMorph(){
-    const ib = input.getBoundingClientRect();
+    const ib = vvRect(input);
     lineAsBox(ib);
     document.getElementById("lockLine").style.opacity = "1";
     lock.classList.add("checking"); sub.textContent = "";   // hide the form; the morph is the "checking" tell
@@ -4941,7 +4955,7 @@ document.getElementById("lockGo").addEventListener("click", async ()=>{
       await lockDelay(140);
       lock.classList.remove("checking");
       await lockRaf();
-      const ib2 = input.getBoundingClientRect();
+      const ib2 = vvRect(input);
       lineAsLine(ib2.left + ib2.width/2, ib2.top + ib2.height/2, ib2.width);
       await lockDelay(420);
       lineAsBox(ib2);
@@ -5574,6 +5588,8 @@ function pluBoxes(plu, mine){
     + '</div>';
 }
 let catPlusMode = "store";   // "store" = Add tab (unchanged); "picklist" = Pick List
+let _catHlSet = null, _catHlTimer = null;   // catalogue rows to glow after a "Found in catalog" jump
+function _catHlKey(o){ return o.code ? ("c:"+o.code) : (o.plu ? ("p:"+o.plu) : ("n:"+String((o.brand||"")+"|"+(o.name||"")).toLowerCase())); }
 function catRow2(o, dim){
   const pw = o.packWt ? '<span class="nm-bdg pack">'+esc(cleanWt(o.packWt))+'</span>' : "";
   const badge = o.store ? '<span class="own">store</span>' : "";
@@ -5593,7 +5609,8 @@ function catRow2(o, dim){
   // scannable image is wide, so it stays on its own line below.
   const codesRight = (!o.code && o.plu) ? pluBoxes(o.plu, !!o.store) : "";
   const bcBelow = o.code ? '<div class="cat-bcimg"><svg class="cat-bc" data-code="'+esc(o.code)+'"></svg></div>' : "";
-  return '<div class="cat-row2 tappable'+(dim?' dim':'')+'" onclick="'+_rowClick+'">'
+  const _hl = (catPlusMode==="store" && dim && _catHlSet && _catHlSet.has(_catHlKey(o))) ? " hl" : "";
+  return '<div class="cat-row2 tappable'+(dim?' dim':'')+_hl+'" onclick="'+_rowClick+'">'
     + '<div class="cat-rowtop"><div class="cat-nm">'+nm+badge+dbadge+pw+'</div>'+codesRight+plus+'</div>'
     + bcBelow + '</div>';
 }
@@ -6551,7 +6568,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v135.1";
+const APP_VERSION = "v135.2";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -11569,6 +11586,17 @@ function addClearButton(id){
 
   const sync = ()=>b.classList.toggle("on", !!input.value);
   input.addEventListener("input", sync);
+  // Mic/scan set .value programmatically, which fires no "input" event \u2014 so the
+  // X (and the empty/filled state) went stale until you hand-edited. Hook the value
+  // setter so ANY assignment keeps the X in step. Reads/writes still work natively.
+  try{
+    const _d = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value");
+    if(_d && _d.get && _d.set){
+      Object.defineProperty(input, "value", { configurable:true,
+        get(){ return _d.get.call(this); },
+        set(v){ _d.set.call(this, v); sync(); } });
+    }
+  }catch(e){}
   b.addEventListener("click", ()=>{
     input.value = "";
     // a plain .value change fires nothing — without this the list stays filtered
@@ -11578,7 +11606,7 @@ function addClearButton(id){
   });
   sync();
 }
-["search","saleSearch","ordSearch","prodSearch"].forEach(addClearButton);
+["search","saleSearch","ordSearch","prodSearch","plSearch","rkAsSearch"].forEach(addClearButton);
 
 /* ============================================================
    RESTOCK LIST — Floor · a shared, voice-filed restock board
@@ -12725,9 +12753,8 @@ function plRenderSuggest(){
     html += carried.map(o=>catRow2(o,false)).join("");
   }
   if(cat.length){
-    html += '<div class="cat-h" style="margin-top:12px">Also in the catalogue</div>'
-      + '<p class="cat-catnote">not carried at 0374 \u2014 tap + to add it to the database</p>'
-      + cat.map(o=>catRow2(o,true)).join("");
+    html += '<button class="pl-catbtn" type="button" onclick="plGoToCatalog(document.getElementById(\'plSearch\').value)">Found in catalog</button>'
+      + '<p class="pl-catnote">' + cat.length + ' catalogue match' + (cat.length>1?'es':'') + ' \u2014 not carried at 0374. Review and add it on the Add tab to make it pickable.</p>';
   }
   if(!carried.length && !cat.length){
     html += '<div class="pg-nomatch">No match in the PLU or Barcode DB. '
@@ -12737,6 +12764,24 @@ function plRenderSuggest(){
   catPlusMode = "store";
   body.innerHTML = html;
   if(typeof drawCatBarcodes === "function") drawCatBarcodes(body);
+}
+/* "Found in catalog" -> jump to the Add tab carrying the typed query, expand the
+   catalogue matches, and glow the ones the picker was after. They press Add if it
+   is right, or add normally. Catalogue items never land on the pick list directly. */
+function plGoToCatalog(q){
+  q = String(q||"").trim(); if(!q) return;
+  const ents = searchEntries(q);
+  _catHlSet = new Set();
+  ents.forEach(o=>{ if(!o.store){ const k=_catHlKey(o); if(k) _catHlSet.add(k); } });
+  showView("list");
+  const s = document.getElementById("search"); if(s) s.value = q;
+  _catLastQ = q.toLowerCase(); _catOpen = true;   // keep the catalogue section open through renderList
+  renderList();
+  setTimeout(()=>{ const el = document.querySelector("#list .cat-row2.hl");
+    if(el && el.scrollIntoView) el.scrollIntoView({ block:"center", behavior:"smooth" }); }, 60);
+  clearTimeout(_catHlTimer);
+  _catHlTimer = setTimeout(()=>{ _catHlSet = null;
+    document.querySelectorAll("#list .cat-row2.hl").forEach(e=>e.classList.remove("hl")); }, 4200);
 }
 /* Tap the laser + on an in-store result -> straight onto the pick list (syncs
    via plTouch), then clear the box so the list shows the item just added. */
@@ -12864,7 +12909,10 @@ async function plPull(){
     const d = await callProxy({ action:"pickListGet" });
     if(d && d.ok && d.state && Array.isArray(d.state.items)){
       const theirs = d.state.updatedAt || "", mine = plState.updatedAt || "";
-      if(theirs && theirs >= mine){ plState = d.state; plState.tombs = plState.tombs || {}; plSave(); renderPickList(); }
+      if(theirs && theirs > mine){ plState = d.state; plState.tombs = plState.tombs || {}; plSave();
+        const _s = document.getElementById("plSearch");
+        if(!_s || !_s.value.trim()) renderPickList();   // don't stomp live search suggestions
+      }
     }
   }catch(e){ /* offline / not approved yet — local list keeps working */ }
 }

@@ -10,7 +10,7 @@
    went on serving the first index.html it ever saw — every update invisible
    until you cleared site data. The comment next to the fetch handler said the
    shell "barely changes", which was wrong the day it was written. */
-const CACHE = "catcaddy-v135.1-2026-08-24";
+const CACHE = "catcaddy-v135.2-2026-08-26";
 const SHELL = [
   "./",
   "./index.html",

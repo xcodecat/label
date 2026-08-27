@@ -899,7 +899,8 @@
   .pl-hint{margin-top:8px;font-size:12px;color:var(--muted);line-height:1.4}
   .pl-sec{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:16px 2px 8px}
   .pl-empty{padding:26px 14px;text-align:center;color:var(--muted);font-size:14px;line-height:1.6}
-  .pl-row{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  .pl-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+  .pl-row .s-bcstrip{flex:0 0 100%;width:100%;margin-top:6px}
   .pl-row .pl-main{flex:1;min-width:0}
   .pl-row .pl-name{font-size:15px;font-weight:600;color:var(--paper);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .pl-row .pl-sub{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:2px}
@@ -1929,7 +1930,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=135.2">
+  <link rel="manifest" href="./manifest.json?v=135.3">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2996,6 +2997,7 @@
     </div>
     <div class="btn-row">
       <button class="btn btn-ghost" id="mCancel">Cancel</button>
+      <button class="btn btn-ghost hidden" id="mReset">Reset to built-in</button>
       <button class="btn btn-primary" id="mSave">Add item</button>
     </div>
   </div>
@@ -5487,6 +5489,16 @@ function storeBcNorm(){
   }
   return _storeBcNorm;
 }
+let _storeBcByNorm = null;
+function storeBcByNorm(){
+  if(!_storeBcByNorm){
+    _storeBcByNorm = new Map();
+    (typeof STORE_ITEMS !== "undefined" ? STORE_ITEMS : [])
+      .filter(x => x.t === "bc" && x.k)
+      .forEach(x => _storeBcByNorm.set(String(x.k).replace(/^0+/, ""), x));
+  }
+  return _storeBcByNorm;
+}
 /* Rank a result against the query: an exact / same-word-form match outranks a
    stemmed (plural<->singular) match, which outranks a loose partial. So searching
    "strawberries" lists the plural items first then the singular, and vice-versa. */
@@ -5528,10 +5540,18 @@ function searchEntries(q){
   // whose barcode duplicates a built-in one (leading zeros ignored) is skipped.
   const bm = dbBcMap();
   for(const code in bm){ const c = bm[code];
-    if(storeBcNorm().has(String(code).replace(/^0+/, ""))) continue;   // built-in wins
-    if(hit(c.name, c.brand, code, "") || stemHit(c.name)) push({ name:c.name||"", code:String(code), plu:"",
-      brand:c.brand||"", packWt:c.packWt||"", pack:c.pack||"", size:c.size||"", unit:c.unit||"",
-      store:storeVal(c.store)===true, deck:storeVal(c.deck)===true }); }
+    // A built-in store item may ALSO carry a Sheet edit row. We no longer drop it
+    // ("built-in wins" hid the user's corrections). Instead the Sheet row overlays
+    // the built-in: the user's values win (blanks included, since the Add form is
+    // pre-filled), the item stays carried, a blanked NAME falls back to the built-in
+    // name, and the built-in deck flag is kept when the row sets none.
+    const _norm = String(code).replace(/^0+/, "");
+    const _bi = storeBcNorm().has(_norm) ? (storeBcByNorm().get(_norm) || null) : null;
+    const _name = c.name || (_bi ? _bi.n : "");
+    if(hit(_name, c.brand, code, "") || stemHit(_name)) push({ name:_name, code:String(code), plu:"",
+      brand:c.brand||"", packWt:c.packWt||"", pack:c.pack||"", size:c.size||"", unit:c.unit||(_bi?_bi.u:"")||"",
+      store:_bi ? true : (storeVal(c.store)===true),
+      deck:(c.deck!==undefined && c.deck!=="") ? (storeVal(c.deck)===true) : (_bi ? !!_bi.d : false) }); }
   // hardcoded store barcodes (offline source of truth)
   if(typeof STORE_ITEMS !== "undefined") STORE_ITEMS.forEach(it=>{
     if(it.t !== "bc") return;
@@ -5662,6 +5682,7 @@ function splitBrandIntoField(){
   const br=p.tags.filter(t=>nmTagKind(t)==="brand");
   if(br.length){ bEl.value=br.join(" "); if(p.core) nEl.value=p.core; }
 }
+var _mResetKind = "", _mResetKey = "";
 /* Open the manual form pre-filled from a catalogue entry. */
 function openManualPrefilled(c){
   ["mCode","mName","mPlu","mNotes","mArticle","mPack","mSize","mPackWt","mBrand"]
@@ -5672,6 +5693,16 @@ function openManualPrefilled(c){
   setManualUnit(unit() === "kg");
   document.getElementById("mPluDrop").classList.add("hidden");
   document.getElementById("mSave").textContent = "Save changes";
+  { // per-item "Reset to built-in": only when editing an item that exists in the built-in lists
+    const _code = c && c.code ? String(c.code) : "";
+    const _plu  = c && c.plu ? String(c.plu) : "";
+    const _isBiBc  = _code && storeBcNorm().has(_code.replace(/^0+/, ""));
+    const _isBiPlu = _plu && Array.isArray(PLU) && PLU.some(e=>e && e.own && String(e.plu)===_plu);
+    _mResetKind = _isBiBc ? "bc" : (_isBiPlu ? "plu" : "");
+    _mResetKey  = _isBiBc ? _code : (_isBiPlu ? _plu : "");
+    const _rb = document.getElementById("mReset");
+    if(_rb) _rb.classList.toggle("hidden", !_mResetKind);
+  }
   { const st=document.getElementById("mStore"); if(st){ st.checked = !!(c && c.store && c.store !== "NO"); syncStoreSeg(); } }
   if(c){
     const set=(id,v)=>{ const el=document.getElementById(id); if(el && v!=null && v!=="") el.value=v; };
@@ -6568,7 +6599,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v135.2";
+const APP_VERSION = "v135.3";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -7285,6 +7316,23 @@ document.getElementById("mSave").addEventListener("click", ()=>{
   const _pgRet = pgPendingSpot;   // capture before closeManual() clears it
   renderList(); closeManual();
   if(_pgRet){ pgReturnFromAdd(_pgRet.key, name); }
+});
+
+async function dbDelete(kind, key){
+  if(!proxyUrl()) return;
+  try{ await callProxy({ action:"dbDelete", kind, key:String(key||"") }); }catch(e){}
+}
+document.getElementById("mReset").addEventListener("click", ()=>{
+  if(!_mResetKind || !_mResetKey) return;
+  if(!confirm("Reset this item to its built-in values? Your edits to it will be removed.")) return;
+  if(_mResetKind === "bc"){
+    const bm = dbBcMap(); if(bm[_mResetKey]){ delete bm[_mResetKey]; try{ localStorage.setItem(KEY_DBBC, JSON.stringify(bm)); }catch(e){} }
+  } else {
+    const pm = dbPluMap(); if(pm[_mResetKey]){ delete pm[_mResetKey]; try{ localStorage.setItem(KEY_DBPLU, JSON.stringify(pm)); }catch(e){} }
+  }
+  dbDelete(_mResetKind, _mResetKey);
+  toast(navigator.onLine ? "Reset to built-in \u2713" : "Reset \u2014 will sync when online");
+  renderList(); closeManual();
 });
 
 function addItem(o){
@@ -12836,14 +12884,16 @@ function renderPickList(){
   }
   if(active.length){
     html += active.map(it=>{
-      const sub = [it.plu && ("PLU " + esc(it.plu)), it.barcode && esc(it.barcode)].filter(Boolean).join(" \u00b7 ");
+      const realBc = !!(it.barcode && !it.plu);
       return '<div class="pl-row"><div class="pl-main"><div class="pl-name">' + esc(it.name) + '</div>' +
         (sub ? '<div class="pl-sub">' + sub + '</div>' : '') + '</div>' +
         '<div class="pl-acts">' +
           '<button class="pl-act filled" onclick="plSetStatus(\'' + it.id + '\',\'filled\')">Filled</button>' +
           '<button class="pl-act reset" onclick="plSetStatus(\'' + it.id + '\',\'reset\')">Reset</button>' +
           '<button class="pl-del" onclick="plRemove(\'' + it.id + '\')" aria-label="Remove">\u00d7</button>' +
-        '</div></div>';
+        '</div>' +
+        (realBc ? '<div class="s-bcstrip"><svg class="s-bc" data-bccode="' + esc(it.barcode) + '"></svg></div>' : '') +
+        '</div>';
     }).join("");
   }
   if(done.length){
@@ -12858,6 +12908,7 @@ function renderPickList(){
     }).join("");
   }
   body.innerHTML = html;
+  if(typeof renderRowBarcodes === "function") renderRowBarcodes();
 }
 
 /* ---- add-bar wiring ---- */

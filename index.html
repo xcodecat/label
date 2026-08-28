@@ -881,9 +881,6 @@
   .wtab.active[data-kind="shorted"]{color:var(--laser);border-top-color:var(--laser)}
   .wtab.active[data-kind="shipped"]{color:var(--ok);border-top-color:var(--ok)}
   #view-order .sticky-bar .wtabs + .wtabs{margin-top:2px}
-  /* invoice-number tabs read as part of the card: no red bar, no red number,
-     just a neutral connected tab. Kind tabs keep their Loop/Flashfood colour. */
-  #view-order #ordTabs .wtab.active{color:var(--paper);border-top-color:var(--line)}
   .vb-jump{margin-top:6px;font-size:13px;font-weight:600;color:var(--laser);
     cursor:pointer;display:inline-block}
   /* ---- Pick List (Floor) ---- */
@@ -1930,7 +1927,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=135.3">
+  <link rel="manifest" href="./manifest.json?v=135.4">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2214,7 +2211,6 @@
         <button class="wtab active" data-kind="shorted">Shorted</button>
         <button class="wtab" data-kind="shipped">Shipped</button>
       </div>
-      <div class="wtabs" id="ordTabs"></div>
     </div>
     <div class="tabpanel">
       <div id="aiQueue" class="aiq hidden"></div>
@@ -6599,7 +6595,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v135.3";
+const APP_VERSION = "v135.4";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -9806,8 +9802,28 @@ function applyArtMemory(rows){
   return stat;
 }
 
-let activeInv = null;
+let activeDay = null;                             // YYYY-MM-DD (local) of the day shown; no stepper -> newest day only
 let activeKind = "shorted";                       // which sub-tab (shorted|shipped) is showing
+/* ---- day grouping: same-day invoice uploads share one merged list ----
+   A page's local calendar day is when it was uploaded. An invoice is filed
+   under the day of its LATEST page, so adding a page today pulls the whole
+   invoice onto today's list instead of hiding it on an old day. */
+function ymdLocal(d){ const z=n=>String(n).padStart(2,"0"); return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate()); }
+function maxTs(inv){ const ts=((inv&&inv.pages)||[]).map(p=>p.ts||0); return ts.length?Math.max(...ts):0; }
+function invDay(inv){ const t=maxTs(inv); return ymdLocal(new Date(t||Date.now())); }
+function dayNice(ymd){
+  try{ const a=ymd.split("-").map(Number); return new Date(a[0],a[1]-1,a[2]).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}); }
+  catch(e){ return ymd; }
+}
+function newestDay(){ const all=orders(); if(!all.length) return null; return all.map(invDay).sort().pop(); }
+// invoices filed under a local day, oldest-uploaded first (natural reading order)
+function invoicesOfDay(day){ return orders().filter(x=>invDay(x)===day).sort((a,b)=>maxTs(a)-maxTs(b)); }
+// every page of a kind across the day's invoices, each tagged with its invoice key
+function dayPages(day, kind){
+  const out=[];
+  invoicesOfDay(day).forEach(inv=>{ pagesOfKind(inv,kind).forEach(p=>out.push({ inv:inv.inv, p })); });
+  return out;
+}
 function pageKind(p){ return (p && p.kind === "shipped") ? "shipped" : "shorted"; }
 function pagesOfKind(inv, kind){ return ((inv && inv.pages) || []).filter(p=>pageKind(p) === kind); }
 
@@ -10462,8 +10478,9 @@ function ingestOrder(rows, head, img, how, rawText, kind, prov){
   const memStat = applyArtMemory(rows);
   const all = orders();
   let key = head.inv;
-  if(!key){ key = (activeInv && all.some(x=>x.inv === activeInv))
-            ? activeInv : ("unknown-" + new Date().toISOString().slice(0,10)); }
+  // a page whose invoice # didn't read is filed under one per-day bucket so
+  // same-day numberless pages still land together (and merge in the day view)
+  if(!key){ key = "unknown-" + ymdLocal(new Date()); }
   let inv = all.find(x=>x.inv === key);
   if(!inv){ inv = { inv:key, date:head.date, cust:head.cust, pages:[] }; all.unshift(inv); }
   if(head.date && !inv.date){ inv.date = head.date; inv.dateGuess = !!head.dateGuess; }
@@ -10485,7 +10502,7 @@ function ingestOrder(rows, head, img, how, rawText, kind, prov){
   saveOrders(all);
   harvestArtMem(rows);
   invMarkDirty();
-  activeInv = key;
+  activeDay = invDay(inv);
   renderOrder();
   const bad = rows.filter(r=>!r.ok).length;
   toast("Read " + rows.length + " row(s)" + (bad ? " · " + bad + " need a look" : "") +
@@ -10521,37 +10538,44 @@ function todayNice(){
 function renderOrder(){
   const all = orders();
   const body = document.getElementById("ordBody");
-  const tabs = document.getElementById("ordTabs");
   if(!all.length){
-    tabs.innerHTML = "";
     document.getElementById("ordVerdict").innerHTML = "";
     body.innerHTML = '<div class="sea-empty">No invoice yet. Tap \uFF0B and photograph a ' +
       'page — the app files it under the <b>' + activeKind + '</b> tab you\'re on.</div>';
     return;
   }
-  if(!activeInv || !all.some(x=>x.inv === activeInv)) activeInv = all[0].inv;
-  tabs.innerHTML = all.slice(0,4).map(x=>
-    `<button class="wtab${x.inv===activeInv?" active":""}" data-inv="${esc(x.inv)}">${
-      esc(x.inv.length > 10 ? "…" + x.inv.slice(-6) : x.inv)}</button>`).join("");
+  // no stepper: always show the most recent upload day, merging that day's invoices
+  if(!activeDay || !all.some(x=>invDay(x) === activeDay)) activeDay = newestDay();
 
-  const inv = all.find(x=>x.inv === activeInv);
-  const pgs = pagesOfKind(inv, activeKind);
-  const rows = pgs.flatMap(p=>p.rows);
-  const bad = rows.filter(r=>!r.ok).length;
+  const dps = dayPages(activeDay, activeKind);      // [{inv, p}] across the day's invoices
+  const dayHdr = `<div class="inv-date">${esc(dayNice(activeDay))}</div>`;
 
-  if(!pgs.length){
+  if(!dps.length){
     document.getElementById("ordVerdict").innerHTML = "";
-    body.innerHTML =
-      `<div class="inv-date">${esc(inv.date || todayNice())}</div>` +
-      `<div class="ord-none">No ${activeKind} page for this invoice yet.<br>Tap \uFF0B to add one.</div>`;
+    body.innerHTML = dayHdr +
+      `<div class="ord-none">No ${activeKind} page for this day yet.<br>Tap \uFF0B to add one.</div>`;
     return;
   }
 
+  // Merge every row from the day's pages, then cluster the same article (real
+  // art only) so an item that appears on two invoices sits adjacent. Unknown-art
+  // rows keep their own slot in first-seen order. No invoice-number badge.
+  const flat = dps.flatMap(d=>d.p.rows);
+  const seen = new Map(), order = [];
+  flat.forEach((r,i)=>{
+    const a = String(r.art||"").trim();
+    const k = (a && a !== "?") ? ("art:"+a) : ("u:"+i);
+    if(!seen.has(k)){ seen.set(k, []); order.push(k); }
+    seen.get(k).push(r);
+  });
+  const rows = order.flatMap(k=>seen.get(k));
+  const bad = rows.filter(r=>!r.ok).length;
+
   body.innerHTML =
-    `<div class="inv-date">${esc(inv.date || todayNice())}</div>` +
-    '<div class="pgrow">' + pgs.map(p=>`<button class="pgdot${
-        p.rows.some(r=>!r.ok)?" bad":""}" data-pg="${p.id}"
-        aria-label="Page ${esc(p.page)}, ${p.rows.length} rows">${esc(p.page)}${p.prov?`<span class="prov ${p.prov==='groq'?'gr':'ge'}">${p.prov==='groq'?'gr':'ge'}</span>`:""}</button>`).join("") +
+    dayHdr +
+    '<div class="pgrow">' + dps.map(d=>`<button class="pgdot${
+        d.p.rows.some(r=>!r.ok)?" bad":""}" data-inv="${esc(d.inv)}" data-pg="${d.p.id}"
+        aria-label="Page ${esc(d.p.page)}, ${d.p.rows.length} rows">${esc(d.p.page)}${d.p.prov?`<span class="prov ${d.p.prov==='groq'?'gr':'ge'}">${d.p.prov==='groq'?'gr':'ge'}</span>`:""}</button>`).join("") +
     '</div>' +
     (bad ? `<p class="cd-src">${bad} row(s) didn't read cleanly — tap a page to check them
             against the photo.</p>` : "") +
@@ -10565,10 +10589,6 @@ function renderOrder(){
   ordSearchRun();
 }
 
-document.getElementById("ordTabs").addEventListener("click", e=>{
-  const b = e.target.closest(".wtab"); if(!b) return;
-  activeInv = b.dataset.inv; renderOrder();
-});
 document.getElementById("ordKindTabs").addEventListener("click", e=>{
   const b = e.target.closest(".wtab"); if(!b) return;
   activeKind = b.dataset.kind === "shipped" ? "shipped" : "shorted";
@@ -10581,17 +10601,16 @@ document.getElementById("ordKindTabs").addEventListener("click", e=>{
 let pgIdx = 0;
 document.getElementById("ordBody").addEventListener("click", e=>{
   const c = e.target.closest(".pgdot"); if(!c) return;
-  const inv = orders().find(x=>x.inv === activeInv); if(!inv) return;
-  const pgs = pagesOfKind(inv, activeKind);
-  pgIdx = pgs.findIndex(p=>p.id === c.dataset.pg);
+  const dps = dayPages(activeDay, activeKind);
+  pgIdx = dps.findIndex(d=>d.inv === c.dataset.inv && d.p.id === c.dataset.pg);
   if(pgIdx < 0) return;
   openPage();
 });
 
 function openPage(){
-  const inv = orders().find(x=>x.inv === activeInv); if(!inv) return;
-  const pgs = pagesOfKind(inv, activeKind);
-  const pg = pgs[pgIdx]; if(!pg) return;
+  const dps = dayPages(activeDay, activeKind);
+  const cur = dps[pgIdx]; if(!cur) return;
+  const pg = cur.p;
   document.getElementById("pgTitle").textContent =
     "Page " + pg.page + (pg.of ? " of " + pg.of : "") + " — " + pg.rows.length + " rows";
   const cap = document.querySelector("#pageOverlay .cd-src");
@@ -10599,9 +10618,9 @@ function openPage(){
     ? "Pinch or double-tap to zoom, drag to move. This photo is the truth when a number looks wrong."
     : "Pasted from " + (pg.src || "text") + " — no photo kept for this page.";
   document.getElementById("pgWhich").textContent =
-    (pgIdx+1) + " / " + pgs.length + " photographed";
+    (pgIdx+1) + " / " + dps.length + " photographed";
   document.getElementById("pgPrev").disabled = pgIdx <= 0;
-  document.getElementById("pgNext").disabled = pgIdx >= pgs.length - 1;
+  document.getElementById("pgNext").disabled = pgIdx >= dps.length - 1;
   const img = document.getElementById("pgImg");
   const stage = document.getElementById("pgStage");
   if(pg.img){
@@ -10615,11 +10634,13 @@ function openPage(){
   document.getElementById("pageOverlay").classList.remove("hidden");
   document.body.style.overflow = "hidden";
   document.getElementById("pgDel").onclick = ()=>{
+    // delete only the page's OWN invoice; last page tombstones just that invoice
     const all = orders();
-    const i = all.find(x=>x.inv === activeInv);
+    const i = all.find(x=>x.inv === cur.inv);
+    if(!i){ closePage(); renderOrder(); return; }
     invTombPage(i.inv, pg.fp);
     i.pages = i.pages.filter(p=>p.id !== pg.id);
-    if(!i.pages.length){ invTombInvoice(i.inv); saveOrders(all.filter(x=>x.inv !== activeInv)); }
+    if(!i.pages.length){ invTombInvoice(i.inv); saveOrders(all.filter(x=>x.inv !== cur.inv)); }
     else saveOrders(all);
     invMarkDirty();
     closePage(); renderOrder();
@@ -10721,20 +10742,20 @@ function ordSearchRun(){
   const v = document.getElementById("ordVerdict");
   clearOrdHi();
   if(!q){ v.innerHTML = ""; return; }
-  const all = orders();
-  const inv = all.find(x=>x.inv === activeInv);
-  if(!inv){ v.innerHTML = ""; return; }
+  const invs = invoicesOfDay(activeDay);
+  if(!invs.length){ v.innerHTML = ""; return; }
   const qt = q.split(/\s+/).filter(Boolean);
-  // Collect matches per kind so search spans both lists; the card points to the page.
+  // Search spans both lists across every invoice in the day, so the same item on
+  // two invoices surfaces both hits; the card points to the page.
   const matchIn = (kind)=>{
     const out = [];
-    pagesOfKind(inv, kind).forEach(p=>{
+    invs.forEach(inv=>{ pagesOfKind(inv, kind).forEach(p=>{
       p.rows.forEach(r=>{
         const hay = [r.item, r.label, r.desc, r.art, r.brand, r.brandFull, r.size]
                       .filter(Boolean).join(" ").toLowerCase();
         if(qt.every(t=>hay.includes(t))) out.push({ r, page:p.page });
       });
-    });
+    }); });
     return out;
   };
   const hits = matchIn(activeKind);

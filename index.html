@@ -1940,6 +1940,31 @@
   @keyframes pg-sp{to{transform:rotate(360deg)}}
   .pg-reading p{font-size:14px;color:var(--paper-dim);text-align:center}
 
+  /* camera+/paste "+" suggestion marker on a box (a read that didn't resolve exactly) */
+  .pg-cell,.pg-slot,.pg-lot{position:relative}
+  .pg-mk{position:absolute;top:6px;right:6px;min-width:16px;height:16px;padding:0 4px;
+    display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;
+    line-height:1;color:#fff;background:var(--laser);border-radius:8px;z-index:2;
+    box-shadow:0 1px 3px rgba(0,0,0,.35)}
+
+  /* planogram Paste + overlay (per-section text list) */
+  .pg-paste-ov{position:fixed;inset:0;background:rgba(10,12,14,.72);display:none;z-index:80;
+    align-items:flex-end;justify-content:center}
+  .pg-paste-ov.show{display:flex}
+  .pg-paste-card{width:100%;max-width:520px;background:var(--surface);border:1px solid var(--line);
+    border-radius:16px 16px 0 0;padding:14px 15px calc(15px + env(safe-area-inset-bottom));
+    box-shadow:0 -8px 30px rgba(0,0,0,.4)}
+  .pg-paste-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .pg-paste-h b{font-size:16px}
+  .pg-paste-h button{background:none;border:none;color:var(--paper-dim);font-size:18px;padding:4px 6px;cursor:pointer}
+  .pg-paste-sub{font-size:12px;color:var(--paper-dim);margin:0 0 9px}
+  .pg-paste-card .pastebox{height:26vh;margin-bottom:11px}
+  .pg-paste-btns{display:flex;gap:10px}
+  .pg-paste-btns button{flex:1;border-radius:11px;padding:12px 0;font-size:14px;font-weight:700;
+    border:1px solid var(--line);cursor:pointer}
+  .pg-paste-1{background:var(--laser);color:#fff;border-color:var(--laser)}
+  .pg-paste-2{background:var(--surface-2);color:var(--paper)}
+
   .pg-dock{display:flex;align-items:center;gap:11px;background:var(--surface);border:1px solid var(--line);
     border-radius:14px;padding:11px 14px;margin:14px 0 4px}
   .pg-dock .pg-sd{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none}
@@ -1976,7 +2001,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=135.8">
+  <link rel="manifest" href="./manifest.json?v=135.9">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2629,6 +2654,18 @@
   <div class="pg-menu" id="pgMenu"></div>
   <div class="pg-reading" id="pgReading"><div><div class="pg-spin"></div><p id="pgReadingTxt">Reading photo…</p></div></div>
   <input type="file" accept="image/*" capture="environment" id="pgCamInput" hidden>
+
+  <div class="pg-paste-ov" id="pgPasteOv">
+    <div class="pg-paste-card">
+      <div class="pg-paste-h"><b id="pgPasteTitle">Paste items</b><button type="button" id="pgPasteX" aria-label="Close">✕</button></div>
+      <p class="pg-paste-sub">One item per line, in shelf order (left&nbsp;→&nbsp;right, top&nbsp;→&nbsp;bottom). Exact DB matches fill in; the rest wait as a <b>+</b> on the box, one tap to pick.</p>
+      <textarea id="pgPasteBox" class="pastebox" placeholder="Broccoli&#10;Apple Gala&#10;Peppers Red…"></textarea>
+      <div class="pg-paste-btns">
+        <button type="button" id="pgPasteClip" class="pg-paste-2">Paste from clipboard</button>
+        <button type="button" id="pgPasteGo" class="pg-paste-1">Fill section</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ============ HANDOFF VIEW ============ -->
   <section id="view-handoff" class="view">
@@ -6670,7 +6707,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v135.8";
+const APP_VERSION = "v135.9";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -13888,7 +13925,7 @@ function hoOpenAssign(id){
 */
 
 const KEY_PLANO = "label_planogram_v1";
-const PG_OCR_ENABLED = false;   // flip on once an OCR endpoint exists (see pgReadPhoto)
+const PG_OCR_ENABLED = true;   // v135.9: planogramOcr endpoint is live (Gemini->Groq race, see pgOcrRead)
 
 const PG_RUN_DEF = [
   { tag:1, name:"Apple",                       c:"--r1" },
@@ -14140,7 +14177,7 @@ function pgBannerLabel(b){ return b==="canada" ? "\ud83c\udf41 CANADA" : b==="no
 function pgRenderPod1(){
   const el = document.getElementById("pgPod1"); if(!el) return;
   el.innerHTML = pgState.pod1.map((p,i)=>`
-    <div class="pg-cell" id="pgspot-pod1-${i}" onclick="pgEdit('pod1-${i}')">
+    <div class="pg-cell" id="pgspot-pod1-${i}" onclick="pgEdit('pod1-${i}')">${pgMk('pod1-'+i)}
       <h3 class="${p.name?'':'pg-blank'}">${nmNameHtml(p.name)||'tap to add'}</h3>
       <button class="pg-banner ${p.banner||'none'}" type="button" onclick="event.stopPropagation();pgCycleBanner(${i})">${pgBannerLabel(p.banner)} \u25be</button>
     </div>`).join("");
@@ -14154,7 +14191,7 @@ function pgRenderPod2(){
   let h="";
   for(let i=0;i<pgState.podN;i++){
     const v = pgState.pod2[i]||"";
-    h += `<div class="pg-cell" id="pgspot-pod2-${i}" onclick="pgEdit('pod2-${i}')"><div class="pg-podnum">${i+1}</div>
+    h += `<div class="pg-cell" id="pgspot-pod2-${i}" onclick="pgEdit('pod2-${i}')">${pgMk('pod2-'+i)}<div class="pg-podnum">${i+1}</div>
           <h3 class="${v?'':'pg-blank'}">${nmNameHtml(v)||'Empty'}</h3></div>`;
   }
   el.innerHTML = h;
@@ -14214,7 +14251,7 @@ function pgRenderRuns(){
     if(ri === 0) pgAtts(0,"b").forEach(function(a,ai){ out += pgAttHtml(0,"b",ai,a); });
     const col = function(end){
       return st[end].map(function(v,i){
-        return '<div class="pg-slot '+(v?'':'pg-blank')+'" id="pgspot-run-'+ri+'-'+end+'-'+i+'" onclick="pgEdit(\'run-'+ri+'-'+end+'-'+i+'\')">'+(nmNameHtml(v)||'tap to add')+'</div>';
+        return '<div class="pg-slot '+(v?'':'pg-blank')+'" id="pgspot-run-'+ri+'-'+end+'-'+i+'" onclick="pgEdit(\'run-'+ri+'-'+end+'-'+i+'\')">'+pgMk('run-'+ri+'-'+end+'-'+i)+(nmNameHtml(v)||'tap to add')+'</div>';
       });
     };
     out += '<div class="pg-run" style="--rc:var('+r.c+')">'
@@ -14230,7 +14267,7 @@ function pgRenderRuns(){
 function pgRenderLots(){
   const el = document.getElementById("pgLots"); if(!el) return;
   el.innerHTML = pgState.lots.map((v,i)=>`
-    <div class="pg-lot" id="pgspot-lot-${i}" onclick="pgEdit('lot-${i}')">
+    <div class="pg-lot" id="pgspot-lot-${i}" onclick="pgEdit('lot-${i}')">${pgMk('lot-'+i)}
       <span class="pg-lt">Lot ${i+1}</span>
       <span class="pg-lv ${v?'':'pg-blank'}">${nmNameHtml(v)||'empty'}</span>
     </div>`).join("");
@@ -14262,6 +14299,7 @@ function pgClearAll(){
 /* ---- icons + the context dropdown that replaced the bare camera button ---- */
 var PG_ICON_CAM = '<svg viewBox="0 0 24 24"><path d="M3 9V6.6A2.6 2.6 0 0 1 5.6 4H8"/><path d="M16 4h2.4A2.6 2.6 0 0 1 21 6.6V9"/><path d="M21 15v2.4a2.6 2.6 0 0 1-2.6 2.6H16"/><path d="M8 20H5.6A2.6 2.6 0 0 1 3 17.4V15"/><circle cx="12" cy="12" r="3.4"/></svg>';
 var PG_ICON_GRID = '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>';
+var PG_ICON_PASTE = '<svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/></svg>';
 var PG_ICON_ADD = '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
 var PG_ICON_SUB = '<svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/></svg>';
 var PG_ICON_DEL = '<svg viewBox="0 0 24 24"><polyline points="3 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg>';
@@ -14272,16 +14310,19 @@ function pgMi(icon,label,action,disabled){
   return '<button type="button"'+(disabled?' disabled':' onclick="pgMenuClose();'+action+'"')+'>'+icon+'<span>'+label+'</span></button>';
 }
 function pgMenuHtml(ctx){
-  if(ctx === "sec-pod1") return pgMi(PG_ICON_CAM,"Camera","pgShoot('pod1',['Pod 1'])");
+  if(ctx === "sec-pod1") return pgMi(PG_ICON_CAM,"Camera +","pgShoot('pod1',['Pod 1'])")
+      + pgMi(PG_ICON_PASTE,"Paste +","pgPasteOpen('pod1',0,'Pod 1')");
   if(ctx === "sec-pod2"){
     return '<div class="pg-mh">How many pods</div>'
       + [4,6,8].map(function(n){ return pgMi(PG_ICON_ADD, n+" pods", "pgSetPods("+n+")", pgState.podN===n); }).join("")
-      + '<hr>' + pgMi(PG_ICON_CAM,"Camera","pgShoot('pod2',['Pod 2'])");
+      + '<hr>' + pgMi(PG_ICON_CAM,"Camera +","pgShoot('pod2',['Pod 2'])")
+      + pgMi(PG_ICON_PASTE,"Paste +","pgPasteOpen('pod2',0,'Pod 2')");
   }
   if(ctx === "sec-lots"){
     return pgMi(PG_ICON_ADD,"Add a lot","pgLotSlots(1)")
       + pgMi(PG_ICON_SUB,"Remove last lot","pgLotSlots(-1)", pgState.lots.length <= 1)
-      + '<hr>' + pgMi(PG_ICON_CAM,"Camera","pgShoot('lots',['Case Lots'])");
+      + '<hr>' + pgMi(PG_ICON_CAM,"Camera +","pgShoot('lots',['Case Lots'])")
+      + pgMi(PG_ICON_PASTE,"Paste +","pgPasteOpen('lots',0,'Case Lots')");
   }
   if(ctx.indexOf("run-") === 0){
     const ri = +ctx.split("-")[1];
@@ -14298,7 +14339,9 @@ function pgMenuHtml(ctx){
         + pgMi(PG_ICON_RACK,"Silver rack","pgAddRack(0,'b')", pgAtts(0,"b").filter(function(a){return a.type==="rack";}).length >= 1)
         + pgMi(PG_ICON_TBL,"Small tables (pair)","pgAddTables(0,'b')");
     }
-    return h + '<hr>' + pgMi(PG_ICON_CAM,"Camera","pgShoot('run-"+ri+"',['Run "+tag+" \u00b7 Wet Cases end','Run "+tag+" \u00b7 HMR end'])");
+    return h + '<hr>' + pgMi(PG_ICON_CAM,"Camera +","pgShoot('run-"+ri+"',['Run "+tag+" \u00b7 Wet Cases end','Run "+tag+" \u00b7 HMR end'])")
+      + pgMi(PG_ICON_PASTE,"Paste + \u00b7 Wet","pgPasteOpen('run-"+ri+"',0,'Run "+tag+" \u00b7 Wet Cases')")
+      + pgMi(PG_ICON_PASTE,"Paste + \u00b7 HMR","pgPasteOpen('run-"+ri+"',1,'Run "+tag+" \u00b7 HMR')");
   }
   if(ctx.indexOf("att-") === 0){
     const p = ctx.split("-"), ri = +p[1], pos = p[2], ai = +p[3];
@@ -14441,7 +14484,11 @@ function pgEdit(key){
   document.getElementById("pgMatches").innerHTML = "";
   pgSel = inp.value.trim() ? inp.value.trim() : null;   // a placed item is DB-backed; allow re-Save
   pgSaveEnable(!!pgSel);
-  pgRenderSug();
+  // A camera+/paste read left a "+" guess on this blank box: pre-load the raw
+  // text so the closest DB names surface right away \u2014 one tap to file, no typing.
+  const _pend = pgOcrSug[key];
+  if(_pend && !inp.value.trim()){ inp.value = _pend.raw; pgRenderSug(); pgOnType(inp.value); }
+  else pgRenderSug();
   document.getElementById("pgScrim").classList.add("show");
   document.getElementById("pgSheet").classList.add("show");
 }
@@ -14450,11 +14497,18 @@ function pgRenderSug(){
   if(pgCur.type==="pod2" && list.length<3){
     PG_POD2_PRIORITY.forEach(p=>{ if(!list.find(x=>x.name===p.name)) list.push({name:p.name, count:0, pref:p.n}); });
   }
+  // The camera+/paste "+" guess for THIS box goes first: closest DB names, one tap to file.
+  const pend = pgCur && pgOcrSug[pgCur.key];
+  if(pend && pend.matches && pend.matches.length){
+    const guesses = pend.matches.map(m=>({name:m.name, count:0, ocr:true}));
+    const have = new Set(guesses.map(x=>x.name));
+    list = guesses.concat(list.filter(x=>!have.has(x.name)));
+  }
   const hdr = document.getElementById("pgSugHdr"), box = document.getElementById("pgSug");
   if(!list.length){ hdr.style.display="none"; box.innerHTML=""; return; }
   hdr.style.display="";
   box.innerHTML = list.slice(0,8).map(x=>{
-    const meta = x.count ? `<span class="pg-learn">\u00d7${x.count}</span>` : (x.pref ? `<span class="pg-plu">${x.pref}</span>` : "");
+    const meta = x.ocr ? `<span class="pg-plu">+</span>` : (x.count ? `<span class="pg-learn">\u00d7${x.count}</span>` : (x.pref ? `<span class="pg-plu">${x.pref}</span>` : ""));
     return `<button class="pg-chip" type="button" onclick='pgAssign(${JSON.stringify(x.name)})'>${esc(x.name)} ${meta}</button>`;
   }).join("");
 }
@@ -14491,7 +14545,7 @@ function pgOnType(v){
   pgSel = exact || null;
   pgSaveEnable(!!pgSel);
 }
-function pgAssign(name){ name = nmShort(name); pgCur.set(name); pgRemember(pgCur.spot, name); pgStampRender(pgCur.key); pgCloseSheet(); pgTouch(); toast("Filed: "+name); }
+function pgAssign(name){ name = nmShort(name); pgCur.set(name); pgRemember(pgCur.spot, name); pgOcrClearSug(pgCur.key); pgStampRender(pgCur.key); pgCloseSheet(); pgTouch(); toast("Filed: "+name); }
 function pgSaveEnable(on){ const b = document.getElementById("pgSaveBtn"); if(b) b.disabled = !on; }
 /* Exact DB name match (case-insensitive, minus the (Organic) suffix). Returns
    the canonical name to file, or null. This is the gate that keeps the Save
@@ -14512,7 +14566,7 @@ function pgPick(name){ const inp = document.getElementById("pgSheetInput"); if(i
 /* Save button: commit the resolved DB item to the spot. */
 function pgSaveSpot(){ if(pgSel && pgCur) pgAssign(pgSel); }
 /* Delete button: empty the spot. */
-function pgDeleteSpot(){ if(!pgCur) return; pgCur.set(""); pgStampRender(pgCur.key); pgCloseSheet(); pgTouch(); toast("Emptied"); }
+function pgDeleteSpot(){ if(!pgCur) return; pgCur.set(""); pgOcrClearSug(pgCur.key); pgStampRender(pgCur.key); pgCloseSheet(); pgTouch(); toast("Emptied"); }
 function pgAddMissing(){
   const inp = document.getElementById("pgSheetInput"); const v = inp ? inp.value.trim() : "";
   if(!v || !pgCur) return;
@@ -14569,8 +14623,8 @@ function pgShoot(section, prompts){
 }
 function pgReadPhoto(file){
   const job = pgShootJob;
-  document.getElementById("pgReadingTxt").textContent = "Reading " + (job.prompts[job.idx]||"photo") + "\u2026";
-  document.getElementById("pgReading").classList.add("show");
+  const section = job.section, end = job.idx;
+  const isAtt = String(section).indexOf("att-") === 0;
   const done = ()=>{
     document.getElementById("pgReading").classList.remove("show");
     job.idx++;
@@ -14578,37 +14632,180 @@ function pgReadPhoto(file){
       toast("\ud83d\udcf7 Now: " + job.prompts[job.idx]);
       const inp = document.getElementById("pgCamInput"); inp.value=""; setTimeout(()=>inp.click(), 300);
     } else {
-      toast("Photo saved \u2014 tap any box to type or speak the item");
       pgShootJob = null;
     }
   };
-  // ONLINE-FIRST: hand the photo to the proxy's OCR, cross-check names against
-  // the PLU/Barcode DB, drop results into the section's boxes. OFFLINE FALLBACK:
-  // on-device OCR (to wire). Until PG_OCR_ENABLED, capture only.
-  if(!PG_OCR_ENABLED){ setTimeout(done, 700); return; }
-  const reader = new FileReader();
-  reader.onload = async ()=>{
-    try{
-      const d = await callProxy({ action:"planogramOcr", image:String(reader.result).split(",")[1], section:job.section, end:job.idx });
-      if(d && d.ok && Array.isArray(d.items)) pgApplyOcr(job.section, job.idx, d.items);
-    }catch(e){ /* offline: on-device OCR would run here once bundled */ }
-    finally{ done(); }
-  };
-  reader.readAsDataURL(file);
+  // ONLINE-FIRST: hand the photo to the planogramOcr endpoint (Gemini->Groq
+  // race), resolve each name against the PLU/Barcode DB, and either autofill an
+  // exact match or leave a tap-to-pick "+" on the box. OFFLINE / no signal /
+  // silver-rack + small-table sections (their slots splice mid-list, so ordered
+  // autofill isn't safe): just keep the capture and let the user tap each box.
+  if(!PG_OCR_ENABLED || isAtt || !proxyUrl() || !navigator.onLine){
+    toast("Photo saved \u2014 tap any box to type or speak the item");
+    setTimeout(done, 400);
+    return;
+  }
+  document.getElementById("pgReadingTxt").textContent = "Reading " + (job.prompts[job.idx]||"photo") + "\u2026";
+  document.getElementById("pgReading").classList.add("show");
+  pgOcrRead({ imageFile:file }).then(res=>{
+    if(res && res.status === "ok" && Array.isArray(res.items)){
+      pgApplyOcr(section, end, res.items);
+    } else {
+      toast((res && res.msg) || "Couldn\u2019t read the photo \u2014 tap the boxes to fill them");
+    }
+  }).catch(()=>{ toast("Couldn\u2019t read the photo \u2014 tap the boxes to fill them"); })
+    .finally(done);
 }
+
+/* Planogram camera+/paste read: shrink the image once, race BOTH vision
+   providers (Gemini + Groq) through the planogramOcr endpoint, take the first
+   that returns an item list. Mirrors the invoice reader's aiRead1/aiReadProvider
+   pair and reuses aiRaceFirstOk. Returns { status:"ok", items:[...] } or a fail. */
+async function pgOcrRead(opts){
+  opts = opts || {};
+  const f = opts.imageFile || null;
+  const text = String(opts.text || "").trim();
+  if(!f && !text) return { status:"error", msg:"Nothing to read" };
+  let b64 = "";
+  if(f){
+    try{ const big = await shrinkImg(f, 1600); b64 = big.replace(/^data:image\/[a-z]+;base64,/, ""); }
+    catch(err){ return { status:"error", msg:"Couldn\u2019t read the image" }; }
+  }
+  const attempts = AI_PROVIDERS.map(p => pgOcrProvider(p, b64, text));
+  return await aiRaceFirstOk(attempts);
+}
+async function pgOcrProvider(provider, b64, text){
+  let resp;
+  try{
+    const payload = { action:"planogramOcr", provider };
+    if(b64)  payload.image = b64;
+    if(text) payload.text  = text;
+    resp = await callProxy(payload, { timeoutMs: 90000 });   // vision is slow; give it room
+  }catch(err){
+    const em = String((err && err.message) || "");
+    const aborted = err && (err.name === "AbortError" || /abort/i.test(em));
+    try{ queueError("PGOCR " + provider + " " + (aborted ? "timeout(90s)" : "fail") + " | " + (em ? em.slice(0,200) : "network error")); }catch(e){}
+    return { status: aborted ? "timeout" : "fail", msg: aborted ? "The reader took too long" : (authMessage(err) || (em || "network error")), retryable:true };
+  }
+  if(!resp || resp.ok === false){
+    const status = resp && resp.aiStatus;
+    let msg = "Reader failed" + (status ? " (" + status + ")" : "");
+    let retryable = true;
+    if(status === 429){ msg = "AI quota used up for today"; retryable = false; }
+    else if(status === 400 || status === 401 || status === 403){ msg = "AI key not accepted \u2014 check the key on the Sheet"; retryable = false; }
+    else if(resp && resp.error) msg = resp.error;
+    try{ queueError("PGOCR " + provider + " fail | status=" + (status || "?") + ((resp && resp.error) ? " | " + String(resp.error).slice(0,200) : "")); }catch(e){}
+    return { status:"fail", msg, retryable };
+  }
+  let items = resp.items;
+  if(!Array.isArray(items)){
+    try{ const p = JSON.parse(String(resp.text||"").replace(/^```json/i,"").replace(/^```/,"").replace(/```$/,"").trim()); items = p && p.items; }catch(e){ items = null; }
+  }
+  if(!Array.isArray(items)) return { status:"noparse", msg:"The reader didn\u2019t return a readable list", retryable:true };
+  return { status:"ok", items: items.map(x=> typeof x === "string" ? x.trim() : ""), provider:(resp.provider || provider) };
+}
+
+/* Closest DB matches for a read that didn't resolve exactly — the same unified
+   PLU + barcode stream the tap-to-edit search uses, deduped, (Organic) stripped. */
+function pgClosest(text){
+  const q = String(text||"").trim(); if(!q) return [];
+  const seen = new Set(), out = [];
+  searchEntries(q).forEach(e=>{
+    const nm = String(e.name||"").replace(/\s*\(Organic\)\s*$/i,"");
+    if(!nm) return; const k = nm.toLowerCase(); if(seen.has(k)) return; seen.add(k);
+    out.push({ name:nm, plu:e.plu, code:e.code });
+  });
+  return out.slice(0,5);
+}
+
+/* Pending OCR "+" guesses, keyed by box key (pod1-i / pod2-i / lot-i /
+   run-ri-col-i). PURELY LOCAL + EPHEMERAL — never synced, never written to
+   pgState. Cleared the moment the box is filled or emptied. Drives the "+"
+   marker on the board and the pre-loaded chips when the box is tapped. */
+let pgOcrSug = {};
+function pgOcrClearSug(key){ if(key && pgOcrSug[key]) delete pgOcrSug[key]; }
+function pgMk(key){ return (pgOcrSug && pgOcrSug[key]) ? '<span class="pg-mk" aria-label="Suggestion waiting">+</span>' : ""; }
+
+/* Auto-pick the pod count from how many items were read. Snap to 4/6/8, but only
+   when the read lands within +-1 of an option (ties go to the larger — 8 items
+   should read as an 8-pod, not a 6). Out of range keeps the current count. Returns
+   { changed, prev, best } or { msg } so the caller can toast + offer undo. */
+function pgAutoPodCount(detected){
+  const opts = [4,6,8];
+  if(!detected) return { msg:"" };
+  let best = opts[0], bestD = Infinity;
+  opts.forEach(o=>{ const d = Math.abs(o-detected); if(d < bestD || (d === bestD && o > best)){ best = o; bestD = d; } });
+  if(bestD > 1) return { msg:"couldn\u2019t read pod count" };
+  if(best === pgState.podN) return { msg:"" };
+  const prev = pgState.podN;
+  pgState.podN = best; pgStamp("podN");
+  return { changed:true, prev, best };
+}
+
+/* Drop an ordered list of read names onto a section's boxes.
+   EXACT DB match  -> autofill the box (0 taps), stamp it, learn it.
+   Fuzzy / no match -> leave the box blank, stash a "+" suggestion so a tap shows
+                       the closest DB names (one tap to file) with the raw read
+                       pre-loaded into the search. A misread is never written. */
 function pgApplyOcr(section, end, items){
-  // Map recognised, DB-resolved names onto the right boxes, then stamp/save.
-  const resolve = t => { const h = pluSearch(String(t||"")); return h.length ? h[0].name.replace(/\s*\(Organic\)\s*$/i,"") : String(t||"").trim(); };
-  if(section==="pod1"){ items.slice(0,4).forEach((t,i)=>{ if(t) pgState.pod1[i].name = resolve(t); }); }
-  else if(section==="pod2"){ items.slice(0,pgState.podN).forEach((t,i)=>{ if(t) pgState.pod2[i] = resolve(t); }); }
-  else if(section==="lots"){ items.slice(0,7).forEach((t,i)=>{ if(t) pgState.lots[i] = resolve(t); }); }
-  else if(section.indexOf("run-")===0){ const ri=+section.split("-")[1]; const col = end===0?"wet":"hmr"; items.slice(0,2).forEach((t,i)=>{ if(t){ pgState.runs[ri][col][i] = resolve(t); pgRemember("run"+(ri+1)+"-"+col, pgState.runs[ri][col][i]); } }); }
-  /* v135.8: stamp what OCR wrote so it merges per-cell like a manual edit */
-  if(section==="pod1"){ for(let i=0;i<4;i++) pgStamp("pod1-"+i); }
-  else if(section==="pod2"){ for(let i=0;i<pgState.podN;i++) pgStamp("pod2-"+i); }
-  else if(section==="lots"){ for(let i=0;i<Math.min(7,pgState.lots.length);i++) pgStamp("lot-"+i); }
-  else if(section.indexOf("run-")===0){ const ri=+section.split("-")[1]; const col = end===0?"wet":"hmr"; for(let i=0;i<2;i++) pgStamp("run-"+ri+"-"+col+"-"+i); }
+  items = (items||[]).map(t => String(t||"").trim());
+  let autofilled = 0, suggested = 0, podResult = null;
+
+  const place = (key, text, getVal, setVal, spot)=>{
+    if(!text) return;                       // model saw an empty spot -> leave the box alone
+    const exact = pgExactName(text);
+    if(exact){                              // exact DB hit: fill (or correct) the box, 0 taps
+      const nm = nmShort(exact);
+      setVal(nm); pgOcrClearSug(key);
+      if(spot) pgRemember(spot, nm);
+      autofilled++;
+      return;
+    }
+    // Not an exact DB hit. Only ever leave a "+" on an EMPTY box: a box that
+    // already holds a value is never overwritten and never nagged with a fuzzy
+    // guess. On an empty box we stash the closest matches (fuzzy) or just the raw
+    // read (no match) so a tap pre-loads it \u2014 a misread is never written silently.
+    if(getVal && String(getVal()||"").trim()) return;
+    pgOcrSug[key] = { raw:text, matches: pgClosest(text) };
+    suggested++;
+  };
+
+  if(section === "pod1"){
+    items.slice(0,PG_POD1_N).forEach((t,i)=> place("pod1-"+i, t, ()=>pgState.pod1[i].name, v=>{ pgState.pod1[i].name = v; }, "pod1-"+i));
+    for(let i=0;i<PG_POD1_N;i++) pgStamp("pod1-"+i);
+  }
+  else if(section === "pod2"){
+    podResult = pgAutoPodCount(items.filter(x=>x).length);   // sets podN before we map to boxes
+    items.slice(0,pgState.podN).forEach((t,i)=> place("pod2-"+i, t, ()=>pgState.pod2[i], v=>{ pgState.pod2[i] = v; }, "pod2-"+i));
+    for(let i=0;i<pgState.podN;i++) pgStamp("pod2-"+i);
+  }
+  else if(section === "lots"){
+    items.slice(0,pgState.lots.length).forEach((t,i)=> place("lot-"+i, t, ()=>pgState.lots[i], v=>{ pgState.lots[i] = v; }, "lot"));
+    for(let i=0;i<pgState.lots.length;i++) pgStamp("lot-"+i);
+  }
+  else if(section.indexOf("run-") === 0){
+    const ri = +section.split("-")[1]; const col = end === 0 ? "wet" : "hmr";
+    const arr = pgState.runs[ri][col];
+    items.slice(0,arr.length).forEach((t,i)=> place("run-"+ri+"-"+col+"-"+i, t, ()=>arr[i], v=>{ arr[i] = v; }, "run"+(ri+1)+"-"+col));
+    for(let i=0;i<arr.length;i++) pgStamp("run-"+ri+"-"+col+"-"+i);
+  }
+  else {
+    toast("Photo saved \u2014 tap any box to type the item");   // attachments stay capture-only
+    return;
+  }
+
   pgTouch();
+
+  if(podResult && podResult.changed){
+    toastUndo("Auto-set to " + podResult.best + " pods (was " + podResult.prev + ")",
+      ()=>{ pgState.podN = podResult.prev; pgStamp("podN"); pgTouch(); });
+    return;
+  }
+  const bits = [];
+  if(autofilled) bits.push(autofilled + " filled");
+  if(suggested)  bits.push(suggested + " to confirm (+)");
+  const pod = podResult && podResult.msg ? podResult.msg : "";
+  toast((pod ? pod + " \u00b7 " : "") + (bits.length ? bits.join(" \u00b7 ") : "Nothing new read"));
 }
 
 /* ---- find item -> spot ---- */
@@ -14846,6 +15043,43 @@ document.addEventListener("visibilitychange", ()=>{
   const v = document.getElementById("view-planogram");
   if(v && v.classList.contains("active")){ if(pgDirty) pgSync(false); else pgPull(); }
 });
+/* ---- planogram Paste + (per section) ----
+   The pasted list is already text, so there's no vision round-trip: split on
+   lines/commas, hand the entries to pgApplyOcr in order, and the SAME confidence
+   split runs (exact DB match -> fill, else -> "+" suggestion). Offline-friendly.
+   For runs, the menu offers a Wet and an HMR entry (end 0 / 1). */
+let pgPasteSection = null, pgPasteEnd = 0;
+function pgPasteOpen(section, end, label){
+  pgPasteSection = section; pgPasteEnd = end || 0;
+  const box = document.getElementById("pgPasteBox");
+  document.getElementById("pgPasteTitle").textContent = "Paste \u2014 " + (label || "section");
+  box.value = "";
+  document.getElementById("pgPasteOv").classList.add("show");
+  document.body.style.overflow = "hidden";
+  try{ setTimeout(()=>box.focus(), 60); }catch(e){}
+  // one-tap pull if the browser hands over the clipboard; the box is there if not
+  try{ if(navigator.clipboard && navigator.clipboard.readText){ navigator.clipboard.readText().then(t=>{ if(t && t.trim() && !box.value.trim()) box.value = t; }).catch(()=>{}); } }catch(e){}
+}
+function pgPasteClose(){ document.getElementById("pgPasteOv").classList.remove("show"); document.body.style.overflow = ""; }
+function pgPasteGo(){
+  const t = document.getElementById("pgPasteBox").value || "";
+  const items = t.split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean);
+  const section = pgPasteSection, end = pgPasteEnd;
+  pgPasteClose();
+  if(!section) return;
+  if(!items.length){ toast("Nothing to read"); return; }
+  pgApplyOcr(section, end, items);
+}
+{
+  const _px = document.getElementById("pgPasteX"); if(_px) _px.addEventListener("click", pgPasteClose);
+  const _pg = document.getElementById("pgPasteGo"); if(_pg) _pg.addEventListener("click", pgPasteGo);
+  const _pov = document.getElementById("pgPasteOv"); if(_pov) _pov.addEventListener("click", e=>{ if(e.target === _pov) pgPasteClose(); });
+  const _pc = document.getElementById("pgPasteClip");
+  if(_pc) _pc.addEventListener("click", async ()=>{
+    try{ const t = await navigator.clipboard.readText(); if(!t || !t.trim()) return toast("Clipboard's empty"); document.getElementById("pgPasteBox").value = t; }
+    catch(e){ toast("Long-press the box and choose Paste"); }
+  });
+}
 {
   const _pgCam = document.getElementById("pgCamInput");
   if(_pgCam) _pgCam.addEventListener("change", function(){ if(!this.files || !this.files.length){ pgShootJob=null; return; } if(pgShootJob) pgReadPhoto(this.files[0]); });

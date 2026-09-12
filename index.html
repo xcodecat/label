@@ -25,30 +25,48 @@
     --mono:'IBM Plex Mono','Courier New',monospace;
     --sans:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
   }
-  /* Light theme is the same layout with the palette inverted — every colour in
-     the app comes from these vars, so nothing else has to know which is on. */
+  /* Light theme — modern iOS palette. Same layout and the same semantic vars, so
+     nothing else in the app has to know which theme is on. The background is a
+     soft system grey so white cards, inputs and rows stay clearly separable;
+     text is near-black; the brand red/green accents are kept (tuned for contrast
+     on white) so status colours — the floor-restock highlights especially — read
+     the same as they do in the dark theme. */
   body.light{
-    --ink:#F2F0E9;
-    --surface:#FFFFFF;
-    --surface-2:#E9E6DC;
-    --paper:#1B1B16;
-    --paper-dim:#3D3B33;
-    --laser:#C93A25;
-    --ok:#2E7D52;
-    --muted:#6B665A;
-    --line:#CFCABB;
+    --ink:#F2F2F7;         /* app background — iOS grouped grey (cards pop off it) */
+    --surface:#FFFFFF;     /* cards, bars, rows */
+    --surface-2:#E5E5EA;   /* raised fills / inputs — distinct from BOTH bg and cards */
+    --paper:#1C1C1E;       /* primary text — near-black */
+    --paper-dim:#5B5B60;   /* secondary text */
+    --laser:#E5372A;       /* brand red accent — legible on white */
+    --ok:#248A3D;          /* green — legible as text on white */
+    --muted:#6E6E73;       /* muted text / icons — iOS secondary label */
+    --line:#D1D1D6;        /* separators / borders */
     --deck:#12A150;
   }
-  body.light .modal{background:#FFFDF6}
-  body.light .label-card{background:#FFFDF6}
-  /* the toast is dark-on-dark by design; in light mode it needs inverting */
+  body.light .modal{background:#FFFFFF}
+  body.light .label-card{background:#FFFFFF}
+  /* the toast is light-on-dark by design; keep it inverted in light mode */
   body.light .toast{background:#1B1B16;color:#F5F2E9}
   body.light .toast button{border-color:#F5F2E9;color:#F5F2E9}
   body.light .pick-row{background:#FFFFFF!important}
-  body.light .pick-btns button{background:#FFFDF6!important}
+  body.light .pick-btns button{background:#F2F2F7!important}
   body.light .mic-fab{color:#fff}
   body.light .offbar{color:#fff}
-  body.light .cel,body.light .mo{background:#E9E6DC}
+  body.light .cel,body.light .mo{background:#E5E5EA}
+  /* Floor-restock + handoff highlights: the dark-tuned tints elsewhere are nearly
+     invisible on white, so re-tint them here at a higher alpha keeping the SAME
+     meaning — green = fresh / claimed / mine, red = editing / selected / unread —
+     which is the cross-theme consistency these highlights need. */
+  body.light .rk-row.rk-fresh{background:rgba(48,164,74,.16)}
+  body.light .rk-row.rk-claimed{background:rgba(48,164,74,.10)}
+  body.light .rk-row.rk-claimed .rk-st{background:rgba(48,164,74,.18);border-color:rgba(48,164,74,.6)}
+  body.light .rk-row.rk-editing{background:rgba(232,68,46,.12)}
+  body.light .rk-row.rk-added-lit{background:rgba(0,0,0,.05);box-shadow:0 0 0 1px rgba(0,0,0,.14) inset}
+  body.light .rk-strip .rk-segfresh{background:rgba(48,164,74,.20)}
+  body.light .rk-topt.sel{background:rgba(232,68,46,.10)}
+  body.light .rk-who.rk-mine{box-shadow:0 0 0 2px rgba(232,68,46,.5)}
+  body.light .rk-claim.rk-mine{background:rgba(48,164,74,.14);border-color:rgba(48,164,74,.6)}
+  body.light .ho-note.ho-unread{background:rgba(232,68,46,.08);border-color:rgba(232,68,46,.30)}
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;
     touch-action:manipulation}
   input,textarea,select,button{font-size:16px}   /* under 16px and iOS zooms on focus */
@@ -204,7 +222,7 @@
     background-repeat:no-repeat;background-position:13px center;background-size:16px 16px;
     padding-left:38px!important}
   body.light #search,body.light #saleSearch,body.light #prodSearch,body.light #ordSearch,body.light #rkAsSearch{
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B665A' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='16.5' y1='16.5' x2='21' y2='21'/%3E%3C/svg%3E")}
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236E6E73' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='16.5' y1='16.5' x2='21' y2='21'/%3E%3C/svg%3E")}
   .sbox button:not(.clr)::before{content:"";position:absolute;left:-5px;top:50%;transform:translateY(-50%);
     width:1px;height:20px;background:var(--line);border-radius:1px;pointer-events:none}
   .sbox button.live{color:var(--laser);animation:micpulse 1s ease-in-out infinite}
@@ -329,6 +347,13 @@
     color:var(--paper);border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer;
     font-family:var(--mono);margin-left:4px}
   .lookup-note{font-size:12px;color:var(--muted);margin-top:-6px;margin-bottom:10px}
+  .name-sug{font-size:12px;color:var(--muted);margin-top:6px;margin-bottom:2px}
+  .name-sug b{font-weight:700}
+  .name-sug button{background:none;border:none;color:var(--laser);font:inherit;font-weight:700;cursor:pointer;padding:0}
+  .al-list{margin-top:8px}
+  .al-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)}
+  .al-ph{flex:1;font-size:14px}
+  .al-x{background:none;border:none;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 6px;line-height:1}
 
   /* ---------- list ---------- */
   .toolbar{display:flex;gap:8px;align-items:center;display:flex;gap:10px;margin-bottom:14px}
@@ -865,6 +890,21 @@
      bar so they pin on long lists; the panel connects just beneath them, and
      its own 1px border is the only frame — no thick recessed padding. */
   #view-sales .sticky-bar,#view-scrap .sticky-bar,#view-order .sticky-bar{padding-bottom:0}
+  /* ---- Order date stepper: walk the last 4 distinct upload days ---- */
+  .dstep{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .dstep[hidden]{display:none}
+  .dstep .arrow{flex:0 0 auto;width:34px;height:34px;border-radius:9px;
+    border:1px solid var(--line);background:var(--surface);color:var(--paper);
+    font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.12s}
+  .dstep .arrow:active{transform:scale(.94)}
+  .dstep .arrow[disabled]{opacity:.32;cursor:default;color:var(--muted)}
+  .dstep .dwrap{flex:1 1 auto;text-align:center;min-width:0}
+  .dstep .dlabel{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dstep .dlabel .today{color:var(--ok)}
+  .dstep .dots{display:flex;gap:5px;justify-content:center;margin-top:5px}
+  .dstep .dots i{width:6px;height:6px;border-radius:50%;background:var(--surface-2);transition:.12s}
+  .dstep .dots i.on{background:var(--ok);width:16px;border-radius:3px}
+  .dstep .dsub{font-size:11px;color:var(--muted);margin-top:3px}
   .wtabs{display:flex;gap:4px;margin-bottom:0;position:relative;z-index:2}
   .wtabs:empty{display:none}
   .wtab{flex:1;background:#0b0d0f;border:1px solid var(--line);color:var(--muted);
@@ -1520,6 +1560,10 @@
   .ho-list{display:flex;flex-direction:column;gap:10px}
   .ho-note{border:1px solid var(--line);background:var(--surface);border-radius:13px;padding:14px 15px}
   .ho-note.done{opacity:.6}
+  /* Unread: a teammate's open note you haven't tapped/ticked yet. Mild tint +
+     a left bar in the same --laser the header alert uses, so "new here" reads
+     the same across the app and in both themes. Clears on tap/tick. */
+  .ho-note.ho-unread{background:rgba(232,68,46,.06);border-color:rgba(232,68,46,.28);box-shadow:inset 3px 0 0 var(--laser)}
   .ho-ntop{display:flex;align-items:center;margin-bottom:11px}
   .ho-prio{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;
     font-weight:750;letter-spacing:.09em;text-transform:uppercase}
@@ -1904,6 +1948,11 @@
   .pg-dock small{color:var(--muted);font-size:11px}
   .pg-dock .pg-syncbtn{margin-left:auto;background:var(--laser);color:#fff;border:0;border-radius:10px;height:42px;
     padding:0 18px;font-weight:800;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:7px}
+  .pg-reset{width:100%;margin:18px 0 6px;height:46px;border:1px solid rgba(232,68,46,.4);border-radius:12px;
+    background:none;color:var(--laser);font-family:var(--sans);font-weight:700;font-size:13px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:.01em}
+  .pg-reset:active{background:rgba(232,68,46,.10)}
+  .pg-reset svg{width:16px;height:16px;stroke:var(--laser);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .pg-dock .pg-syncbtn svg{width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2}
   .pg-dock .pg-syncbtn.pg-spin svg{animation:pg-sp 1s linear infinite}
   /* section cards: Pod 1 / Pod 2 / Case Lots, endcap-style, lightly tinted */
@@ -1927,7 +1976,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=135.4">
+  <link rel="manifest" href="./manifest.json?v=135.7">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2206,6 +2255,15 @@
     <div class="sticky-bar">
       <div class="sales-head">
         <input id="ordSearch" placeholder="Was it shorted? Search an item…" autocomplete="off">
+      </div>
+      <div class="dstep" id="ordStep" hidden>
+        <button class="arrow" id="ordStepPrev" aria-label="Older day">‹</button>
+        <div class="dwrap">
+          <div class="dlabel" id="ordStepLabel">—</div>
+          <div class="dots" id="ordStepDots"></div>
+          <div class="dsub" id="ordStepSub"></div>
+        </div>
+        <button class="arrow" id="ordStepNext" aria-label="Newer day">›</button>
       </div>
       <div class="wtabs" id="ordKindTabs">
         <button class="wtab active" data-kind="shorted">Shorted</button>
@@ -2531,6 +2589,11 @@
       <div><strong id="pgDockTitle">All synced</strong><small id="pgDockSub">Nothing to send yet</small></div>
       
     </div>
+
+    <button class="pg-reset" type="button" onclick="pgClearAll()">
+      <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      Clear all &middot; reset to default board
+    </button>
   </section>
 
   <!-- planogram editor sheet + camera + reading overlay -->
@@ -2710,6 +2773,16 @@
          restock, and the trainer only walks what's in store — faster and more
          accurate. Search to add an item if you start carrying it later.</p>
       <button class="btn btn-ghost" onclick="rkAsOpen()">Open assortment editor</button>
+    </div>
+    <div class="panel dev-only">
+      <h3>Brand aliases</h3>
+      <p>Teach a full brand name its short badge — e.g. <b>Green Giant → GG</b>. Aliases sync to every phone and the Sheet. Built-ins like <b>Taylor Farms → TF</b> are already known.</p>
+      <div class="field two-up">
+        <div><label for="alPhrase">Full name</label><input id="alPhrase" placeholder="e.g. green giant" autocomplete="off"></div>
+        <div><label for="alTag">Badge</label><input id="alTag" placeholder="e.g. GG" maxlength="4" autocomplete="off"></div>
+      </div>
+      <button class="btn btn-primary" id="btnAlAdd">Add alias</button>
+      <div class="al-list" id="alList"></div>
     </div>
     <div class="panel">
       <h3>Restock location prompt</h3>
@@ -2912,6 +2985,7 @@
         <input id="mName" autocomplete="off">
         <button type="button" class="qty-btn mic-sm" id="mSay" aria-label="Say the product name"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg></button>
       </div>
+      <div class="name-sug" id="mNameSug" style="display:none"></div>
       <div class="two-up" style="margin-top:8px;">
         <div>
           <label for="mBrand">Brand</label>
@@ -3916,7 +3990,7 @@ function showView(name){
   if(name==="sales"){ renderWeekTabs(); renderSales(); }
   if(name==="scrap"){ maybeResumeWip(); renderLists(); scrapAutoSync(); scrapSharePull(); }
   if(name==="restock"){ renderRestock(); rkBumpItemViews(); rkPull(); rkStartPoll(); dbAutoRefresh(false); }
-  if(name==="handoff"){ ensureBadgePermission(); hoMarkSeen(); renderHandoff(); hoPull(); hoStartPoll(); hoMaybePrompt(); renderHoIcon(); }
+  if(name==="handoff"){ ensureBadgePermission(); hoMarkSeen(); renderHandoff(); hoPull(); hoStartPoll(); renderHoIcon(); }
   if(name==="planogram"){ renderPlanogram(); pgPull(); pgStartPoll(); }
   if(name==="product"){
     // renderProduct scans the whole catalogue and lays out up to 80 cards; doing
@@ -3944,6 +4018,7 @@ function showView(name){
     { const _pt=document.getElementById("rkPromptToggle"); if(_pt) _pt.checked=rkPromptOn(); }
     // surface the claim button without making you go looking for it
     if(proxyUrl() && navigator.onLine) checkAccess();
+    aliasBrRender(); aliasBrPull();
   }
   if(name==="settings"){
     document.getElementById("scriptUrl").value = localStorage.getItem(KEY_URL) || BAKED_PROXY_URL;
@@ -6595,7 +6670,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v135.4";
+const APP_VERSION = "v135.7";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -7221,6 +7296,7 @@ document.getElementById("mQtyMinus").addEventListener("click", ()=>{
 let mSuggest = null;
 document.getElementById("mName").addEventListener("change", splitBrandIntoField);
 document.getElementById("mName").addEventListener("input", ()=>{
+  mNameSuggest();
   const nm = document.getElementById("mName").value.trim();
   const note = document.getElementById("mKnown");
   const codeBox = document.getElementById("mCode");
@@ -8279,7 +8355,7 @@ function setTheme(t){
   localStorage.setItem(KEY_THEME, t);
   document.body.classList.toggle("light", t === "light");
   const m = document.querySelector('meta[name="theme-color"]');
-  if(m) m.setAttribute("content", t === "light" ? "#F2F0E9" : "#14171A");
+  if(m) m.setAttribute("content", t === "light" ? "#F2F2F7" : "#14171A");
 }
 function unit(){ return localStorage.getItem(KEY_UNIT) || "kg"; }
 function setUnit(u){ localStorage.setItem(KEY_UNIT, u); }
@@ -9529,15 +9605,17 @@ const BRAND_FULL = {
   nnni:"No Name Naturally Imperfect", ninni:"No Name Naturally Imperfect",
   nn:"No Name", ns:"No Name", pc:"President's Choice", pco:"PC Organic",
   pcb:"PC Blue Menu", fm:"Farmers Market", cove:"Cove", manns:"Manns",
-  wholly:"Wholly", gt:"GT's", sensations:"Sensations"
+  wholly:"Wholly", gt:"GT's", sensations:"Sensations",
+  taylor:"Taylor Farms"
 };
 const BRAND_TAG = {
   nnni:"NNI", ninni:"NNI", nn:"NN", ns:"NN", pc:"PC", pco:"PCO",
   pcb:"PCBM", fm:"FM", cove:"COVE", manns:"MANNS", wholly:"WHOLLY",
-  gt:"GT", sensations:"SENS"
+  gt:"GT", sensations:"SENS",
+  taylor:"TF"
 };
 const BRANDS = new Set(Object.keys(BRAND_FULL).concat(
-  ["farmers","presidents","choice","organics"]));
+  ["farmers","presidents","choice","organics","farms"]));
 
 /* Pull the brand off the front of a description. Only the leading run counts:
    "PC TOMATO BISTRO" is President's Choice, but a stray brand word in the
@@ -10535,10 +10613,46 @@ function todayNice(){
   try{ return new Date().toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" }); }
   catch(e){ return new Date().toDateString(); }
 }
+/* ---- date stepper: walk the last N distinct upload days (newest = default) ----
+   Reachable set = the last STEP_DAYS distinct upload days in local storage.
+   Older days stay stored/synced but drop off the stepper; the backend purges
+   them past the same window (INV_KEEP_DAYS) so the two never drift. */
+const STEP_DAYS = 4;   // matches the backend INV_KEEP_DAYS live window
+function stepDays(){ return [...new Set(orders().map(invDay))].sort().slice(-STEP_DAYS); }
+function dayTotalPages(day){ return invoicesOfDay(day).reduce((n,inv)=>n+(((inv&&inv.pages)||[]).length),0); }
+function renderStepper(){
+  const days = stepDays();                              // oldest→newest, ≤ STEP_DAYS
+  const wrap = document.getElementById("ordStep");
+  if(days.length < 2){ wrap.hidden = true; return; }    // one day (or none) → nothing to step
+  wrap.hidden = false;
+  let idx = days.indexOf(activeDay);
+  if(idx < 0){ idx = days.length - 1; activeDay = days[idx]; }   // fell off the window → newest
+  const newestIdx = days.length - 1;
+  const back = newestIdx - idx;                         // 0 = newest upload
+  const isToday = activeDay === ymdLocal(new Date());
+  document.getElementById("ordStepLabel").innerHTML =
+    isToday ? '<span class="today">Today</span>' : esc(dayNice(activeDay));
+  document.getElementById("ordStepDots").innerHTML =
+    days.map((d,i)=>`<i class="${i===idx?"on":""}"></i>`).join("");   // newest on the right
+  const pg = dayTotalPages(activeDay);
+  document.getElementById("ordStepSub").textContent =
+    (back===0 ? "newest upload" : (back + " day" + (back>1?"s":"") + " back")) +
+    " \u00b7 " + pg + " page" + (pg===1?"":"s");
+  document.getElementById("ordStepPrev").disabled = idx <= 0;         // ‹ older
+  document.getElementById("ordStepNext").disabled = idx >= newestIdx; // › newer
+}
+function stepTo(delta){   // -1 = older, +1 = newer
+  const days = stepDays(); if(!days.length) return;
+  let idx = days.indexOf(activeDay); if(idx < 0) idx = days.length - 1;
+  idx = Math.max(0, Math.min(days.length - 1, idx + delta));
+  activeDay = days[idx];
+  renderOrder();
+}
 function renderOrder(){
   const all = orders();
   const body = document.getElementById("ordBody");
   if(!all.length){
+    document.getElementById("ordStep").hidden = true;
     document.getElementById("ordVerdict").innerHTML = "";
     body.innerHTML = '<div class="sea-empty">No invoice yet. Tap \uFF0B and photograph a ' +
       'page — the app files it under the <b>' + activeKind + '</b> tab you\'re on.</div>';
@@ -10546,6 +10660,7 @@ function renderOrder(){
   }
   // no stepper: always show the most recent upload day, merging that day's invoices
   if(!activeDay || !all.some(x=>invDay(x) === activeDay)) activeDay = newestDay();
+  renderStepper();
 
   const dps = dayPages(activeDay, activeKind);      // [{inv, p}] across the day's invoices
   const dayHdr = `<div class="inv-date">${esc(dayNice(activeDay))}</div>`;
@@ -10589,6 +10704,8 @@ function renderOrder(){
   ordSearchRun();
 }
 
+document.getElementById("ordStepPrev").addEventListener("click", ()=>stepTo(-1)); // ‹ older
+document.getElementById("ordStepNext").addEventListener("click", ()=>stepTo(+1)); // › newer
 document.getElementById("ordKindTabs").addEventListener("click", e=>{
   const b = e.target.closest(".wtab"); if(!b) return;
   activeKind = b.dataset.kind === "shipped" ? "shipped" : "shorted";
@@ -11874,6 +11991,7 @@ const NM_BRANDS = [
   { tag:"PCBM", re:/\b(pc\s*blue\s*menu|blue\s*menu|pcbm)\b/ig },
   { tag:"PCO",  re:/\b(president'?s?\s*choice\s*organic|pc\s*organic|pco)\b/ig },
   { tag:"PC",   re:/\b(president'?s?\s*choice|pc)\b/ig },
+  { tag:"TF",   re:/\b(taylor\s*farms?)\b/ig },
   { tag:"FM",   re:/\bfm\b/ig }
 ];
 /* ---- learned brands ---------------------------------------------------------
@@ -11923,11 +12041,168 @@ function learnedBrandRe(){
   _lbRe = new RegExp("\\b("+alt+")\\b","ig");
   return _lbRe;
 }
+/* ---- B3: inline name-suggestion chip (category -> variety -> size) ----------
+   As you type a produce name, suggest the store's word order (category first)
+   as a tap-to-use chip. Suggestion ONLY: never rewrites what you typed, no-ops
+   on branded items so brand names are never mangled, and it fires two ways:
+   (1) catalogue canonical order -- if the typed words match a built-in name's
+       word set, suggest that name's order (this can never reverse an already-
+       correct name, since "Tomato Cherry" already matches in order);
+   (2) fallback heuristic -- for a novel combo with exactly ONE recognised
+       category word that isn't already leading, move it to the front.
+   Caches are lazy; a mid-session PLU import won't refresh them until reload. */
+var _nmCatLex = null, _nmCanon = null;
+function nmCatLexicon(){
+  if(_nmCatLex) return _nmCatLex;
+  var set = new Set();
+  var add = function(nm){ var t = pluTokens(String(nm||""))[0]; if(t && t.length>=3 && !/\d/.test(t)){ set.add(t); set.add(stem(t)); } };
+  try{ (PLU||[]).forEach(function(e){ add(e.name); }); }catch(e){}
+  try{ (CATALOG||[]).forEach(function(c){ add((typeof applyFix==="function"?applyFix(c):c).name); }); }catch(e){}
+  _nmCatLex = set; return set;
+}
+function _nmCat(tok){ var lex = nmCatLexicon(); var t = String(tok||"").toLowerCase(); return lex.has(t) || lex.has(stem(t)); }
+function nmCanonMap(){
+  if(_nmCanon) return _nmCanon;
+  var m = new Map();
+  var put = function(nm){
+    var toks = pluTokens(String(nm||"")).filter(function(t){ return t.length>=2 && !/\d/.test(t); });
+    if(toks.length < 2) return;
+    var key = toks.slice().sort().join("|");
+    if(!m.has(key)) m.set(key, toks);
+    else if(m.get(key) && m.get(key).join("|") !== toks.join("|")) m.set(key, null); // conflicting orders -> ambiguous
+  };
+  try{ (PLU||[]).forEach(function(e){ put(e.name); }); }catch(e){}
+  try{ (CATALOG||[]).forEach(function(c){ put((typeof applyFix==="function"?applyFix(c):c).name); }); }catch(e){}
+  _nmCanon = m; return m;
+}
+function _nmIsSize(tok){ return (/\d/.test(tok) && /(g|kg|ml|l|lb|oz|ct|pk|ea)$/i.test(tok)) || /^\d+x[\d.]/i.test(tok) || PACKWORDS.test(tok); }
+function nmTitleWord(t){ return /\d/.test(t) ? t.toUpperCase() : (t.charAt(0).toUpperCase() + t.slice(1).toLowerCase()); }
+function nmSuggestName(raw){
+  var val = String(raw||"").trim();
+  if(val.length < 4) return null;
+  try{ var nm = nmNormalize(val); if(nm.tags.some(function(t){ return nmTagKind(t)==="brand"; })) return null; }catch(e){}
+  var toks = val.split(/\s+/).filter(Boolean);
+  if(toks.length < 2) return null;
+  var words = [], sizes = [];
+  toks.forEach(function(t){ (_nmIsSize(t) ? sizes : words).push(t); });
+  if(words.length < 2) return null;
+  // (1) catalogue canonical order
+  var nameToks = pluTokens(val).filter(function(t){ return t.length>=2 && !/\d/.test(t); });
+  if(nameToks.length >= 2){
+    var canon = nmCanonMap().get(nameToks.slice().sort().join("|"));
+    if(canon && canon.length){
+      if(canon.join(" ") !== nameToks.join(" ")){
+        var out1 = canon.map(nmTitleWord).concat(sizes.map(nmTitleWord)).join(" ");
+        return (out1.toLowerCase() === val.toLowerCase()) ? null : out1;
+      }
+      return null; // matches a catalogue name and already in order
+    }
+  }
+  // (2) fallback: exactly one recognised category word, not already leading
+  var catIdx = -1, catCount = 0;
+  for(var i=0;i<words.length;i++){ if(_nmCat(words[i])){ if(!catCount) catIdx = i; catCount++; } }
+  if(catCount !== 1 || catIdx <= 0) return null;
+  var rest = words.slice(0,catIdx).concat(words.slice(catIdx+1));
+  var out2 = [words[catIdx]].concat(rest, sizes).map(nmTitleWord).join(" ");
+  return (out2.toLowerCase() === val.toLowerCase()) ? null : out2;
+}
+function mNameSuggest(){
+  var inp = document.getElementById("mName"), box = document.getElementById("mNameSug");
+  if(!inp || !box) return;
+  var sug = nmSuggestName(inp.value);
+  if(!sug){ box.style.display="none"; box.innerHTML=""; return; }
+  box.style.display=""; box.innerHTML = 'Suggested: <b>'+esc(sug)+'</b> \u2014 <button type="button" id="mNameSugUse">tap to use</button>';
+  var b = document.getElementById("mNameSugUse");
+  if(b) b.onclick = function(){ inp.value = sug; box.style.display="none"; box.innerHTML=""; if(typeof splitBrandIntoField==="function") splitBrandIntoField(); };
+}
+
+/* ---- B2b: user-defined brand aliases (full phrase -> badge), MERGE-synced ----
+   Teach a full brand name its short badge ("green giant" -> "GG"). Stored as
+   {phrase:{tag,ts,by,del?}} so the backend can MERGE per key across phones
+   (union of keys, newest ts wins) instead of last-write-wins clobbering another
+   phone's additions. Feeds nmNormalize alongside the built-in NM_BRANDS list. */
+const KEY_ALIASBR = "label_brandalias_v1";
+var _abRe = null, _abTag = null, _abSyncing = false, _abSyncTimer = null, _abDirty = false;
+function _abInval(){ _abRe = null; _abTag = null; }
+function aliasBrRaw(){ try{ var o = JSON.parse(localStorage.getItem(KEY_ALIASBR)||"{}"); return (o && typeof o==="object") ? o : {}; }catch(e){ return {}; } }
+function aliasBrSaveRaw(o){ try{ localStorage.setItem(KEY_ALIASBR, JSON.stringify(o)); }catch(e){} _abInval(); }
+function aliasBrKey(p){ return String(p||"").toLowerCase().replace(/\s+/g," ").trim(); }
+function aliasBrTag(t){ return String(t||"").replace(/[^A-Za-z0-9]/g,"").slice(0,4).toUpperCase(); }
+function aliasBrLive(){ var o = aliasBrRaw(), out = {}; for(var k in o){ var e = o[k]; if(e && !e.del && e.tag) out[k] = aliasBrTag(e.tag); } return out; }
+function aliasBrAdd(phrase, tag){
+  var k = aliasBrKey(phrase), t = aliasBrTag(tag);
+  if(k.length < 2 || !t) return false;
+  var o = aliasBrRaw();
+  o[k] = { tag:t, ts:Date.now(), by:(localStorage.getItem(KEY_DEV)||localStorage.getItem(KEY_ME_NAME)||"") };
+  aliasBrSaveRaw(o); aliasBrAutoSync(); return true;
+}
+function aliasBrDel(phrase){ var k = aliasBrKey(phrase), o = aliasBrRaw(); o[k] = { del:true, ts:Date.now() }; aliasBrSaveRaw(o); aliasBrAutoSync(); }
+function aliasBrRe(){
+  if(_abRe !== null) return _abRe;
+  var live = aliasBrLive(), keys = Object.keys(live);
+  if(!keys.length){ _abRe = false; _abTag = {}; return _abRe; }
+  _abTag = {}; keys.forEach(function(k){ _abTag[k] = live[k]; });
+  var alt = keys.slice().sort(function(a,b){ return b.length - a.length; })
+    .map(function(k){ return k.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/\s+/g,"\\s+"); }).join("|");
+  _abRe = new RegExp("\\b("+alt+")\\b","ig");
+  return _abRe;
+}
+function aliasBrTagFor(m){ var k = aliasBrKey(m); return (_abTag && _abTag[k]) || ""; }
+function aliasBrAutoSync(){ _abDirty = true; clearTimeout(_abSyncTimer); _abSyncTimer = setTimeout(function(){ aliasBrSync(false); }, 1200); }
+async function aliasBrSync(manual){
+  if(_abSyncing) return;
+  if(!proxyUrl()){ if(manual) toast("Not set up yet \u2014 see Settings"); return; }
+  _abSyncing = true;
+  try{
+    var d = await callProxy({ action:"aliasesSync", map: aliasBrRaw() });
+    if(d && d.ok && d.map && typeof d.map==="object"){ aliasBrSaveRaw(d.map); }
+    _abDirty = false;
+    if(manual) toast("Aliases synced");
+    aliasBrRender();
+  }catch(err){ if(manual) toast(typeof authMessage==="function" ? authMessage(err) : "Sync failed \u2014 offline?"); }
+  finally{ _abSyncing = false; }
+}
+async function aliasBrPull(){
+  if(!proxyUrl() || !navigator.onLine) return;
+  if(_abDirty) return;                       // never clobber unsent local edits
+  try{
+    var d = await callProxy({ action:"aliasesGet" });
+    if(d && d.ok && d.map && typeof d.map==="object"){
+      var local = aliasBrRaw(), remote = d.map, merged = {}, k;
+      for(k in local) merged[k] = local[k];
+      for(k in remote){ var r = remote[k], c = merged[k];
+        if(!c || typeof (c && c.ts) !== "number" || (r && typeof r.ts==="number" && r.ts >= c.ts)) merged[k] = r; }
+      aliasBrSaveRaw(merged); aliasBrRender();
+    }
+  }catch(e){}
+}
+function aliasBrRender(){
+  var box = document.getElementById("alList"); if(!box) return;
+  var live = aliasBrLive(), keys = Object.keys(live).sort();
+  if(!keys.length){ box.innerHTML = '<p class="lookup-note">No custom aliases yet.</p>'; return; }
+  box.innerHTML = keys.map(function(k){
+    return '<div class="al-row"><span class="al-ph">'+esc(k)+'</span>'+
+      '<span class="nm-bdg brand">'+esc(live[k])+'</span>'+
+      '<button type="button" class="al-x" data-k="'+esc(k)+'" aria-label="Remove">\u2715</button></div>';
+  }).join("");
+  Array.prototype.slice.call(box.querySelectorAll(".al-x")).forEach(function(b){
+    b.onclick = function(){ aliasBrDel(b.getAttribute("data-k")); aliasBrRender(); };
+  });
+}
+if(document.getElementById("btnAlAdd")){
+  document.getElementById("btnAlAdd").addEventListener("click", function(){
+    var p = document.getElementById("alPhrase"), t = document.getElementById("alTag");
+    if(aliasBrAdd(p.value, t.value)){ p.value=""; t.value=""; aliasBrRender(); toast("Alias added"); }
+    else toast("Enter a full name and a short badge");
+  });
+}
+
 function nmNormalize(raw){
   let s = " " + String(raw||"").replace(/\s+/g," ").trim() + " ";
   const brands = [];
   NM_BRANDS.forEach(b=>{ const before=s; s=s.replace(b.re," "); if(s!==before && brands.indexOf(b.tag)<0) brands.push(b.tag); });
   { const _lb = learnedBrandRe(); if(_lb){ s = s.replace(_lb, function(m){ const t = _lbClean(m); if(t && brands.indexOf(t) < 0) brands.push(t); return " "; }); } }
+  { const _ab = aliasBrRe(); if(_ab){ s = s.replace(_ab, function(m){ const t = aliasBrTagFor(m); if(t && brands.indexOf(t) < 0) brands.push(t); return " "; }); } }
   // spoken number-words before a unit -> digits ("three pack"->"3 pack", "six pound"->"6 pound")
   const _NW = {one:"1",two:"2",three:"3",four:"4",five:"5",six:"6",seven:"7",eight:"8",nine:"9",ten:"10",eleven:"11",twelve:"12"};
   s = s.replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+(packs?|pk|counts?|cts?|ct|lbs?|pounds?|kgs?|kilograms?|kilos?|ozs?|ounces?|grams?|mls?|millilitres?|milliliters?|litres?|liters?|l)\b/ig, function(m,w,u){ return _NW[w.toLowerCase()] + " " + u; });
@@ -13215,6 +13490,24 @@ function hoUnseen(){
   const seenMs = hoLastSeenAt ? Date.parse(hoLastSeenAt) : 0;
   return hoState.notes.some(n => !n.done && (n.ts||0) > seenMs);
 }
+/* Per-note "read" tracking, separate from the icon's last-seen above. A
+   teammate's open note stays mildly highlighted until YOU tap or tick that
+   specific note; your own notes never highlight. Stored as a pruned id list so
+   it can't grow unbounded as notes are cleared away. */
+const KEY_HO_SEENIDS = "label_handoff_seenids_v1";
+function hoSeenSet(){ try{ const a = JSON.parse(localStorage.getItem(KEY_HO_SEENIDS)||"[]"); return new Set(Array.isArray(a)?a:[]); }catch(e){ return new Set(); } }
+function hoSeenHas(id){ return hoSeenSet().has(id); }
+function hoMarkNoteSeen(id){
+  if(!id) return;
+  const s = hoSeenSet(); if(s.has(id)) return;
+  s.add(id);
+  const live = new Set(hoState.notes.map(n=>n.id));   // prune ids of notes that no longer exist
+  const keep = Array.from(s).filter(x=>live.has(x));
+  try{ localStorage.setItem(KEY_HO_SEENIDS, JSON.stringify(keep)); }catch(e){}
+}
+function hoNoteUnread(n, seen, me){ return !!n && !n.done && !!n.by && n.by !== me && !seen.has(n.id); }
+/* Tap anywhere on a note to acknowledge it (clears the unread tint). */
+function hoNoteTap(id){ if(!hoSeenHas(id)){ hoMarkNoteSeen(id); renderHandoff(); } }
 function hoPop(){ const el=document.getElementById("hoNav"); if(!el) return; el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
 
 function renderHoIcon(){
@@ -13289,6 +13582,7 @@ function hoTouch(){
 }
 function hoToggleDone(id){
   const n = hoState.notes.find(x=>x.id===id); if(!n) return;
+  hoMarkNoteSeen(id);            // ticking counts as reading it — clear the unread tint
   n.done = !n.done;
   if(n.done){ n.doneBy = hoMeName(); n.doneTs = Date.now(); } else { n.doneBy = ""; n.doneTs = 0; }
   hoTouch();
@@ -13349,15 +13643,17 @@ function renderHandoff(){
         : hoFilter==="open" ? '<b>Floor\u2019s clear</b>No open handoff notes right now.'
         : '<b>No handoff notes</b>Tap Add note to pass something to the next shift.')+'</div>';
     } else {
-      host.innerHTML = rows.map(hoNoteHtml).join("");
+      const seen = hoSeenSet(), me = hoMeName();
+      host.innerHTML = rows.map(n=>hoNoteHtml(n, seen, me)).join("");
     }
   }
   hoDock();
 }
-function hoNoteHtml(n){
+function hoNoteHtml(n, seen, me){
   const done = !!n.done;
+  const unread = hoNoteUnread(n, seen || hoSeenSet(), me || hoMeName());
   const prio = (n.prio==="high"||n.prio==="low") ? n.prio : "medium";
-  return '<div class="ho-note'+(done?' done':'')+'">'+
+  return '<div class="ho-note'+(done?' done':'')+(unread?' ho-unread':'')+'" onclick="hoNoteTap(\''+n.id+'\')">'+
     '<div class="ho-ntop">'+
       '<span class="ho-prio '+prio+'"><span class="pd"></span>'+prio+'</span>'+
       '<span class="ho-meta">'+esc(n.by||"")+' \u00b7 '+hoClock(n.ts)+'</span>'+
@@ -13845,6 +14141,16 @@ function pgCycleBanner(i){
   pgTouch();
 }
 function pgSetPods(n){ pgState.podN = n; document.getElementById("pgPodCount").classList.remove("open"); pgTouch(); }
+/* Clear-all: full reset of the whole board back to the default layout. Destructive
+   and shared, so it confirms first. pgTouch() stamps + syncs it to every phone. */
+function pgClearAll(){
+  if(!confirm("Reset the WHOLE planogram to the default board?\n\nThis clears every pod, endcap, silver rack and case-lot entry for everyone, and can't be undone.")) return;
+  pgState = pgDefault();
+  pgCur = null; pgPendingSpot = null; pgSel = null;
+  try{ pgCloseSheet(); }catch(e){}
+  pgTouch();
+  toast("Planogram reset to the default board");
+}
 
 /* ---- icons + the context dropdown that replaced the bare camera button ---- */
 var PG_ICON_CAM = '<svg viewBox="0 0 24 24"><path d="M3 9V6.6A2.6 2.6 0 0 1 5.6 4H8"/><path d="M16 4h2.4A2.6 2.6 0 0 1 21 6.6V9"/><path d="M21 15v2.4a2.6 2.6 0 0 1-2.6 2.6H16"/><path d="M8 20H5.6A2.6 2.6 0 0 1 3 17.4V15"/><circle cx="12" cy="12" r="3.4"/></svg>';
@@ -14443,6 +14749,7 @@ showView("list");
    teammate's new note lights it up wherever you are in the app. */
 renderHoIcon();
 if(proxyUrl() && navigator.onLine) hoPull();
+if(proxyUrl() && navigator.onLine) aliasBrPull();
 setInterval(()=>{ if(!document.hidden){ renderHoIcon(); hoPull(); } }, 45000);
 setInterval(hoWiggleTick, 25000);
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden){ renderHoIcon(); hoPull(); } });

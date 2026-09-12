@@ -1976,7 +1976,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=135.7">
+  <link rel="manifest" href="./manifest.json?v=135.8">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6670,7 +6670,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v135.7";
+const APP_VERSION = "v135.8";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -13903,6 +13903,104 @@ const PG_POD2_PRIORITY = [
   {n:"#3",name:"Eggplant / Long"},{n:"#4",name:"Garlic 1KG"},{n:"#5",name:"3lb Red Onion"},{n:"#6",name:"Ginger Root"}
 ];
 
+/* ===== v135.8 Batch 2: planogram per-cell merge (B+) ================
+   The board used to sync as one blob, last-write-wins: a phone holding a
+   stale board that then edited any single spot re-pushed the whole stale
+   board with a newer time and resurrected everyone's deletes. Now every
+   fixed + tail-variable cell carries its own timestamp (pgState.cellTs)
+   and each tail length carries its own (pgState.lenTs); the backend and
+   pgPull MERGE per key, newest ts wins, so a cleared cell ("" with a newer
+   ts) sticks and a stale re-push can't revive it. Silver racks / small
+   tables, pinned routes and the learn map are lower-churn and ride whole-
+   subtree (att-<ri>-<b|a>, pinned, learn union-max) -- no id-plumbing or
+   board wipe. Old pre-cellTs blobs upgrade in place: pgSeedTs stamps every
+   key from updatedAt so the shared board converges once, then per-cell
+   edits diverge correctly. Fully effective once every phone runs v135.8. */
+const PG_POD1_N = 4, PG_MANGO_N = 2, PG_POD2_N = 8, PG_RUNS_N = 5;
+function pgNow(){ return Date.now(); }
+function pgS(v){ return (v == null) ? "" : String(v); }
+function pgTsOf(map, k){ return (map && +map[k]) || 0; }
+function pgStamp(){ pgState.cellTs = pgState.cellTs || {}; for(var i=0;i<arguments.length;i++) pgState.cellTs[arguments[i]] = pgNow(); }
+function pgStampLen(k){ pgState.lenTs = pgState.lenTs || {}; pgState.lenTs[k] = pgNow(); }
+/* render key (what pgEdit uses) -> the cell key we stamp; attachment box /
+   table edits collapse to the whole att-<ri>-<b|a> subtree */
+function pgStampRender(k){ if(k && k.indexOf("att-")===0){ var p=k.split("-"); pgStamp("att-"+p[1]+"-"+p[2]); } else if(k){ pgStamp(k); } }
+/* every canonical key at one ts (Clear-all uses this so the reset wins) */
+function pgStampAll(ts, st){
+  st = st || pgState; ts = ts || pgNow();
+  var c = st.cellTs = {}, L = st.lenTs = {}, i, ri;
+  c["podN"] = ts;
+  for(i=0;i<PG_POD1_N;i++){ c["pod1-"+i]=ts; c["pod1b-"+i]=ts; }
+  for(i=0;i<PG_MANGO_N;i++) c["mango-"+i]=ts;
+  for(i=0;i<PG_POD2_N;i++) c["pod2-"+i]=ts;
+  L["L-lots"]=ts;
+  var lots = st.lots || [];
+  for(i=0;i<lots.length;i++) c["lot-"+i]=ts;
+  var runs = st.runs || [];
+  for(ri=0;ri<PG_RUNS_N;ri++){
+    L["L-run-"+ri]=ts;
+    var r = runs[ri] || {wet:[],hmr:[]};
+    var wn = (r.wet||[]).length;
+    for(i=0;i<wn;i++){ c["run-"+ri+"-wet-"+i]=ts; c["run-"+ri+"-hmr-"+i]=ts; }
+    c["att-"+ri+"-b"]=ts; c["att-"+ri+"-a"]=ts;
+  }
+  c["pinned"]=ts;
+}
+/* pre-B+ blob (no cellTs): stamp every key from updatedAt so the current
+   shared board converges the same way today's last-write-wins would, then
+   per-cell edits take over. No-op once cellTs exists. */
+function pgSeedTs(s){ if(!s || s.cellTs) return s; pgStampAll(Date.parse(s.updatedAt||"")||1, s); return s; }
+/* defensive shape so the cell enumeration is always safe */
+function pgMergeStruct(s){
+  if(!Array.isArray(s.pod1)) s.pod1 = [];
+  while(s.pod1.length < PG_POD1_N) s.pod1.push({name:"",banner:""});
+  for(var i=0;i<PG_POD1_N;i++){ if(!s.pod1[i]) s.pod1[i]={name:"",banner:""}; if(typeof s.pod1[i].name!=="string")s.pod1[i].name=""; if(typeof s.pod1[i].banner!=="string")s.pod1[i].banner=""; }
+  if(!Array.isArray(s.mango)) s.mango=[]; while(s.mango.length<PG_MANGO_N) s.mango.push("");
+  if(!Array.isArray(s.pod2)) s.pod2=[]; while(s.pod2.length<PG_POD2_N) s.pod2.push("");
+  if(!Array.isArray(s.lots)) s.lots=[];
+  if(!Array.isArray(s.runs)) s.runs=[];
+  for(var ri=0;ri<PG_RUNS_N;ri++){ var r=s.runs[ri]=s.runs[ri]||{wet:["",""],hmr:["",""]}; if(!Array.isArray(r.wet))r.wet=["",""]; if(!Array.isArray(r.hmr))r.hmr=["",""]; while(r.hmr.length<r.wet.length)r.hmr.push(""); while(r.wet.length<r.hmr.length)r.wet.push(""); if(!Array.isArray(r.before))r.before=[]; if(!Array.isArray(r.after))r.after=[]; }
+  if(!s.cellTs) s.cellTs={}; if(!s.lenTs) s.lenTs={}; if(!s.learn) s.learn={}; if(!Array.isArray(s.pinned)) s.pinned=[];
+  return s;
+}
+/* learning never needs deletes; union by max count so a merge never erases it */
+function pgMergeLearn(a,b){
+  var out={}, k, n; a=a||{}; b=b||{};
+  for(k in a){ out[k]={}; for(n in a[k]) out[k][n]=a[k][n]; }
+  for(k in b){ out[k]=out[k]||{}; for(n in b[k]){ var v=b[k][n]; if(!(out[k][n]>=v)) out[k][n]=v; } }
+  return out;
+}
+/* per-cell merge: A is the base we keep on ties, B wins a cell only with a
+   strictly newer ts. Mirrors the backend pgMerge_ exactly. */
+function pgMerge(a,b){
+  if(!b || !Array.isArray(b.runs)) return a;
+  if(!a || !Array.isArray(a.runs)) return b;
+  const M = pgMergeStruct(pgSeedTs(JSON.parse(JSON.stringify(a))));
+  const B = pgMergeStruct(pgSeedTs(JSON.parse(JSON.stringify(b))));
+  const pick = (key, getB, setM)=>{ const tb=pgTsOf(B.cellTs,key), ta=pgTsOf(M.cellTs,key); if(tb>ta){ setM(getB()); M.cellTs[key]=tb; } };
+  pick("podN", ()=>B.podN, v=>{ M.podN=v; });
+  for(let i=0;i<PG_POD1_N;i++){ pick("pod1-"+i,()=>pgS(B.pod1[i].name),v=>{M.pod1[i].name=v;}); pick("pod1b-"+i,()=>pgS(B.pod1[i].banner),v=>{M.pod1[i].banner=v;}); }
+  for(let i=0;i<PG_MANGO_N;i++){ pick("mango-"+i,()=>pgS(B.mango[i]),v=>{M.mango[i]=v;}); }
+  for(let i=0;i<PG_POD2_N;i++){ pick("pod2-"+i,()=>pgS(B.pod2[i]),v=>{M.pod2[i]=v;}); }
+  { const lb=pgTsOf(B.lenTs,"L-lots"), la=pgTsOf(M.lenTs,"L-lots"); const lotN=(lb>la)?B.lots.length:M.lots.length; if(lb>la)M.lenTs["L-lots"]=lb; while(M.lots.length<lotN)M.lots.push(""); M.lots.length=lotN; for(let i=0;i<lotN;i++){ pick("lot-"+i,()=>pgS(B.lots[i]),v=>{M.lots[i]=v;}); } }
+  for(let ri=0;ri<PG_RUNS_N;ri++){
+    const rlb=pgTsOf(B.lenTs,"L-run-"+ri), rla=pgTsOf(M.lenTs,"L-run-"+ri);
+    const rn=(rlb>rla)?B.runs[ri].wet.length:M.runs[ri].wet.length;
+    if(rlb>rla)M.lenTs["L-run-"+ri]=rlb;
+    const R=M.runs[ri];
+    while(R.wet.length<rn)R.wet.push(""); R.wet.length=rn;
+    while(R.hmr.length<rn)R.hmr.push(""); R.hmr.length=rn;
+    for(let j=0;j<rn;j++){ pick("run-"+ri+"-wet-"+j,()=>pgS(B.runs[ri].wet[j]),v=>{R.wet[j]=v;}); pick("run-"+ri+"-hmr-"+j,()=>pgS(B.runs[ri].hmr[j]),v=>{R.hmr[j]=v;}); }
+    ["b","a"].forEach(pos=>{ const field=(pos==="b")?"before":"after"; const key="att-"+ri+"-"+pos; const tb=pgTsOf(B.cellTs,key), ta=pgTsOf(M.cellTs,key); if(tb>ta){ R[field]=JSON.parse(JSON.stringify(B.runs[ri][field]||[])); M.cellTs[key]=tb; } });
+  }
+  { const tb=pgTsOf(B.cellTs,"pinned"), ta=pgTsOf(M.cellTs,"pinned"); if(tb>ta){ M.pinned=JSON.parse(JSON.stringify(B.pinned||[])); M.cellTs["pinned"]=tb; } }
+  M.learn=pgMergeLearn(M.learn,B.learn);
+  M.updatedBy=B.updatedBy||M.updatedBy||"";
+  const au=Date.parse(M.updatedAt||"")||0, bu=Date.parse(B.updatedAt||"")||0;
+  M.updatedAt=(bu>au?B.updatedAt:M.updatedAt)||new Date().toISOString();
+  return M;
+}
+
 function pgDefault(){
   return {
     pod1:[
@@ -13931,7 +14029,7 @@ function pgDefault(){
       { brand:"FM", kw:"carrot", pack:"lb", table:"root" },
       { brand:"FM", kw:"onion",  pack:"lb", table:"root" }
     ],
-    learn:{}, updatedBy:"", updatedAt:""
+    learn:{}, updatedBy:"", updatedAt:"", cellTs:{}, lenTs:{}
   };
 }
 
@@ -13994,6 +14092,14 @@ function pgNorm(s){
       });
     });
   });
+  /* v135.8: fixed sections to expected length so cell enumeration is safe */
+  if(!Array.isArray(s.pod1)) s.pod1 = pgDefault().pod1;
+  while(s.pod1.length < 4) s.pod1.push({name:"",banner:""});
+  s.pod1.forEach(function(p){ if(p){ if(typeof p.name!=="string")p.name=""; if(typeof p.banner!=="string")p.banner=""; } });
+  if(!Array.isArray(s.mango) || s.mango.length < 2){ s.mango = Array.isArray(s.mango) ? s.mango : []; while(s.mango.length < 2) s.mango.push(""); }
+  if(!Array.isArray(s.pod2)) s.pod2 = pgDefault().pod2;
+  while(s.pod2.length < 8) s.pod2.push("");
+  pgSeedTs(s);   /* pre-B+ blobs get per-cell timestamps from updatedAt */
   return s;
 }
 function pgAtts(ri,pos){
@@ -14138,9 +14244,9 @@ const PG_BANNERS = ["canada","sales","noname",""];
 function pgCycleBanner(i){
   const cur = pgState.pod1[i].banner||"";
   pgState.pod1[i].banner = PG_BANNERS[(PG_BANNERS.indexOf(cur)+1)%PG_BANNERS.length];
-  pgTouch();
+  pgStamp("pod1b-"+i); pgTouch();
 }
-function pgSetPods(n){ pgState.podN = n; document.getElementById("pgPodCount").classList.remove("open"); pgTouch(); }
+function pgSetPods(n){ pgState.podN = n; document.getElementById("pgPodCount").classList.remove("open"); pgStamp("podN"); pgTouch(); }
 /* Clear-all: full reset of the whole board back to the default layout. Destructive
    and shared, so it confirms first. pgTouch() stamps + syncs it to every phone. */
 function pgClearAll(){
@@ -14148,6 +14254,7 @@ function pgClearAll(){
   pgState = pgDefault();
   pgCur = null; pgPendingSpot = null; pgSel = null;
   try{ pgCloseSheet(); }catch(e){}
+  pgStampAll();
   pgTouch();
   toast("Planogram reset to the default board");
 }
@@ -14233,7 +14340,7 @@ function pgMenuClose(){
 /* ---- box-count + attachment mutators (each ends in pgTouch -> save+sync) ---- */
 function pgRunSlots(ri,d){
   const st = pgState.runs[ri]; if(!st) return;
-  if(d > 0){ st.wet.push(""); st.hmr.push(""); }
+  if(d > 0){ st.wet.push(""); st.hmr.push(""); pgStamp("run-"+ri+"-wet-"+(st.wet.length-1), "run-"+ri+"-hmr-"+(st.hmr.length-1)); }
   else {
     if(st.wet.length <= 1) return;
     if(st.wet[st.wet.length-1] || st.hmr[st.hmr.length-1]){
@@ -14241,34 +14348,34 @@ function pgRunSlots(ri,d){
     }
     st.wet.pop(); st.hmr.pop();
   }
-  pgTouch();
+  pgStampLen("L-run-"+ri); pgTouch();
 }
 function pgLotSlots(d){
-  if(d > 0) pgState.lots.push("");
+  if(d > 0){ pgState.lots.push(""); pgStamp("lot-"+(pgState.lots.length-1)); }
   else {
     if(pgState.lots.length <= 1) return;
     if(pgState.lots[pgState.lots.length-1] && !confirm("That lot still has an item. Remove anyway?")) return;
     pgState.lots.pop();
   }
-  pgTouch();
+  pgStampLen("L-lots"); pgTouch();
 }
 function pgAddRack(ri,pos){
   const list = pgAtts(ri,pos);
   const racks = list.filter(function(a){ return a.type === "rack"; });
   if(racks.length >= 1){ toast("A silver rack is already there"); return; }
   list.push({ type:"rack", wet:["","",""], hmr:["","",""] });   // one card = both physical racks
-  pgTouch(); toast("Silver rack added \u2014 wet + HMR sides");
+  pgStamp("att-"+ri+"-"+pos); pgTouch(); toast("Silver rack added \u2014 wet + HMR sides");
 }
 function pgAddTables(ri,pos){
   pgAtts(ri,pos).push({ type:"table", wet:"", hmr:"" });
-  pgTouch(); toast("Small tables added");
+  pgStamp("att-"+ri+"-"+pos); pgTouch(); toast("Small tables added");
 }
 function pgDelAtt(ri,pos,ai){
   const list = pgAtts(ri,pos), a = list[ai]; if(!a) return;
   const used = a.type === "rack" ? (a.wet||[]).concat(a.hmr||[]).some(function(v){ return !!v; }) : (a.wet || a.hmr);
   const what = a.type === "rack" ? "silver rack" : "small tables";
   if(used && !confirm("That " + what + " still has items on it. Remove anyway?")) return;
-  list.splice(ai,1); pgTouch(); toast("Removed " + what);
+  list.splice(ai,1); pgStamp("att-"+ri+"-"+pos); pgTouch(); toast("Removed " + what);
 }
 function pgRackSlots(ri,pos,ai,d){
   const a = pgAtts(ri,pos)[ai]; if(!a || a.type !== "rack") return;
@@ -14280,7 +14387,7 @@ function pgRackSlots(ri,pos,ai,d){
     if((a.wet[a.wet.length-1] || a.hmr[a.hmr.length-1]) && !confirm("The last box on each side still has an item. Remove anyway?")) return;
     a.wet.pop(); a.hmr.pop();
   }
-  pgTouch();
+  pgStamp("att-"+ri+"-"+pos); pgTouch();
 }
 
 /* ---- editor ---- */
@@ -14384,7 +14491,7 @@ function pgOnType(v){
   pgSel = exact || null;
   pgSaveEnable(!!pgSel);
 }
-function pgAssign(name){ name = nmShort(name); pgCur.set(name); pgRemember(pgCur.spot, name); pgCloseSheet(); pgTouch(); toast("Filed: "+name); }
+function pgAssign(name){ name = nmShort(name); pgCur.set(name); pgRemember(pgCur.spot, name); pgStampRender(pgCur.key); pgCloseSheet(); pgTouch(); toast("Filed: "+name); }
 function pgSaveEnable(on){ const b = document.getElementById("pgSaveBtn"); if(b) b.disabled = !on; }
 /* Exact DB name match (case-insensitive, minus the (Organic) suffix). Returns
    the canonical name to file, or null. This is the gate that keeps the Save
@@ -14405,7 +14512,7 @@ function pgPick(name){ const inp = document.getElementById("pgSheetInput"); if(i
 /* Save button: commit the resolved DB item to the spot. */
 function pgSaveSpot(){ if(pgSel && pgCur) pgAssign(pgSel); }
 /* Delete button: empty the spot. */
-function pgDeleteSpot(){ if(!pgCur) return; pgCur.set(""); pgCloseSheet(); pgTouch(); toast("Emptied"); }
+function pgDeleteSpot(){ if(!pgCur) return; pgCur.set(""); pgStampRender(pgCur.key); pgCloseSheet(); pgTouch(); toast("Emptied"); }
 function pgAddMissing(){
   const inp = document.getElementById("pgSheetInput"); const v = inp ? inp.value.trim() : "";
   if(!v || !pgCur) return;
@@ -14496,6 +14603,11 @@ function pgApplyOcr(section, end, items){
   else if(section==="pod2"){ items.slice(0,pgState.podN).forEach((t,i)=>{ if(t) pgState.pod2[i] = resolve(t); }); }
   else if(section==="lots"){ items.slice(0,7).forEach((t,i)=>{ if(t) pgState.lots[i] = resolve(t); }); }
   else if(section.indexOf("run-")===0){ const ri=+section.split("-")[1]; const col = end===0?"wet":"hmr"; items.slice(0,2).forEach((t,i)=>{ if(t){ pgState.runs[ri][col][i] = resolve(t); pgRemember("run"+(ri+1)+"-"+col, pgState.runs[ri][col][i]); } }); }
+  /* v135.8: stamp what OCR wrote so it merges per-cell like a manual edit */
+  if(section==="pod1"){ for(let i=0;i<4;i++) pgStamp("pod1-"+i); }
+  else if(section==="pod2"){ for(let i=0;i<pgState.podN;i++) pgStamp("pod2-"+i); }
+  else if(section==="lots"){ for(let i=0;i<Math.min(7,pgState.lots.length);i++) pgStamp("lot-"+i); }
+  else if(section.indexOf("run-")===0){ const ri=+section.split("-")[1]; const col = end===0?"wet":"hmr"; for(let i=0;i<2;i++) pgStamp("run-"+ri+"-"+col+"-"+i); }
   pgTouch();
 }
 
@@ -14719,8 +14831,9 @@ async function pgPull(){
   try{
     const d = await callProxy({ action:"planogramGet" });
     if(d && d.ok && d.state && Array.isArray(d.state.runs)){
-      const theirs = d.state.updatedAt||"", mine = pgState.updatedAt||"";
-      if(theirs && theirs >= mine){ pgState = pgNorm(d.state); pgSave(); renderPlanogram(); }
+      /* per-cell merge, not blob replace: a remote delete lands, an un-synced
+         local edit (newer ts) is preserved. pgDirty guard already bailed above. */
+      pgState = pgMerge(pgState, pgNorm(d.state)); pgSave(); renderPlanogram();
     }
   }catch(e){}
 }

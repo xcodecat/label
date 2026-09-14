@@ -1548,6 +1548,10 @@
   .ho-addbtn{margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:none;border:0;
     color:var(--laser);font-family:var(--sans);font-size:13px;font-weight:750;cursor:pointer;padding:2px}
   .ho-addbtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round}
+  .ho-clrbtn{margin-left:auto;margin-right:6px;display:none;align-items:center;gap:5px;background:none;border:0;
+    color:var(--muted);font-family:var(--sans);font-size:12px;font-weight:700;cursor:pointer;padding:2px 4px}
+  .ho-clrbtn.show{display:inline-flex}
+  .ho-clrbtn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
   .ho-seg{display:flex;gap:8px;margin:0 0 15px}
   .ho-seg button{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;
@@ -1573,6 +1577,10 @@
   .ho-prio.medium{color:#E0A53A}.ho-prio.medium .pd{background:#E0A53A}
   .ho-prio.low{color:var(--ok)}.ho-prio.low .pd{background:var(--ok)}
   .ho-meta{margin-left:auto;font-size:10px;color:var(--muted)}
+  .ho-del{margin-left:8px;flex:none;width:30px;height:30px;display:grid;place-items:center;background:none;
+    border:0;border-radius:8px;color:var(--muted);cursor:pointer;padding:0}
+  .ho-del:active{color:var(--laser);background:var(--surface-2)}
+  .ho-del svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
   .ho-main{display:flex;gap:12px;align-items:flex-start}
   .ho-check{width:40px;height:40px;flex:none;border:2px solid var(--line);border-radius:10px;
     background:none;cursor:pointer;display:grid;place-items:center;color:transparent;margin-top:1px}
@@ -2002,7 +2010,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=135.10">
+  <link rel="manifest" href="./manifest.json?v=135.11">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2699,6 +2707,10 @@
 
     <div class="ho-sechead">
       <span class="ho-seclbl">PASS IT FORWARD</span>
+      <button class="ho-clrbtn" id="hoClearDone" type="button" onclick="hoClearDone()">
+        <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+        Clear done
+      </button>
       <button class="ho-addbtn" type="button" onclick="hoOpenAdd()">
         <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add note
@@ -6728,7 +6740,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v135.10";
+const APP_VERSION = "v135.11";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -13669,6 +13681,20 @@ function hoDel(id){
   hoState.notes.splice(i,1); hoTouch();
   toastUndo("Removed note", ()=>{ hoState.notes.splice(i,0,gone); hoTouch(); });
 }
+function hoClearDone(){
+  const done = hoState.notes.filter(n=>n.done);
+  if(!done.length) return;
+  const n = done.length;
+  appConfirm("Clear cleared notes?",
+    "This removes the "+n+" ticked-off note"+(n===1?"":"s")+" for everyone. Can't be undone.",
+    "Clear",
+    function(){
+      hoState.notes = hoState.notes.filter(x=>!x.done);
+      hoTouch();
+      toast(n+" note"+(n===1?"":"s")+" removed");
+    },
+    { okClass:"btn-danger" });
+}
 function hoSetFilter(f){ hoFilter = f; renderHandoff(); }
 
 /* ---- render ---- */
@@ -13699,6 +13725,7 @@ function renderHandoff(){
 
   const setc = (id,v)=>{ const e = document.getElementById(id); if(e) e.textContent = v; };
   setc("hoCAll", total); setc("hoCOpen", open); setc("hoCDone", done);
+  { const cb = document.getElementById("hoClearDone"); if(cb) cb.classList.toggle("show", done>0); }
   const seg = document.getElementById("hoSeg");
   if(seg) [...seg.children].forEach(b=>b.classList.toggle("on", b.dataset.f===hoFilter));
 
@@ -13727,6 +13754,9 @@ function hoNoteHtml(n, seen, me){
     '<div class="ho-ntop">'+
       '<span class="ho-prio '+prio+'"><span class="pd"></span>'+prio+'</span>'+
       '<span class="ho-meta">'+esc(n.by||"")+' \u00b7 '+hoClock(n.ts)+'</span>'+
+      '<button class="ho-del" type="button" onclick="event.stopPropagation();hoDel(\''+n.id+'\')" aria-label="Delete note" title="Delete note">'+
+        '<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>'+
+      '</button>'+
     '</div>'+
     '<div class="ho-main">'+
       '<button class="ho-check" type="button" onclick="hoToggleDone(\''+n.id+'\')" aria-label="Clear">'+
@@ -15100,7 +15130,9 @@ function pgFullPrompt(){
   const L = [
     "Read this produce planogram photo and list every product, in shelf order.",
     "Output ONLY the block below. No commentary, no markdown, no PLU numbers, no prices.",
-    "Keep these exact headers. Under each, one product per line, left to right then top to bottom. Leave a header with no lines if it is not in the photo.",
+    "Keep these exact headers as plain text \u2014 no bold, bullets, numbers or extra words on the header lines.",
+    "Under each header, one product per line, left to right then top to bottom.",
+    "If the photo shows only part of the planogram, include just the headers you can actually see and skip the rest \u2014 a partial paste is fine.",
     "",
     "POD1",
     "POD2",
@@ -15109,20 +15141,40 @@ function pgFullPrompt(){
   for(let i=0;i<runs;i++){ L.push("RUN"+(i+1)+" WET"); L.push("RUN"+(i+1)+" HMR"); }
   return L.join("\n");
 }
+/* Classify one raw line: header (returns {key}), a header we deliberately
+   ignore ({ignore}), a blank/fence ({blank}), or an item ({item}). Tolerant of
+   markdown and hand output: strips leading/trailing decoration (**bold**, #, >,
+   bullets, trailing ":" / "."), accepts spelled/spaced/parenthesised headers and
+   reversed "WET RUN 1" order. This is what makes a *partial* paste land — only
+   the headers actually present need to survive, in whatever dress the reader
+   wrapped them. Real produce names (parens, commas) are pushed untouched. */
+function pgFullHdr(raw){
+  let s = String(raw)
+    .replace(/^\s*```.*$/,"")                        // whole code-fence line
+    .replace(/^[\s>#*_~`\-\u2022\u00b7.]+/,"")        // leading decoration / bullets
+    .replace(/^\d+[.)]\s+/,"")                        // numbered-list enumerator "1. " / "2) "
+    .replace(/[\s*_~`:.\-]+$/,"")                     // trailing decoration / punct
+    .trim();
+  if(!s) return { blank:true };
+  const H = s.toUpperCase().replace(/[._:()\[\]]+/g," ").replace(/\s+/g," ").trim();
+  let m;
+  if(/^POD ?(1|ONE)$/.test(H))             return { key:"pod1" };
+  if(/^POD ?(2|TWO)$/.test(H))             return { key:"pod2" };
+  if(/^(CASE ?LOTS?|LOTS?|CASE)$/.test(H)) return { key:"lots" };
+  if((m = H.match(/^R(?:UN)? ?(\d+) ?(WET|HMR)( CASES?)?$/)))
+    return { key:"run-"+(+m[1]-1)+"-"+m[2].toLowerCase() };
+  if((m = H.match(/^(WET|HMR) ?R(?:UN)? ?(\d+)$/)))
+    return { key:"run-"+(+m[2]-1)+"-"+m[1].toLowerCase() };
+  if(/^(MANGO|POD|RUN|R ?\d|LOTS?|CASE|WET|HMR)\b/.test(H)) return { ignore:true };
+  return { item:s };
+}
 function pgFullParse(text){
   const map = {}; let cur = null;
   String(text||"").split(/\r?\n/).forEach(function(raw){
-    let line = raw.replace(/^[\s>*\-\u2022]+/,"").trim();
-    if(!line) return;
-    if(/^```/.test(line)) return;                          // stray code fence
-    const H = line.toUpperCase().replace(/[._:]+/g," ").replace(/\s+/g," ").trim();
-    let m;
-    if(/^POD ?1$/.test(H)){ cur = (map["pod1"] = map["pod1"] || []); return; }
-    if(/^POD ?2$/.test(H)){ cur = (map["pod2"] = map["pod2"] || []); return; }
-    if(/^(CASE ?LOTS?|LOTS?)$/.test(H)){ cur = (map["lots"] = map["lots"] || []); return; }
-    if((m = H.match(/^RUN ?(\d+) ?(WET|HMR)$/))){ const k = "run-"+(+m[1]-1)+"-"+m[2].toLowerCase(); cur = (map[k] = map[k] || []); return; }
-    if(/^(MANGO|POD|RUN|LOTS?|CASE)\b/.test(H)) return;    // unknown header -> ignore, don't file as item
-    if(cur) cur.push(line);
+    const r = pgFullHdr(raw);
+    if(r.blank || r.ignore) return;
+    if(r.key){ cur = (map[r.key] = map[r.key] || []); return; }
+    if(cur && r.item) cur.push(r.item);
   });
   return map;
 }

@@ -1393,6 +1393,7 @@
   .nm-bdg.brand{color:var(--laser);border:1px solid #4a2e28;background:#2a1a17;margin-right:5px}
   .nm-bdg.pack{color:#f0c98a;border:1px solid #5a4a33;background:#2a2118;margin-left:5px;font-size:10px;padding:1px 5px}
   .nm-bdg.org{color:#3ecf8e;border:1px solid #1f5c3f;background:#14261d;margin-right:5px}
+  .nm-bdg.bulk{color:#8ab4f8;border:1px solid #2d4468;background:#171f2e;margin-left:5px}
   .cat-wrap{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
   .cat-h{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--muted);margin:0 0 8px}
   .cat-row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--line)}
@@ -2001,7 +2002,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=135.9">
+  <link rel="manifest" href="./manifest.json?v=135.10">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2619,6 +2620,10 @@
       <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
       Clear all &middot; reset to default board
     </button>
+    <button class="pg-reset" type="button" onclick="pgFullOpen()">
+      <svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/></svg>
+      Paste whole planogram
+    </button>
   </section>
 
   <!-- planogram editor sheet + camera + reading overlay -->
@@ -2663,6 +2668,22 @@
       <div class="pg-paste-btns">
         <button type="button" id="pgPasteClip" class="pg-paste-2">Paste from clipboard</button>
         <button type="button" id="pgPasteGo" class="pg-paste-1">Fill section</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- whole-board paste: copy a prompt to your photo reader, paste its answer back -->
+  <div class="pg-paste-ov" id="pgFullOv">
+    <div class="pg-paste-card">
+      <div class="pg-paste-h"><b>Paste whole planogram</b><button type="button" id="pgFullX" aria-label="Close">\u2715</button></div>
+      <p class="pg-paste-sub"><b>1.</b> Copy this and give it to your photo reader along with a picture of the board.</p>
+      <textarea id="pgFullPrompt" class="pastebox" readonly style="min-height:88px"></textarea>
+      <div class="pg-paste-btns"><button type="button" id="pgFullCopy" class="pg-paste-2">Copy prompt</button></div>
+      <p class="pg-paste-sub"><b>2.</b> Paste what it gives back here, then fill the board. Exact DB matches fill in; the rest wait as a <b>+</b>.</p>
+      <textarea id="pgFullBox" class="pastebox" placeholder="POD1&#10;Grapes Red Seedless&#10;Cherries&#10;&#10;POD2&#10;Apple Gala&#10;\u2026"></textarea>
+      <div class="pg-paste-btns">
+        <button type="button" id="pgFullClip" class="pg-paste-2">Paste from clipboard</button>
+        <button type="button" id="pgFullGo" class="pg-paste-1">Fill board</button>
       </div>
     </div>
   </div>
@@ -6707,7 +6728,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v135.9";
+const APP_VERSION = "v135.10";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -7848,7 +7869,10 @@ function snapToKnown(core){
   for(const nm of cand){
     const nw = nm.split(/\s+/).filter(Boolean);
     const common = cw.filter(w=> nw.indexOf(w) >= 0).length;
-    const overlap = common / Math.max(cw.length, nw.length);
+    // fuzzy word credit: a mis-recognised long word (e.g. "honeycus" for
+    // "honeycrisp") still counts toward overlap when it closely matches a DB word.
+    const fuzzy = cw.filter(w=> nw.indexOf(w) < 0 && nw.some(x=> Math.min(w.length,x.length) >= 5 && _sim(w,x) >= 0.68)).length;
+    const overlap = (common + fuzzy) / Math.max(cw.length, nw.length);
     const score = overlap * 0.55 + _sim(core, nm) * 0.45;
     if(score > bestScore){ bestScore = score; best = nm; }
   }
@@ -12236,6 +12260,10 @@ if(document.getElementById("btnAlAdd")){
 
 function nmNormalize(raw){
   let s = " " + String(raw||"").replace(/\s+/g," ").trim() + " ";
+  // Voice/ASR sometimes glues a short brand onto the following number ("fm11"
+  // for "fm 11"); split a known brand prefix off a brand+digits token so both
+  // the brand and the pack count parse cleanly.
+  s = s.replace(/\b(fm|pco|pcbm|pc|nn+i|tf)(\d)/ig, "$1 $2");
   const brands = [];
   NM_BRANDS.forEach(b=>{ const before=s; s=s.replace(b.re," "); if(s!==before && brands.indexOf(b.tag)<0) brands.push(b.tag); });
   { const _lb = learnedBrandRe(); if(_lb){ s = s.replace(_lb, function(m){ const t = _lbClean(m); if(t && brands.indexOf(t) < 0) brands.push(t); return " "; }); } }
@@ -12257,21 +12285,26 @@ function nmNormalize(raw){
     const num=String(parseFloat(n)).replace(/\.0+$/,"");
     const t=num+unit; if(packs.indexOf(t)<0)packs.push(t); return " ";
   });
+  // "bulk" -> its own badge, stripped from the name that gets DB-matched.
+  let bulk = false;
+  { const _b = s; s = s.replace(/\bbulk\b/ig," "); if(s !== _b) bulk = true; }
   const core = s.replace(/\s{2,}/g," ").trim();
-  const tags = brands.concat(packs);
+  const tags = brands.concat(bulk ? ["Bulk"] : [], packs);
   if(!core && !tags.length) return { core: String(raw||"").trim(), tags: [] };
   return { core, tags };
 }
 function nmTagKind(t){
   if(/^org$/i.test(t)) return "org";
+  if(/^bulk$/i.test(t)) return "bulk";
   if(/[0-9]\s*(pk|ct|kg|lb|oz|ml|g|l)$/i.test(t)) return "pack";
   return "brand";
 }
 function nmShort(raw){
   const nm = nmNormalize(raw);
   const brand = nm.tags.filter(t=>nmTagKind(t)==="brand");
+  const bulk  = nm.tags.filter(t=>nmTagKind(t)==="bulk");
   const pack  = nm.tags.filter(t=>nmTagKind(t)==="pack");
-  return [brand.join(" "), nm.core, pack.join(" ")].filter(Boolean).join(" ").trim() || String(raw||"").trim();
+  return [brand.join(" "), nm.core, bulk.join(" "), pack.join(" ")].filter(Boolean).join(" ").trim() || String(raw||"").trim();
 }
 function nmBadgesHtml(tags){ return (tags&&tags.length) ? tags.map(t=>'<span class="nm-bdg '+nmTagKind(t)+'">'+esc(t)+'</span>').join("") : ""; }
 function cleanWt(s){
@@ -14041,27 +14074,19 @@ function pgMerge(a,b){
 function pgDefault(){
   return {
     pod1:[
-      {name:"Grapes \u2014 Red / Green Seedless", banner:"canada"},
-      {name:"Cherries", banner:"canada"},
-      {name:"Tomatoes on the Vine", banner:"noname"},
-      {name:"Local Strawberries", banner:"sales"}
+      {name:"",banner:""},{name:"",banner:""},{name:"",banner:""},{name:"",banner:""}
     ],
-    mango:["Mango Case","Mango Case"],
+    mango:["",""],
     podN:6,
     pod2:["","","","","","","",""],
     runs:[
-      { wet:["NNNI Apples 6lb","FM Navel Oranges 3lb"], hmr:["FM Peaches 3L","FM Nectarines 2L"] },
-      { wet:["Cut Watermelon","Red+Green Grapes"],      hmr:["Blueberries 2lb","FM Mandarins 2lb"] },
-      { wet:["Cantaloupe / Pineapple","FM Kiwi 2lb"],   hmr:["Regular Bananas","Joyburst Pack"] },
-      { wet:["PC Grape/Cherry Tom","FM Mini Cukes 6ct"],hmr:["Beefsteak Tomatoes","Romaine Hearts"] },
-      { wet:["FM Potatoes 10lb","PC Russets 5lb"],      hmr:["FM 3lb Carrots","FM 3lb Onions"] }
+      { wet:["",""], hmr:["",""] },
+      { wet:["",""], hmr:["",""] },
+      { wet:["",""], hmr:["",""] },
+      { wet:["",""], hmr:["",""] },
+      { wet:["",""], hmr:["",""] }
     ],
-    lots:[
-      "10lb Russet/White Potato \u00b7 10lb Red Onion",
-      "10lb Russet/White \u00b7 10lb Red Onion",
-      "10lb Yellow & 10lb Red Potato",
-      "NN Peanuts 907g","","","Burpee Seed Rack"
-    ],
+    lots:["","","","","","",""],
     pinned:[
       { brand:"FM", kw:"carrot", pack:"lb", table:"root" },
       { brand:"FM", kw:"onion",  pack:"lb", table:"root" }
@@ -14287,13 +14312,15 @@ function pgSetPods(n){ pgState.podN = n; document.getElementById("pgPodCount").c
 /* Clear-all: full reset of the whole board back to the default layout. Destructive
    and shared, so it confirms first. pgTouch() stamps + syncs it to every phone. */
 function pgClearAll(){
-  if(!confirm("Reset the WHOLE planogram to the default board?\n\nThis clears every pod, endcap, silver rack and case-lot entry for everyone, and can't be undone.")) return;
-  pgState = pgDefault();
-  pgCur = null; pgPendingSpot = null; pgSel = null;
-  try{ pgCloseSheet(); }catch(e){}
-  pgStampAll();
-  pgTouch();
-  toast("Planogram reset to the default board");
+  appConfirm("Reset to default board?", "This can't be undone.", "Reset", function(){
+    pgState = pgDefault();                 // now an empty board (no seed to resurrect)
+    pgCur = null; pgPendingSpot = null; pgSel = null;
+    try{ pgCloseSheet(); }catch(e){}
+    pgOcrSug = {};                          // drop any pending + suggestions
+    pgStampAll();
+    pgTouch();
+    toast("Board reset");
+  });
 }
 
 /* ---- icons + the context dropdown that replaced the bare camera button ---- */
@@ -14747,7 +14774,8 @@ function pgAutoPodCount(detected){
    Fuzzy / no match -> leave the box blank, stash a "+" suggestion so a tap shows
                        the closest DB names (one tap to file) with the raw read
                        pre-loaded into the search. A misread is never written. */
-function pgApplyOcr(section, end, items){
+function pgApplyOcr(section, end, items, opts){
+  opts = opts || {};
   items = (items||[]).map(t => String(t||"").trim());
   let autofilled = 0, suggested = 0, podResult = null;
 
@@ -14794,6 +14822,7 @@ function pgApplyOcr(section, end, items){
     return;
   }
 
+  if(opts.defer) return { autofilled, suggested };
   pgTouch();
 
   if(podResult && podResult.changed){
@@ -15061,6 +15090,89 @@ function pgPasteOpen(section, end, label){
   try{ if(navigator.clipboard && navigator.clipboard.readText){ navigator.clipboard.readText().then(t=>{ if(t && t.trim() && !box.value.trim()) box.value = t; }).catch(()=>{}); } }catch(e){}
 }
 function pgPasteClose(){ document.getElementById("pgPasteOv").classList.remove("show"); document.body.style.overflow = ""; }
+
+/* ---- whole-board paste ------------------------------------------------------
+   Button hands Faisal a prompt to run against a planogram photo in his own
+   reader; he pastes the labelled text back and it fills every section at once,
+   reusing pgApplyOcr's exact-fill / fuzzy-"+" split (deferred, one sync). */
+function pgFullPrompt(){
+  const runs = (pgState.runs||[]).length || PG_RUNS_N;
+  const L = [
+    "Read this produce planogram photo and list every product, in shelf order.",
+    "Output ONLY the block below. No commentary, no markdown, no PLU numbers, no prices.",
+    "Keep these exact headers. Under each, one product per line, left to right then top to bottom. Leave a header with no lines if it is not in the photo.",
+    "",
+    "POD1",
+    "POD2",
+    "CASE LOTS"
+  ];
+  for(let i=0;i<runs;i++){ L.push("RUN"+(i+1)+" WET"); L.push("RUN"+(i+1)+" HMR"); }
+  return L.join("\n");
+}
+function pgFullParse(text){
+  const map = {}; let cur = null;
+  String(text||"").split(/\r?\n/).forEach(function(raw){
+    let line = raw.replace(/^[\s>*\-\u2022]+/,"").trim();
+    if(!line) return;
+    if(/^```/.test(line)) return;                          // stray code fence
+    const H = line.toUpperCase().replace(/[._:]+/g," ").replace(/\s+/g," ").trim();
+    let m;
+    if(/^POD ?1$/.test(H)){ cur = (map["pod1"] = map["pod1"] || []); return; }
+    if(/^POD ?2$/.test(H)){ cur = (map["pod2"] = map["pod2"] || []); return; }
+    if(/^(CASE ?LOTS?|LOTS?)$/.test(H)){ cur = (map["lots"] = map["lots"] || []); return; }
+    if((m = H.match(/^RUN ?(\d+) ?(WET|HMR)$/))){ const k = "run-"+(+m[1]-1)+"-"+m[2].toLowerCase(); cur = (map[k] = map[k] || []); return; }
+    if(/^(MANGO|POD|RUN|LOTS?|CASE)\b/.test(H)) return;    // unknown header -> ignore, don't file as item
+    if(cur) cur.push(line);
+  });
+  return map;
+}
+function pgFullApply(map){
+  let fill = 0, sug = 0, any = false;
+  const acc = r => { if(r){ fill += r.autofilled||0; sug += r.suggested||0; } };
+  if(map["pod1"]){ any=true; acc(pgApplyOcr("pod1", 0, map["pod1"], {defer:true})); }
+  if(map["pod2"]){ any=true; acc(pgApplyOcr("pod2", 0, map["pod2"], {defer:true})); }
+  if(map["lots"]){ any=true; acc(pgApplyOcr("lots", 0, map["lots"], {defer:true})); }
+  for(let ri=0; ri<(pgState.runs||[]).length; ri++){
+    const w = map["run-"+ri+"-wet"], h = map["run-"+ri+"-hmr"];
+    if(w){ any=true; acc(pgApplyOcr("run-"+ri, 0, w, {defer:true})); }
+    if(h){ any=true; acc(pgApplyOcr("run-"+ri, 1, h, {defer:true})); }
+  }
+  if(!any){ toast("No sections found \u2014 keep the POD1 / RUN1 WET headers"); return; }
+  pgTouch();
+  const bits = [];
+  if(fill) bits.push(fill + " filled");
+  if(sug)  bits.push(sug + " to confirm (+)");
+  toast(bits.length ? bits.join(" \u00b7 ") : "Nothing new read");
+}
+function pgFullOpen(){
+  const pr = document.getElementById("pgFullPrompt"); if(pr) pr.value = pgFullPrompt();
+  const bx = document.getElementById("pgFullBox"); if(bx) bx.value = "";
+  document.getElementById("pgFullOv").classList.add("show");
+  document.body.style.overflow = "hidden";
+}
+function pgFullClose(){ const o=document.getElementById("pgFullOv"); if(o) o.classList.remove("show"); document.body.style.overflow = ""; }
+function pgFullGo(){
+  const t = (document.getElementById("pgFullBox")||{}).value || "";
+  const map = pgFullParse(t);
+  pgFullClose();
+  pgFullApply(map);
+}
+{
+  const _fx = document.getElementById("pgFullX"); if(_fx) _fx.addEventListener("click", pgFullClose);
+  const _fg = document.getElementById("pgFullGo"); if(_fg) _fg.addEventListener("click", pgFullGo);
+  const _fo = document.getElementById("pgFullOv"); if(_fo) _fo.addEventListener("click", e=>{ if(e.target === _fo) pgFullClose(); });
+  const _fcp = document.getElementById("pgFullCopy");
+  if(_fcp) _fcp.addEventListener("click", async ()=>{
+    const pr = document.getElementById("pgFullPrompt"); if(!pr) return;
+    try{ await navigator.clipboard.writeText(pr.value); toast("Prompt copied"); }
+    catch(e){ pr.focus(); pr.select(); toast("Long-press to copy the prompt"); }
+  });
+  const _fcl = document.getElementById("pgFullClip");
+  if(_fcl) _fcl.addEventListener("click", async ()=>{
+    try{ const t = await navigator.clipboard.readText(); if(!t || !t.trim()) return toast("Clipboard's empty"); document.getElementById("pgFullBox").value = t; }
+    catch(e){ toast("Long-press the box and choose Paste"); }
+  });
+}
 function pgPasteGo(){
   const t = document.getElementById("pgPasteBox").value || "";
   const items = t.split(/[\n,;]+/).map(s=>s.trim()).filter(Boolean);

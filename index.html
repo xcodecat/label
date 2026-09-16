@@ -1810,6 +1810,16 @@
   .pg-banner.noname{background:#FEDD00;color:#1a1a1a}
   .pg-banner.sales{background:linear-gradient(90deg,var(--laser) 0 55%,#FEDD00 55% 100%);color:#fff}
   .pg-banner.none{background:var(--surface-2);color:var(--muted)}
+  /* v136: up-to-3 items per pod / case-lot cell */
+  .pg-itm-row{display:flex;align-items:flex-start;gap:6px;justify-content:space-between}
+  .pg-itm-row + .pg-itm-row{margin-top:5px}
+  .pg-cell .pg-itm{flex:1;min-width:0;cursor:pointer;word-break:break-word}
+  .pg-itm-x{flex:none;width:22px;height:22px;border:0;border-radius:6px;background:var(--surface-2);color:var(--muted);font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+  .pg-itm-x:active{background:var(--laser);color:#fff}
+  .pg-itm-add{align-self:flex-start;margin-top:7px;font-family:var(--mono);font-size:11px;font-weight:800;background:var(--surface-2);color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:4px 9px;cursor:pointer}
+  .pg-itm-add:active{border-color:var(--muted)}
+  .pg-lot .pg-lv-wrap{display:flex;flex-direction:column;gap:5px;min-width:0}
+  .pg-lot .pg-lv-wrap .pg-itm{font-size:14px}
   .pg-mango{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
   .pg-mango .pg-cell{min-height:50px;border-style:dashed;border-color:#8a6d2a;align-items:center;
     justify-content:center;color:#d0a544;font-weight:640}
@@ -2010,7 +2020,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=135.11">
+  <link rel="manifest" href="./manifest.json?v=136">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2665,8 +2675,6 @@
   </div>
   <div class="pg-menuscrim" id="pgMenuScrim" onclick="pgMenuClose()"></div>
   <div class="pg-menu" id="pgMenu"></div>
-  <div class="pg-reading" id="pgReading"><div><div class="pg-spin"></div><p id="pgReadingTxt">Reading photo…</p></div></div>
-  <input type="file" accept="image/*" capture="environment" id="pgCamInput" hidden>
 
   <div class="pg-paste-ov" id="pgPasteOv">
     <div class="pg-paste-card">
@@ -6740,7 +6748,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v135.11";
+const APP_VERSION = "v136";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -12654,8 +12662,8 @@ function pgLocationsFor(name, tags){
   const s = pgLoad2(); if(!pgFresh(s)) return [];
   const tok = pgMainTok(name); if(!tok) return [];
   const out = [];
-  (s.pod1||[]).forEach(p=>{ if(pgHit(p && p.name, tok)) out.push({kind:"pod", id:"pod1", label:"Pod 1"}); });
-  (s.pod2||[]).forEach(v=>{ if(pgHit(v, tok)) out.push({kind:"pod", id:"pod2", label:"Pod 2"}); });
+  (s.pod1||[]).forEach(p=>{ if(!p) return; if(pgHit(p.name, tok) || pgArr3(p.extra).some(x=>pgHit(x,tok))) out.push({kind:"pod", id:"pod1", label:"Pod 1"}); });
+  (s.pod2||[]).forEach(v=>{ if(pgArr3(v).some(x=>pgHit(x,tok))) out.push({kind:"pod", id:"pod2", label:"Pod 2"}); });
   (s.runs||[]).forEach((r,ri)=>{ ["wet","hmr"].forEach(function(end){ (r[end]||[]).forEach(function(v){ if(pgHit(v, tok)){
     const tid = RK_RUN_IDS[ri] || "root";
     out.push({kind:"endcap", ri:ri, end:end, slot:v, table:tid, label:(RK_BY_ID[tid]?RK_BY_ID[tid].name:("Run "+(ri+1)))+" \u2014 endcap"});
@@ -13981,14 +13989,11 @@ function hoOpenAssign(id){
    what usually goes in each spot to suggest it next time. Learning rides inside
    the synced state, so suggestions reflect the whole store, not one phone.
 
-   OCR NOTE: the camera captures a real photo, but recognition (photo -> item
-   names) needs an OCR provider that isn't wired yet. pgReadPhoto is built
-   online-first / offline-fallback; until PG_OCR_ENABLED is true it captures the
-   shot and asks you to tap/type/speak each box. Wiring OCR later is one function.
-*/
+   ITEM SOURCES: paste-from-AI (whole-board or per-section) and manual tap-to-edit.
+   The old in-app camera OCR was removed in v136 (inaccurate + slow); paste stays
+   fully client-side and the "+" DB-match suggestions still fire on a paste. */
 
 const KEY_PLANO = "label_planogram_v1";
-const PG_OCR_ENABLED = true;   // v135.9: planogramOcr endpoint is live (Gemini->Groq race, see pgOcrRead)
 
 const PG_RUN_DEF = [
   { tag:1, name:"Apple",                       c:"--r1" },
@@ -14017,6 +14022,35 @@ const PG_POD2_PRIORITY = [
    key from updatedAt so the shared board converges once, then per-cell
    edits diverge correctly. Fully effective once every phone runs v135.8. */
 const PG_POD1_N = 4, PG_MANGO_N = 2, PG_POD2_N = 8, PG_RUNS_N = 5;
+/* v136: pod1 / pod2 / case-lot cells hold up to 3 items. Fixed 3-slot backing;
+   slot 0 keeps the cell's legacy ts key (pod1-i / pod2-i / lot-i) so the whole
+   installed base needs NO timestamp migration \u2014 extra slots (pod2-i-1 / -2)
+   simply don't exist on old blobs, read as ts 0, and fill fresh. pod1 keeps its
+   {name,banner} shape + extra[2]; pod2/lot cells go string -> [s0,s1,s2]. */
+const PG_CELL_MAX = 3;
+function pgArr3(v){ var a = Array.isArray(v) ? v.slice(0,PG_CELL_MAX).map(pgS) : [pgS(v)]; while(a.length<PG_CELL_MAX) a.push(""); return a; }
+function pgSlotKey(kind,i,s){ return s===0 ? kind+"-"+i : kind+"-"+i+"-"+s; }
+function pgSlotGet(kind,i,s){
+  if(kind==="pod1"){ var p=pgState.pod1[i]; if(!p) return ""; return s===0 ? pgS(p.name) : pgS(p.extra && p.extra[s-1]); }
+  if(kind==="pod2"){ var c=pgState.pod2[i]; return Array.isArray(c) ? pgS(c[s]) : (s===0 ? pgS(c) : ""); }
+  if(kind==="lot"){ var l=pgState.lots[i]; return Array.isArray(l) ? pgS(l[s]) : (s===0 ? pgS(l) : ""); }
+  return "";
+}
+function pgSlotSet(kind,i,s,val){
+  val = pgS(val);
+  if(kind==="pod1"){ var p=pgState.pod1[i]; if(!p) return; if(s===0){ p.name=val; } else { if(!Array.isArray(p.extra)) p.extra=["",""]; p.extra[s-1]=val; } return; }
+  if(kind==="pod2"){ if(!Array.isArray(pgState.pod2[i])) pgState.pod2[i]=pgArr3(pgState.pod2[i]); pgState.pod2[i][s]=val; return; }
+  if(kind==="lot"){ if(!Array.isArray(pgState.lots[i])) pgState.lots[i]=pgArr3(pgState.lots[i]); pgState.lots[i][s]=val; return; }
+}
+/* filled slots of a cell, contiguous, in order */
+function pgSlotsFilled(kind,i){ var out=[]; for(var s=0;s<PG_CELL_MAX;s++){ var v=pgSlotGet(kind,i,s); if(v!=="") out.push({s:s, v:v}); } return out; }
+/* delete one item and collapse the rest up; restamp every slot of the cell */
+function pgDelSlot(kind,i,s){
+  var vals=[]; for(var k=0;k<PG_CELL_MAX;k++){ if(k!==s) vals.push(pgSlotGet(kind,i,k)); }
+  vals.push("");
+  for(var k=0;k<PG_CELL_MAX;k++){ pgSlotSet(kind,i,k,vals[k]); pgStamp(pgSlotKey(kind,i,k)); pgOcrClearSug(pgSlotKey(kind,i,k)); }
+  pgTouch();
+}
 function pgNow(){ return Date.now(); }
 function pgS(v){ return (v == null) ? "" : String(v); }
 function pgTsOf(map, k){ return (map && +map[k]) || 0; }
@@ -14030,12 +14064,12 @@ function pgStampAll(ts, st){
   st = st || pgState; ts = ts || pgNow();
   var c = st.cellTs = {}, L = st.lenTs = {}, i, ri;
   c["podN"] = ts;
-  for(i=0;i<PG_POD1_N;i++){ c["pod1-"+i]=ts; c["pod1b-"+i]=ts; }
+  for(i=0;i<PG_POD1_N;i++){ c["pod1-"+i]=ts; c["pod1b-"+i]=ts; c["pod1-"+i+"-1"]=ts; c["pod1-"+i+"-2"]=ts; }
   for(i=0;i<PG_MANGO_N;i++) c["mango-"+i]=ts;
-  for(i=0;i<PG_POD2_N;i++) c["pod2-"+i]=ts;
+  for(i=0;i<PG_POD2_N;i++){ c["pod2-"+i]=ts; c["pod2-"+i+"-1"]=ts; c["pod2-"+i+"-2"]=ts; }
   L["L-lots"]=ts;
   var lots = st.lots || [];
-  for(i=0;i<lots.length;i++) c["lot-"+i]=ts;
+  for(i=0;i<lots.length;i++){ c["lot-"+i]=ts; c["lot-"+i+"-1"]=ts; c["lot-"+i+"-2"]=ts; }
   var runs = st.runs || [];
   for(ri=0;ri<PG_RUNS_N;ri++){
     L["L-run-"+ri]=ts;
@@ -14054,10 +14088,10 @@ function pgSeedTs(s){ if(!s || s.cellTs) return s; pgStampAll(Date.parse(s.updat
 function pgMergeStruct(s){
   if(!Array.isArray(s.pod1)) s.pod1 = [];
   while(s.pod1.length < PG_POD1_N) s.pod1.push({name:"",banner:""});
-  for(var i=0;i<PG_POD1_N;i++){ if(!s.pod1[i]) s.pod1[i]={name:"",banner:""}; if(typeof s.pod1[i].name!=="string")s.pod1[i].name=""; if(typeof s.pod1[i].banner!=="string")s.pod1[i].banner=""; }
+  for(var i=0;i<PG_POD1_N;i++){ if(!s.pod1[i]) s.pod1[i]={name:"",banner:""}; if(typeof s.pod1[i].name!=="string")s.pod1[i].name=""; if(typeof s.pod1[i].banner!=="string")s.pod1[i].banner=""; if(!Array.isArray(s.pod1[i].extra))s.pod1[i].extra=["",""]; while(s.pod1[i].extra.length<2)s.pod1[i].extra.push(""); s.pod1[i].extra.length=2; s.pod1[i].extra[0]=pgS(s.pod1[i].extra[0]); s.pod1[i].extra[1]=pgS(s.pod1[i].extra[1]); }
   if(!Array.isArray(s.mango)) s.mango=[]; while(s.mango.length<PG_MANGO_N) s.mango.push("");
-  if(!Array.isArray(s.pod2)) s.pod2=[]; while(s.pod2.length<PG_POD2_N) s.pod2.push("");
-  if(!Array.isArray(s.lots)) s.lots=[];
+  if(!Array.isArray(s.pod2)) s.pod2=[]; while(s.pod2.length<PG_POD2_N) s.pod2.push(""); for(var pi=0;pi<PG_POD2_N;pi++) s.pod2[pi]=pgArr3(s.pod2[pi]);
+  if(!Array.isArray(s.lots)) s.lots=[]; for(var li=0;li<s.lots.length;li++) s.lots[li]=pgArr3(s.lots[li]);
   if(!Array.isArray(s.runs)) s.runs=[];
   for(var ri=0;ri<PG_RUNS_N;ri++){ var r=s.runs[ri]=s.runs[ri]||{wet:["",""],hmr:["",""]}; if(!Array.isArray(r.wet))r.wet=["",""]; if(!Array.isArray(r.hmr))r.hmr=["",""]; while(r.hmr.length<r.wet.length)r.hmr.push(""); while(r.wet.length<r.hmr.length)r.wet.push(""); if(!Array.isArray(r.before))r.before=[]; if(!Array.isArray(r.after))r.after=[]; }
   if(!s.cellTs) s.cellTs={}; if(!s.lenTs) s.lenTs={}; if(!s.learn) s.learn={}; if(!Array.isArray(s.pinned)) s.pinned=[];
@@ -14079,10 +14113,10 @@ function pgMerge(a,b){
   const B = pgMergeStruct(pgSeedTs(JSON.parse(JSON.stringify(b))));
   const pick = (key, getB, setM)=>{ const tb=pgTsOf(B.cellTs,key), ta=pgTsOf(M.cellTs,key); if(tb>ta){ setM(getB()); M.cellTs[key]=tb; } };
   pick("podN", ()=>B.podN, v=>{ M.podN=v; });
-  for(let i=0;i<PG_POD1_N;i++){ pick("pod1-"+i,()=>pgS(B.pod1[i].name),v=>{M.pod1[i].name=v;}); pick("pod1b-"+i,()=>pgS(B.pod1[i].banner),v=>{M.pod1[i].banner=v;}); }
+  for(let i=0;i<PG_POD1_N;i++){ pick("pod1-"+i,()=>pgS(B.pod1[i].name),v=>{M.pod1[i].name=v;}); pick("pod1b-"+i,()=>pgS(B.pod1[i].banner),v=>{M.pod1[i].banner=v;}); pick("pod1-"+i+"-1",()=>pgS(B.pod1[i].extra[0]),v=>{M.pod1[i].extra[0]=v;}); pick("pod1-"+i+"-2",()=>pgS(B.pod1[i].extra[1]),v=>{M.pod1[i].extra[1]=v;}); }
   for(let i=0;i<PG_MANGO_N;i++){ pick("mango-"+i,()=>pgS(B.mango[i]),v=>{M.mango[i]=v;}); }
-  for(let i=0;i<PG_POD2_N;i++){ pick("pod2-"+i,()=>pgS(B.pod2[i]),v=>{M.pod2[i]=v;}); }
-  { const lb=pgTsOf(B.lenTs,"L-lots"), la=pgTsOf(M.lenTs,"L-lots"); const lotN=(lb>la)?B.lots.length:M.lots.length; if(lb>la)M.lenTs["L-lots"]=lb; while(M.lots.length<lotN)M.lots.push(""); M.lots.length=lotN; for(let i=0;i<lotN;i++){ pick("lot-"+i,()=>pgS(B.lots[i]),v=>{M.lots[i]=v;}); } }
+  for(let i=0;i<PG_POD2_N;i++){ pick("pod2-"+i,()=>pgS(B.pod2[i][0]),v=>{M.pod2[i][0]=v;}); pick("pod2-"+i+"-1",()=>pgS(B.pod2[i][1]),v=>{M.pod2[i][1]=v;}); pick("pod2-"+i+"-2",()=>pgS(B.pod2[i][2]),v=>{M.pod2[i][2]=v;}); }
+  { const lb=pgTsOf(B.lenTs,"L-lots"), la=pgTsOf(M.lenTs,"L-lots"); const lotN=(lb>la)?B.lots.length:M.lots.length; if(lb>la)M.lenTs["L-lots"]=lb; while(M.lots.length<lotN)M.lots.push(["","",""]); M.lots.length=lotN; for(let i=0;i<lotN;i++){ if(!Array.isArray(M.lots[i]))M.lots[i]=pgArr3(M.lots[i]); pick("lot-"+i,()=>pgS(B.lots[i][0]),v=>{M.lots[i][0]=v;}); pick("lot-"+i+"-1",()=>pgS(B.lots[i][1]),v=>{M.lots[i][1]=v;}); pick("lot-"+i+"-2",()=>pgS(B.lots[i][2]),v=>{M.lots[i][2]=v;}); } }
   for(let ri=0;ri<PG_RUNS_N;ri++){
     const rlb=pgTsOf(B.lenTs,"L-run-"+ri), rla=pgTsOf(M.lenTs,"L-run-"+ri);
     const rn=(rlb>rla)?B.runs[ri].wet.length:M.runs[ri].wet.length;
@@ -14104,11 +14138,11 @@ function pgMerge(a,b){
 function pgDefault(){
   return {
     pod1:[
-      {name:"",banner:""},{name:"",banner:""},{name:"",banner:""},{name:"",banner:""}
+      {name:"",banner:"",extra:["",""]},{name:"",banner:"",extra:["",""]},{name:"",banner:"",extra:["",""]},{name:"",banner:"",extra:["",""]}
     ],
     mango:["",""],
     podN:6,
-    pod2:["","","","","","","",""],
+    pod2:[["","",""],["","",""],["","",""],["","",""],["","",""],["","",""],["","",""],["","",""]],
     runs:[
       { wet:["",""], hmr:["",""] },
       { wet:["",""], hmr:["",""] },
@@ -14116,7 +14150,7 @@ function pgDefault(){
       { wet:["",""], hmr:["",""] },
       { wet:["",""], hmr:["",""] }
     ],
-    lots:["","","","","","",""],
+    lots:[["","",""],["","",""],["","",""],["","",""],["","",""],["","",""],["","",""]],
     pinned:[
       { brand:"FM", kw:"carrot", pack:"lb", table:"root" },
       { brand:"FM", kw:"onion",  pack:"lb", table:"root" }
@@ -14136,7 +14170,7 @@ function pgNorm(s){
   if(!s || !Array.isArray(s.runs)) return s;
   if(!s.learn) s.learn = {};
   if(!Array.isArray(s.pinned)) s.pinned = pgDefault().pinned;
-  if(!Array.isArray(s.lots) || !s.lots.length) s.lots = pgDefault().lots;
+  if(!Array.isArray(s.lots) || !s.lots.length) s.lots = pgDefault().lots; else { for(var lni=0;lni<s.lots.length;lni++) s.lots[lni]=pgArr3(s.lots[lni]); }
   // v133.1: a silver rack card now holds BOTH sides (wet[] + hmr[]). Old boards
   // stored two single-sided racks ({side,boxes}) per gap; merge each such pair
   // into one two-sided rack. Idempotent: a migrated rack already has .wet arrays.
@@ -14187,10 +14221,10 @@ function pgNorm(s){
   /* v135.8: fixed sections to expected length so cell enumeration is safe */
   if(!Array.isArray(s.pod1)) s.pod1 = pgDefault().pod1;
   while(s.pod1.length < 4) s.pod1.push({name:"",banner:""});
-  s.pod1.forEach(function(p){ if(p){ if(typeof p.name!=="string")p.name=""; if(typeof p.banner!=="string")p.banner=""; } });
+  s.pod1.forEach(function(p){ if(p){ if(typeof p.name!=="string")p.name=""; if(typeof p.banner!=="string")p.banner=""; if(!Array.isArray(p.extra))p.extra=["",""]; while(p.extra.length<2)p.extra.push(""); p.extra.length=2; p.extra[0]=pgS(p.extra[0]); p.extra[1]=pgS(p.extra[1]); } });
   if(!Array.isArray(s.mango) || s.mango.length < 2){ s.mango = Array.isArray(s.mango) ? s.mango : []; while(s.mango.length < 2) s.mango.push(""); }
   if(!Array.isArray(s.pod2)) s.pod2 = pgDefault().pod2;
-  while(s.pod2.length < 8) s.pod2.push("");
+  while(s.pod2.length < 8) s.pod2.push(""); for(var pni=0;pni<s.pod2.length;pni++) s.pod2[pni]=pgArr3(s.pod2[pni]);
   pgSeedTs(s);   /* pre-B+ blobs get per-cell timestamps from updatedAt */
   return s;
 }
@@ -14229,13 +14263,33 @@ function pgSuggest(spot){
 
 /* ---- render ---- */
 function pgBannerLabel(b){ return b==="canada" ? "\ud83c\udf41 CANADA" : b==="noname" ? "no name" : b==="sales" ? "SALES" : "+ banner"; }
+function pgItemBlank(kind){ return kind==="lot" ? "empty" : (kind==="pod1" ? "tap to add" : "Empty"); }
+/* v136: render a cell's up-to-3 items, each tappable, each with an \u00d7 delete,
+   plus a "+ item" when there's room. One blank line (opens slot 0) when empty. */
+function pgCellItemsHtml(kind,i){
+  var filled=pgSlotsFilled(kind,i), h="", k, f;
+  if(!filled.length){
+    return '<h3 class="pg-blank pg-itm" onclick="pgEdit(\''+pgSlotKey(kind,i,0)+'\')">'+pgItemBlank(kind)+'</h3>';
+  }
+  for(k=0;k<filled.length;k++){ f=filled[k];
+    h += '<div class="pg-itm-row">'
+      + '<h3 class="pg-itm" onclick="pgEdit(\''+pgSlotKey(kind,i,f.s)+'\')">'+nmNameHtml(f.v)+'</h3>'
+      + '<button class="pg-itm-x" type="button" onclick="event.stopPropagation();pgDelSlot(\''+kind+'\','+i+','+f.s+')" aria-label="Delete item">\u00d7</button>'
+      + '</div>';
+  }
+  if(filled.length<PG_CELL_MAX){
+    h += '<button class="pg-itm-add" type="button" onclick="event.stopPropagation();pgEdit(\''+pgSlotKey(kind,i,filled.length)+'\')">+ item</button>';
+  }
+  return h;
+}
 function pgRenderPod1(){
   const el = document.getElementById("pgPod1"); if(!el) return;
-  el.innerHTML = pgState.pod1.map((p,i)=>`
-    <div class="pg-cell" id="pgspot-pod1-${i}" onclick="pgEdit('pod1-${i}')">${pgMk('pod1-'+i)}
-      <h3 class="${p.name?'':'pg-blank'}">${nmNameHtml(p.name)||'tap to add'}</h3>
-      <button class="pg-banner ${p.banner||'none'}" type="button" onclick="event.stopPropagation();pgCycleBanner(${i})">${pgBannerLabel(p.banner)} \u25be</button>
-    </div>`).join("");
+  el.innerHTML = pgState.pod1.map(function(p,i){
+    return '<div class="pg-cell pg-cell-multi" id="pgspot-pod1-'+i+'">'+pgMk('pod1-'+i)
+      + pgCellItemsHtml('pod1',i)
+      + '<button class="pg-banner '+(p.banner||'none')+'" type="button" onclick="event.stopPropagation();pgCycleBanner('+i+')">'+pgBannerLabel(p.banner)+' \u25be</button>'
+      + '</div>';
+  }).join("");
 }
 function pgRenderMango(){
   const el = document.getElementById("pgMango"); if(!el) return;
@@ -14245,9 +14299,8 @@ function pgRenderPod2(){
   const el = document.getElementById("pgPod2"); if(!el) return;
   let h="";
   for(let i=0;i<pgState.podN;i++){
-    const v = pgState.pod2[i]||"";
-    h += `<div class="pg-cell" id="pgspot-pod2-${i}" onclick="pgEdit('pod2-${i}')">${pgMk('pod2-'+i)}<div class="pg-podnum">${i+1}</div>
-          <h3 class="${v?'':'pg-blank'}">${nmNameHtml(v)||'Empty'}</h3></div>`;
+    h += '<div class="pg-cell pg-cell-multi" id="pgspot-pod2-'+i+'">'+pgMk('pod2-'+i)+'<div class="pg-podnum">'+(i+1)+'</div>'
+       + pgCellItemsHtml('pod2',i)+'</div>';
   }
   el.innerHTML = h;
   document.querySelectorAll('#pgPodCount button').forEach(b=>b.classList.toggle('on', +b.dataset.n===pgState.podN));
@@ -14321,11 +14374,12 @@ function pgRenderRuns(){
 }
 function pgRenderLots(){
   const el = document.getElementById("pgLots"); if(!el) return;
-  el.innerHTML = pgState.lots.map((v,i)=>`
-    <div class="pg-lot" id="pgspot-lot-${i}" onclick="pgEdit('lot-${i}')">${pgMk('lot-'+i)}
-      <span class="pg-lt">Lot ${i+1}</span>
-      <span class="pg-lv ${v?'':'pg-blank'}">${nmNameHtml(v)||'empty'}</span>
-    </div>`).join("");
+  el.innerHTML = pgState.lots.map(function(v,i){
+    return '<div class="pg-lot" id="pgspot-lot-'+i+'">'+pgMk('lot-'+i)
+      + '<span class="pg-lt">Lot '+(i+1)+'</span>'
+      + '<span class="pg-lv-wrap">'+pgCellItemsHtml('lot',i)+'</span>'
+      + '</div>';
+  }).join("");
 }
 function renderPlanogram(){
   pgRenderPod1(); pgRenderMango(); pgRenderPod2(); pgRenderRuns(); pgRenderLots(); pgDock();
@@ -14354,7 +14408,6 @@ function pgClearAll(){
 }
 
 /* ---- icons + the context dropdown that replaced the bare camera button ---- */
-var PG_ICON_CAM = '<svg viewBox="0 0 24 24"><path d="M3 9V6.6A2.6 2.6 0 0 1 5.6 4H8"/><path d="M16 4h2.4A2.6 2.6 0 0 1 21 6.6V9"/><path d="M21 15v2.4a2.6 2.6 0 0 1-2.6 2.6H16"/><path d="M8 20H5.6A2.6 2.6 0 0 1 3 17.4V15"/><circle cx="12" cy="12" r="3.4"/></svg>';
 var PG_ICON_GRID = '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>';
 var PG_ICON_PASTE = '<svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-3"/></svg>';
 var PG_ICON_ADD = '<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
@@ -14367,19 +14420,16 @@ function pgMi(icon,label,action,disabled){
   return '<button type="button"'+(disabled?' disabled':' onclick="pgMenuClose();'+action+'"')+'>'+icon+'<span>'+label+'</span></button>';
 }
 function pgMenuHtml(ctx){
-  if(ctx === "sec-pod1") return pgMi(PG_ICON_CAM,"Camera +","pgShoot('pod1',['Pod 1'])")
-      + pgMi(PG_ICON_PASTE,"Paste +","pgPasteOpen('pod1',0,'Pod 1')");
+  if(ctx === "sec-pod1") return pgMi(PG_ICON_PASTE,"Paste +","pgPasteOpen('pod1',0,'Pod 1')");
   if(ctx === "sec-pod2"){
     return '<div class="pg-mh">How many pods</div>'
       + [4,6,8].map(function(n){ return pgMi(PG_ICON_ADD, n+" pods", "pgSetPods("+n+")", pgState.podN===n); }).join("")
-      + '<hr>' + pgMi(PG_ICON_CAM,"Camera +","pgShoot('pod2',['Pod 2'])")
-      + pgMi(PG_ICON_PASTE,"Paste +","pgPasteOpen('pod2',0,'Pod 2')");
+      + '<hr>' + pgMi(PG_ICON_PASTE,"Paste +","pgPasteOpen('pod2',0,'Pod 2')");
   }
   if(ctx === "sec-lots"){
     return pgMi(PG_ICON_ADD,"Add a lot","pgLotSlots(1)")
       + pgMi(PG_ICON_SUB,"Remove last lot","pgLotSlots(-1)", pgState.lots.length <= 1)
-      + '<hr>' + pgMi(PG_ICON_CAM,"Camera +","pgShoot('lots',['Case Lots'])")
-      + pgMi(PG_ICON_PASTE,"Paste +","pgPasteOpen('lots',0,'Case Lots')");
+      + '<hr>' + pgMi(PG_ICON_PASTE,"Paste +","pgPasteOpen('lots',0,'Case Lots')");
   }
   if(ctx.indexOf("run-") === 0){
     const ri = +ctx.split("-")[1];
@@ -14396,8 +14446,7 @@ function pgMenuHtml(ctx){
         + pgMi(PG_ICON_RACK,"Silver rack","pgAddRack(0,'b')", pgAtts(0,"b").filter(function(a){return a.type==="rack";}).length >= 1)
         + pgMi(PG_ICON_TBL,"Small tables (pair)","pgAddTables(0,'b')");
     }
-    return h + '<hr>' + pgMi(PG_ICON_CAM,"Camera +","pgShoot('run-"+ri+"',['Run "+tag+" \u00b7 Wet Cases end','Run "+tag+" \u00b7 HMR end'])")
-      + pgMi(PG_ICON_PASTE,"Paste + \u00b7 Wet","pgPasteOpen('run-"+ri+"',0,'Run "+tag+" \u00b7 Wet Cases')")
+    return h + '<hr>' + pgMi(PG_ICON_PASTE,"Paste + \u00b7 Wet","pgPasteOpen('run-"+ri+"',0,'Run "+tag+" \u00b7 Wet Cases')")
       + pgMi(PG_ICON_PASTE,"Paste + \u00b7 HMR","pgPasteOpen('run-"+ri+"',1,'Run "+tag+" \u00b7 HMR')");
   }
   if(ctx.indexOf("att-") === 0){
@@ -14407,11 +14456,9 @@ function pgMenuHtml(ctx){
       return '<div class="pg-mh">Boxes on this rack</div>'
         + pgMi(PG_ICON_ADD,"Add a box \u2014 each side","pgRackSlots("+ri+",'"+pos+"',"+ai+",1)")
         + pgMi(PG_ICON_SUB,"Remove last box \u2014 each side","pgRackSlots("+ri+",'"+pos+"',"+ai+",-1)", (a.wet||[]).length <= 1)
-        + '<hr>' + pgMi(PG_ICON_DEL,"Remove silver rack","pgDelAtt("+ri+",'"+pos+"',"+ai+")")
-        + pgMi(PG_ICON_CAM,"Camera","pgShoot('"+ctx+"',['Silver rack'])");
+        + '<hr>' + pgMi(PG_ICON_DEL,"Remove silver rack","pgDelAtt("+ri+",'"+pos+"',"+ai+")");
     }
-    return pgMi(PG_ICON_DEL,"Remove small tables","pgDelAtt("+ri+",'"+pos+"',"+ai+")")
-      + pgMi(PG_ICON_CAM,"Camera","pgShoot('"+ctx+"',['Small tables'])");
+    return pgMi(PG_ICON_DEL,"Remove small tables","pgDelAtt("+ri+",'"+pos+"',"+ai+")");
   }
   return "";
 }
@@ -14451,10 +14498,10 @@ function pgRunSlots(ri,d){
   pgStampLen("L-run-"+ri); pgTouch();
 }
 function pgLotSlots(d){
-  if(d > 0){ pgState.lots.push(""); pgStamp("lot-"+(pgState.lots.length-1)); }
+  if(d > 0){ pgState.lots.push(["","",""]); pgStamp("lot-"+(pgState.lots.length-1)); }
   else {
     if(pgState.lots.length <= 1) return;
-    if(pgState.lots[pgState.lots.length-1] && !confirm("That lot still has an item. Remove anyway?")) return;
+    if(pgArr3(pgState.lots[pgState.lots.length-1]).some(v=>v) && !confirm("That lot still has an item. Remove anyway?")) return;
     pgState.lots.pop();
   }
   pgStampLen("L-lots"); pgTouch();
@@ -14515,12 +14562,12 @@ function pgSpotMeta(key){
              label:"Small table \u00b7 "+(last === "wet" ? "Wet cases" : "HMR")+" \u00b7 "+at,
              get:function(){ return a[last] || ""; }, set:function(v){ a[last] = v; } };
   }
-  if(key.indexOf("pod1-")===0){ const i=+key.split("-")[1]; return {type:"pod1", spot:"pod1-"+i, label:"Pod 1 spot", get:()=>pgState.pod1[i].name, set:v=>pgState.pod1[i].name=v}; }
+  if(key.indexOf("pod1-")===0){ const p=key.split("-"); const i=+p[1], s=(p[2]==null?0:+p[2]); return {type:"pod1", spot:"pod1-"+i, label:"Pod 1 spot"+(s?" \u00b7 item "+(s+1):""), get:()=>pgSlotGet("pod1",i,s), set:v=>pgSlotSet("pod1",i,s,v)}; }
   if(key.indexOf("mango-")===0){ const i=+key.split("-")[1]; return {type:"mango", spot:"mango", label:"Mango case", get:()=>pgState.mango[i], set:v=>pgState.mango[i]=v}; }
-  if(key.indexOf("pod2-")===0){ const i=+key.split("-")[1]; return {type:"pod2", spot:"pod2-"+i, label:"Pod "+(i+1), get:()=>pgState.pod2[i], set:v=>pgState.pod2[i]=v}; }
+  if(key.indexOf("pod2-")===0){ const p=key.split("-"); const i=+p[1], s=(p[2]==null?0:+p[2]); return {type:"pod2", spot:"pod2-"+i, label:"Pod "+(i+1)+(s?" \u00b7 item "+(s+1):""), get:()=>pgSlotGet("pod2",i,s), set:v=>pgSlotSet("pod2",i,s,v)}; }
   if(key.indexOf("run-")===0){ const p=key.split("-"); const ri=+p[1], end=p[2], i=+p[3];
     return {type:"run", spot:"run"+(ri+1)+"-"+end, label:"Run "+PG_RUN_DEF[ri].tag+" \u00b7 "+(end==="wet"?"Wet Cases":"HMR"), get:()=>pgState.runs[ri][end][i], set:v=>pgState.runs[ri][end][i]=v}; }
-  if(key.indexOf("lot-")===0){ const i=+key.split("-")[1]; return {type:"lot", spot:"lot", label:"Case Lot "+(i+1), get:()=>pgState.lots[i], set:v=>pgState.lots[i]=v}; }
+  if(key.indexOf("lot-")===0){ const p=key.split("-"); const i=+p[1], s=(p[2]==null?0:+p[2]); return {type:"lot", spot:"lot", label:"Case Lot "+(i+1)+(s?" \u00b7 item "+(s+1):""), get:()=>pgSlotGet("lot",i,s), set:v=>pgSlotSet("lot",i,s,v)}; }
 }
 function pgSetBrand(v){
   const inp = document.getElementById("pgSheetInput"); if(!inp) return;
@@ -14672,95 +14719,9 @@ function pgStartMic(){
 function pgStopMic(){ pgMicLive = false; const m=document.getElementById("pgMic"); if(m) m.classList.remove("live"); if(pgRec){ try{ pgRec.stop(); }catch(e){} pgRec = null; } }
 
 /* ---- camera + OCR (online-first, offline fallback) ---- */
-let pgShootJob = null;
-function pgShoot(section, prompts){
-  pgShootJob = { section, prompts, idx:0 };
-  toast("\ud83d\udcf7 " + prompts[0]);
-  const inp = document.getElementById("pgCamInput"); inp.value = ""; inp.click();
-}
-function pgReadPhoto(file){
-  const job = pgShootJob;
-  const section = job.section, end = job.idx;
-  const isAtt = String(section).indexOf("att-") === 0;
-  const done = ()=>{
-    document.getElementById("pgReading").classList.remove("show");
-    job.idx++;
-    if(job.idx < job.prompts.length){
-      toast("\ud83d\udcf7 Now: " + job.prompts[job.idx]);
-      const inp = document.getElementById("pgCamInput"); inp.value=""; setTimeout(()=>inp.click(), 300);
-    } else {
-      pgShootJob = null;
-    }
-  };
-  // ONLINE-FIRST: hand the photo to the planogramOcr endpoint (Gemini->Groq
-  // race), resolve each name against the PLU/Barcode DB, and either autofill an
-  // exact match or leave a tap-to-pick "+" on the box. OFFLINE / no signal /
-  // silver-rack + small-table sections (their slots splice mid-list, so ordered
-  // autofill isn't safe): just keep the capture and let the user tap each box.
-  if(!PG_OCR_ENABLED || isAtt || !proxyUrl() || !navigator.onLine){
-    toast("Photo saved \u2014 tap any box to type or speak the item");
-    setTimeout(done, 400);
-    return;
-  }
-  document.getElementById("pgReadingTxt").textContent = "Reading " + (job.prompts[job.idx]||"photo") + "\u2026";
-  document.getElementById("pgReading").classList.add("show");
-  pgOcrRead({ imageFile:file }).then(res=>{
-    if(res && res.status === "ok" && Array.isArray(res.items)){
-      pgApplyOcr(section, end, res.items);
-    } else {
-      toast((res && res.msg) || "Couldn\u2019t read the photo \u2014 tap the boxes to fill them");
-    }
-  }).catch(()=>{ toast("Couldn\u2019t read the photo \u2014 tap the boxes to fill them"); })
-    .finally(done);
-}
-
-/* Planogram camera+/paste read: shrink the image once, race BOTH vision
-   providers (Gemini + Groq) through the planogramOcr endpoint, take the first
-   that returns an item list. Mirrors the invoice reader's aiRead1/aiReadProvider
-   pair and reuses aiRaceFirstOk. Returns { status:"ok", items:[...] } or a fail. */
-async function pgOcrRead(opts){
-  opts = opts || {};
-  const f = opts.imageFile || null;
-  const text = String(opts.text || "").trim();
-  if(!f && !text) return { status:"error", msg:"Nothing to read" };
-  let b64 = "";
-  if(f){
-    try{ const big = await shrinkImg(f, 1600); b64 = big.replace(/^data:image\/[a-z]+;base64,/, ""); }
-    catch(err){ return { status:"error", msg:"Couldn\u2019t read the image" }; }
-  }
-  const attempts = AI_PROVIDERS.map(p => pgOcrProvider(p, b64, text));
-  return await aiRaceFirstOk(attempts);
-}
-async function pgOcrProvider(provider, b64, text){
-  let resp;
-  try{
-    const payload = { action:"planogramOcr", provider };
-    if(b64)  payload.image = b64;
-    if(text) payload.text  = text;
-    resp = await callProxy(payload, { timeoutMs: 90000 });   // vision is slow; give it room
-  }catch(err){
-    const em = String((err && err.message) || "");
-    const aborted = err && (err.name === "AbortError" || /abort/i.test(em));
-    try{ queueError("PGOCR " + provider + " " + (aborted ? "timeout(90s)" : "fail") + " | " + (em ? em.slice(0,200) : "network error")); }catch(e){}
-    return { status: aborted ? "timeout" : "fail", msg: aborted ? "The reader took too long" : (authMessage(err) || (em || "network error")), retryable:true };
-  }
-  if(!resp || resp.ok === false){
-    const status = resp && resp.aiStatus;
-    let msg = "Reader failed" + (status ? " (" + status + ")" : "");
-    let retryable = true;
-    if(status === 429){ msg = "AI quota used up for today"; retryable = false; }
-    else if(status === 400 || status === 401 || status === 403){ msg = "AI key not accepted \u2014 check the key on the Sheet"; retryable = false; }
-    else if(resp && resp.error) msg = resp.error;
-    try{ queueError("PGOCR " + provider + " fail | status=" + (status || "?") + ((resp && resp.error) ? " | " + String(resp.error).slice(0,200) : "")); }catch(e){}
-    return { status:"fail", msg, retryable };
-  }
-  let items = resp.items;
-  if(!Array.isArray(items)){
-    try{ const p = JSON.parse(String(resp.text||"").replace(/^```json/i,"").replace(/^```/,"").replace(/```$/,"").trim()); items = p && p.items; }catch(e){ items = null; }
-  }
-  if(!Array.isArray(items)) return { status:"noparse", msg:"The reader didn\u2019t return a readable list", retryable:true };
-  return { status:"ok", items: items.map(x=> typeof x === "string" ? x.trim() : ""), provider:(resp.provider || provider) };
-}
+/* v136: planogram camera OCR removed — paste-from-AI + manual entry only.
+   Paste stays fully client-side (pgFullParse / pgPasteGo -> pgApplyOcr); the
+   "+" suggestion engine (pgOcrSug / pgMk / pgClosest) is kept for paste. */
 
 /* Closest DB matches for a read that didn't resolve exactly — the same unified
    PLU + barcode stream the tap-to-edit search uses, deduped, (Organic) stripped. */
@@ -14829,16 +14790,16 @@ function pgApplyOcr(section, end, items, opts){
   };
 
   if(section === "pod1"){
-    items.slice(0,PG_POD1_N).forEach((t,i)=> place("pod1-"+i, t, ()=>pgState.pod1[i].name, v=>{ pgState.pod1[i].name = v; }, "pod1-"+i));
+    items.slice(0,PG_POD1_N).forEach((t,i)=> place("pod1-"+i, t, ()=>pgSlotGet("pod1",i,0), v=>{ pgSlotSet("pod1",i,0,v); }, "pod1-"+i));
     for(let i=0;i<PG_POD1_N;i++) pgStamp("pod1-"+i);
   }
   else if(section === "pod2"){
     podResult = pgAutoPodCount(items.filter(x=>x).length);   // sets podN before we map to boxes
-    items.slice(0,pgState.podN).forEach((t,i)=> place("pod2-"+i, t, ()=>pgState.pod2[i], v=>{ pgState.pod2[i] = v; }, "pod2-"+i));
+    items.slice(0,pgState.podN).forEach((t,i)=> place("pod2-"+i, t, ()=>pgSlotGet("pod2",i,0), v=>{ pgSlotSet("pod2",i,0,v); }, "pod2-"+i));
     for(let i=0;i<pgState.podN;i++) pgStamp("pod2-"+i);
   }
   else if(section === "lots"){
-    items.slice(0,pgState.lots.length).forEach((t,i)=> place("lot-"+i, t, ()=>pgState.lots[i], v=>{ pgState.lots[i] = v; }, "lot"));
+    items.slice(0,pgState.lots.length).forEach((t,i)=> place("lot-"+i, t, ()=>pgSlotGet("lot",i,0), v=>{ pgSlotSet("lot",i,0,v); }, "lot"));
     for(let i=0;i<pgState.lots.length;i++) pgStamp("lot-"+i);
   }
   else if(section.indexOf("run-") === 0){
@@ -14870,8 +14831,8 @@ function pgApplyOcr(section, end, items, opts){
 /* ---- find item -> spot ---- */
 function pgSpotIndex(){
   const idx = [];
-  pgState.pod1.forEach((p,i)=>{ if(p.name) idx.push({name:p.name, loc:"Pod 1", c:"--laser", key:"pod1-"+i}); });
-  pgState.pod2.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"Pod 2 #"+(i+1), c:"--r5", key:"pod2-"+i}); });
+  pgState.pod1.forEach((p,i)=>{ if(!p) return; pgSlotsFilled("pod1",i).forEach(f=> idx.push({name:f.v, loc:"Pod 1", c:"--laser", key:pgSlotKey("pod1",i,f.s)})); });
+  pgState.pod2.forEach((v,i)=>{ pgSlotsFilled("pod2",i).forEach(f=> idx.push({name:f.v, loc:"Pod 2 #"+(i+1), c:"--r5", key:pgSlotKey("pod2",i,f.s)})); });
   PG_RUN_DEF.forEach((r,ri)=>{ const st=pgState.runs[ri]; if(!st) return;
     st.wet.forEach((v,i)=>{ if(v) idx.push({name:v, loc:r.name+" table \u00b7 wet cases", c:r.c, key:"run-"+ri+"-wet-"+i}); });
     st.hmr.forEach((v,i)=>{ if(v) idx.push({name:v, loc:r.name+" table \u00b7 HMR", c:r.c, key:"run-"+ri+"-hmr-"+i}); });
@@ -14892,7 +14853,7 @@ function pgSpotIndex(){
       });
     });
   });
-  pgState.lots.forEach((v,i)=>{ if(v) idx.push({name:v, loc:"next to the "+((PG_RUN_DEF[4]&&PG_RUN_DEF[4].name)||"Root veg & Onions")+" table", c:"--muted", key:"lot-"+i}); });
+  pgState.lots.forEach((v,i)=>{ pgSlotsFilled("lot",i).forEach(f=> idx.push({name:f.v, loc:"next to the "+((PG_RUN_DEF[4]&&PG_RUN_DEF[4].name)||"Root veg & Onions")+" table", c:"--muted", key:pgSlotKey("lot",i,f.s)})); });
   return idx;
 }
 function pgDoFind(q){
@@ -15245,8 +15206,6 @@ function pgPasteGo(){
   });
 }
 {
-  const _pgCam = document.getElementById("pgCamInput");
-  if(_pgCam) _pgCam.addEventListener("change", function(){ if(!this.files || !this.files.length){ pgShootJob=null; return; } if(pgShootJob) pgReadPhoto(this.files[0]); });
   const _pgIn = document.getElementById("pgSheetInput");
   if(_pgIn) _pgIn.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); pgOnEnter(); } });
 }

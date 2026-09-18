@@ -1811,13 +1811,9 @@
   .pg-banner.sales{background:linear-gradient(90deg,var(--laser) 0 55%,#FEDD00 55% 100%);color:#fff}
   .pg-banner.none{background:var(--surface-2);color:var(--muted)}
   /* v136: up-to-3 items per pod / case-lot cell */
-  .pg-itm-row{display:flex;align-items:flex-start;gap:6px;justify-content:space-between}
-  .pg-itm-row + .pg-itm-row{margin-top:5px}
   .pg-cell .pg-itm{flex:1;min-width:0;cursor:pointer;word-break:break-word}
-  .pg-itm-x{flex:none;width:22px;height:22px;border:0;border-radius:6px;background:var(--surface-2);color:var(--muted);font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
-  .pg-itm-x:active{background:var(--laser);color:#fff}
-  .pg-itm-add{align-self:flex-start;margin-top:7px;font-family:var(--mono);font-size:11px;font-weight:800;background:var(--surface-2);color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:4px 9px;cursor:pointer}
-  .pg-itm-add:active{border-color:var(--muted)}
+  .pg-more{align-self:flex-start;margin-top:6px;font-family:var(--mono);font-size:11px;font-weight:800;background:var(--surface-2);color:var(--muted);border:1px solid var(--line);border-radius:16px;padding:4px 10px;cursor:pointer}
+  .pg-more:active{border-color:var(--muted);color:var(--paper-dim)}
   .pg-lot .pg-lv-wrap{display:flex;flex-direction:column;gap:5px;min-width:0}
   .pg-lot .pg-lv-wrap .pg-itm{font-size:14px}
   .pg-mango{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px}
@@ -1923,15 +1919,33 @@
   .pg-sheet .pg-bar{width:38px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 14px}
   .pg-sheet .pg-lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
   .pg-sheet h4{margin:3px 0 12px;font-size:16px}
+  #pgStack{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+  #pgStack:empty{display:none}
+  .pg-srow{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:0 6px 0 14px;height:48px}
+  .pg-srow .pg-sname{flex:1;min-width:0;font-size:15px;color:var(--paper);word-break:break-word}
+  .pg-srow .pg-sx{flex:none;width:34px;height:34px;border:0;border-radius:9px;background:none;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;display:grid;place-items:center}
+  .pg-srow .pg-sx:active{background:var(--laser);color:#fff}
   .pg-editrow{display:flex;gap:9px;align-items:center}
-  .pg-editrow input{flex:1;height:50px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
-    padding:0 14px;color:var(--paper);font-size:15px;outline:0;font-family:var(--sans)}
-  .pg-editrow input:focus{border-color:var(--laser)}
-  .pg-mic{width:50px;height:50px;flex:none;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);
-    display:grid;place-items:center;cursor:pointer}
+  .pg-inwrap{position:relative;flex:1;display:flex}
+  .pg-inwrap input{flex:1;height:50px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
+    padding:0 84px 0 14px;color:var(--paper);font-size:15px;outline:0;font-family:var(--sans)}
+  .pg-inwrap input:focus{border-color:var(--laser)}
+  .pg-clr{position:absolute;right:50px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;
+    border:none;cursor:pointer;background:var(--muted);color:var(--ink);font-size:11px;line-height:1;padding:0;
+    display:none;align-items:center;justify-content:center;z-index:3}
+  .pg-clr.on{display:flex}
+  .pg-clr:active{background:var(--paper)}
+  .pg-mic{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:0;
+    background:none;cursor:pointer;display:grid;place-items:center;z-index:4;padding:0}
+  .pg-mic::before{content:"";position:absolute;left:-5px;top:50%;transform:translateY(-50%);width:1px;height:20px;
+    background:var(--line);border-radius:1px;pointer-events:none}
   .pg-mic svg{width:20px;height:20px;stroke:var(--paper-dim);fill:none;stroke-width:1.8}
-  .pg-mic.live{background:var(--laser);border-color:var(--laser)}
-  .pg-mic.live svg{stroke:#fff}
+  .pg-mic.live svg{stroke:var(--laser)}
+  .pg-add{width:50px;height:50px;flex:none;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);
+    display:grid;place-items:center;cursor:pointer;color:var(--paper-dim);font-size:26px;line-height:1;font-weight:400}
+  .pg-add.hide{display:none}
+  .pg-add:disabled{opacity:.4;cursor:default}
+  .pg-add:not(:disabled):active{border-color:var(--laser);color:var(--paper)}
   .pg-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px}
   .pg-brandrow{display:flex;align-items:center;gap:9px;margin-top:11px}
   .pg-brandrow label{font-size:12px;color:var(--muted)}
@@ -2020,7 +2034,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=136">
+  <link rel="manifest" href="./manifest.json?v=137">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2650,9 +2664,14 @@
     <div class="pg-bar"></div>
     <div class="pg-lbl" id="pgSheetLbl">POD</div>
     <h4 id="pgSheetTitle">Assign item</h4>
-    <div class="pg-editrow">
-      <input id="pgSheetInput" placeholder="Type an item…" autocomplete="off" oninput="pgOnType(this.value)">
-      <button class="pg-mic" id="pgMic" type="button" onclick="pgToggleMic()" aria-label="Speak the item"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></svg></button>
+    <div id="pgStack"></div>
+    <div class="pg-editrow" id="pgEditRow">
+      <div class="pg-inwrap">
+        <input id="pgSheetInput" placeholder="Type an item…" autocomplete="off" oninput="pgOnType(this.value)">
+        <button class="pg-clr" id="pgClr" type="button" onclick="pgClearInput()" aria-label="Clear">&times;</button>
+        <button class="pg-mic" id="pgMic" type="button" onclick="pgToggleMic()" aria-label="Speak the item"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></svg></button>
+      </div>
+      <button class="pg-add" id="pgAddBtn" type="button" onclick="pgAddItem()" aria-label="Add another item" disabled>+</button>
     </div>
     <div class="pg-brandrow">
       <label for="pgBrandSel">Brand badge</label>
@@ -2669,7 +2688,7 @@
     <div class="pg-matchhdr" id="pgSugHdr">Suggested for this spot</div>
     <div class="pg-chips" id="pgSug"></div>
     <div class="pg-editacts">
-      <button class="pg-del" type="button" onclick="pgDeleteSpot()">Delete</button>
+      <button class="pg-del" id="pgDelBtn" type="button" onclick="pgDeleteSpot()">Delete</button>
       <button class="pg-save" id="pgSaveBtn" type="button" onclick="pgSaveSpot()" disabled>Save</button>
     </div>
   </div>
@@ -6748,7 +6767,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v136";
+const APP_VERSION = "v137";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -14264,23 +14283,24 @@ function pgSuggest(spot){
 /* ---- render ---- */
 function pgBannerLabel(b){ return b==="canada" ? "\ud83c\udf41 CANADA" : b==="noname" ? "no name" : b==="sales" ? "SALES" : "+ banner"; }
 function pgItemBlank(kind){ return kind==="lot" ? "empty" : (kind==="pod1" ? "tap to add" : "Empty"); }
-/* v136: render a cell's up-to-3 items, each tappable, each with an \u00d7 delete,
-   plus a "+ item" when there's room. One blank line (opens slot 0) when empty. */
+/* v137: main view shows the first item + "+N more"; tap to reveal all names.
+   No per-item x and no "+ item" here \u2014 add/delete happen inside the sheet. */
 function pgCellItemsHtml(kind,i){
-  var filled=pgSlotsFilled(kind,i), h="", k, f;
+  var filled=pgSlotsFilled(kind,i), ck=kind+"-"+i, cellKey=pgSlotKey(kind,i,0);
   if(!filled.length){
-    return '<h3 class="pg-blank pg-itm" onclick="pgEdit(\''+pgSlotKey(kind,i,0)+'\')">'+pgItemBlank(kind)+'</h3>';
+    return '<h3 class="pg-blank pg-itm" onclick="pgEdit(\''+cellKey+'\')">'+pgItemBlank(kind)+'</h3>';
   }
-  for(k=0;k<filled.length;k++){ f=filled[k];
-    h += '<div class="pg-itm-row">'
-      + '<h3 class="pg-itm" onclick="pgEdit(\''+pgSlotKey(kind,i,f.s)+'\')">'+nmNameHtml(f.v)+'</h3>'
-      + '<button class="pg-itm-x" type="button" onclick="event.stopPropagation();pgDelSlot(\''+kind+'\','+i+','+f.s+')" aria-label="Delete item">\u00d7</button>'
-      + '</div>';
+  if(filled.length===1){
+    return '<h3 class="pg-itm" onclick="pgEdit(\''+cellKey+'\')">'+nmNameHtml(filled[0].v)+'</h3>';
   }
-  if(filled.length<PG_CELL_MAX){
-    h += '<button class="pg-itm-add" type="button" onclick="event.stopPropagation();pgEdit(\''+pgSlotKey(kind,i,filled.length)+'\')">+ item</button>';
+  if(pgExpand[ck]){
+    return filled.map(function(f){
+      return '<h3 class="pg-itm" onclick="event.stopPropagation();pgEdit(\''+cellKey+'\')">'+nmNameHtml(f.v)+'</h3>';
+    }).join("")
+      + '<button class="pg-more" type="button" onclick="event.stopPropagation();pgToggleExpand(\''+kind+'\','+i+')">\u2212 less</button>';
   }
-  return h;
+  return '<h3 class="pg-itm" onclick="event.stopPropagation();pgToggleExpand(\''+kind+'\','+i+')">'+nmNameHtml(filled[0].v)+'</h3>'
+    + '<button class="pg-more" type="button" onclick="event.stopPropagation();pgToggleExpand(\''+kind+'\','+i+')">+'+(filled.length-1)+' more</button>';
 }
 function pgRenderPod1(){
   const el = document.getElementById("pgPod1"); if(!el) return;
@@ -14538,7 +14558,7 @@ function pgRackSlots(ri,pos,ai,d){
 }
 
 /* ---- editor ---- */
-let pgCur = null;
+let pgCur = null, pgCellKI = null, pgExpand = {};
 let pgPendingSpot = null;   // planogram <-> Add round-trip (Pass C hard block)
 let pgSel = null;           // resolved DB item ready to Save into the spot
 const PG_SPOT_LABEL = { pod1:"POD 1", pod2:"POD 2", mango:"POD 1 \u00b7 MANGO", run:"ENDCAP", lot:"CASE LOT", rack:"SILVER RACK", table:"SMALL TABLE" };
@@ -14569,6 +14589,15 @@ function pgSpotMeta(key){
     return {type:"run", spot:"run"+(ri+1)+"-"+end, label:"Run "+PG_RUN_DEF[ri].tag+" \u00b7 "+(end==="wet"?"Wet Cases":"HMR"), get:()=>pgState.runs[ri][end][i], set:v=>pgState.runs[ri][end][i]=v}; }
   if(key.indexOf("lot-")===0){ const p=key.split("-"); const i=+p[1], s=(p[2]==null?0:+p[2]); return {type:"lot", spot:"lot", label:"Case Lot "+(i+1)+(s?" \u00b7 item "+(s+1):""), get:()=>pgSlotGet("lot",i,s), set:v=>pgSlotSet("lot",i,s,v)}; }
 }
+/* v137 multi-item helpers: which cell a board key belongs to, its sheet title,
+   and the main-view expand/collapse toggle. */
+function pgCellOf(key){ var m=/^(pod1|pod2|lot)-(\d+)/.exec(key||""); return m ? {kind:m[1], i:+m[2]} : null; }
+function pgCellTitle(cell){
+  var n=pgSlotsFilled(cell.kind,cell.i).length;
+  var base = cell.kind==="pod1" ? "Pod 1 spot" : (cell.kind==="pod2" ? ("Pod "+(cell.i+1)) : ("Case Lot "+(cell.i+1)));
+  return base + (n ? " \u00b7 "+n+" item"+(n>1?"s":"") : "");
+}
+function pgToggleExpand(kind,i){ var k=kind+"-"+i; if(pgExpand[k]) delete pgExpand[k]; else pgExpand[k]=1; renderPlanogram(); }
 function pgSetBrand(v){
   const inp = document.getElementById("pgSheetInput"); if(!inp) return;
   const p = nmNormalize(inp.value || "");
@@ -14576,23 +14605,43 @@ function pgSetBrand(v){
   if(typeof pgOnType === "function") pgOnType(inp.value);
 }
 function pgEdit(key){
+  var cell = pgCellOf(key);
+  pgCellKI = cell;
+  var full = false;
+  if(cell){
+    var nf = pgSlotsFilled(cell.kind, cell.i).length;
+    full = nf >= PG_CELL_MAX;
+    key = pgSlotKey(cell.kind, cell.i, Math.min(nf, PG_CELL_MAX-1));   // active = next empty slot
+  }
   const m = pgSpotMeta(key); if(!m) return;
   pgCur = Object.assign({key}, m);
   document.getElementById("pgSheetLbl").textContent = PG_SPOT_LABEL[m.type] || m.type.toUpperCase();
-  document.getElementById("pgSheetTitle").textContent = m.label;
-  const cur = m.get()||"";
+  document.getElementById("pgSheetTitle").textContent = cell ? pgCellTitle(cell) : m.label;
   const inp = document.getElementById("pgSheetInput");
+  const cur = cell ? "" : (m.get()||"");                 // a multi-item live line always starts blank
   inp.value = /^(tap to add|empty|mango case)$/i.test(cur) ? "" : cur;
   { const bsel=document.getElementById("pgBrandSel");
     if(bsel){ const b=nmNormalize(inp.value||"").tags.filter(t=>nmTagKind(t)==="brand"); bsel.value=b[0]||""; } }
   document.getElementById("pgMatches").innerHTML = "";
-  pgSel = inp.value.trim() ? inp.value.trim() : null;   // a placed item is DB-backed; allow re-Save
+  pgSel = inp.value.trim() ? inp.value.trim() : null;
   pgSaveEnable(!!pgSel);
-  // A camera+/paste read left a "+" guess on this blank box: pre-load the raw
-  // text so the closest DB names surface right away \u2014 one tap to file, no typing.
+  // A paste read left a "+" guess on this blank box: pre-load the raw text so the
+  // closest DB names surface right away \u2014 one tap to file, no typing.
   const _pend = pgOcrSug[key];
   if(_pend && !inp.value.trim()){ inp.value = _pend.raw; pgRenderSug(); pgOnType(inp.value); }
   else pgRenderSug();
+  pgRenderStack();
+  var addBtn=document.getElementById("pgAddBtn"), row=document.getElementById("pgEditRow"), del=document.getElementById("pgDelBtn");
+  if(cell){
+    if(addBtn) addBtn.classList.remove("hide");
+    if(row) row.style.display = full ? "none" : "";
+    if(del) del.textContent = "Delete all";
+  } else {
+    if(addBtn) addBtn.classList.add("hide");
+    if(row) row.style.display = "";
+    if(del) del.textContent = "Delete";
+  }
+  pgSyncInputBtns();
   document.getElementById("pgScrim").classList.add("show");
   document.getElementById("pgSheet").classList.add("show");
 }
@@ -14619,7 +14668,7 @@ function pgRenderSug(){
 function pgOnType(v){
   const q = String(v||"").trim();
   const box = document.getElementById("pgMatches");
-  if(!q){ box.innerHTML=""; pgSel=null; pgSaveEnable(false); return; }
+  if(!q){ box.innerHTML=""; pgSel=null; pgSaveEnable(false); pgSyncInputBtns(); return; }
   // Unified PLU + Barcode search (same stream the Add tab uses).
   const seen = new Set(); const hits = [];
   searchEntries(q).forEach(e=>{
@@ -14648,8 +14697,11 @@ function pgOnType(v){
   box.innerHTML = html;
   pgSel = exact || null;
   pgSaveEnable(!!pgSel);
+  pgSyncInputBtns();
 }
-function pgAssign(name){ name = nmShort(name); pgCur.set(name); pgRemember(pgCur.spot, name); pgOcrClearSug(pgCur.key); pgStampRender(pgCur.key); pgCloseSheet(); pgTouch(); toast("Filed: "+name); }
+/* Commit a DB item to the active slot WITHOUT closing (pgTouch re-renders). */
+function pgCommit(name){ name = nmShort(name); pgCur.set(name); pgRemember(pgCur.spot, name); pgOcrClearSug(pgCur.key); pgStampRender(pgCur.key); pgTouch(); }
+function pgAssign(name){ var nm = nmShort(name); pgCommit(nm); pgCloseSheet(); toast("Filed: "+nm); }
 function pgSaveEnable(on){ const b = document.getElementById("pgSaveBtn"); if(b) b.disabled = !on; }
 /* Exact DB name match (case-insensitive, minus the (Organic) suffix). Returns
    the canonical name to file, or null. This is the gate that keeps the Save
@@ -14669,8 +14721,48 @@ function pgExactName(v){
 function pgPick(name){ const inp = document.getElementById("pgSheetInput"); if(inp){ inp.value = name; pgOnType(name); } }
 /* Save button: commit the resolved DB item to the spot. */
 function pgSaveSpot(){ if(pgSel && pgCur) pgAssign(pgSel); }
-/* Delete button: empty the spot. */
-function pgDeleteSpot(){ if(!pgCur) return; pgCur.set(""); pgOcrClearSug(pgCur.key); pgStampRender(pgCur.key); pgCloseSheet(); pgTouch(); toast("Emptied"); }
+/* Delete button. Single spot: empty it. Multi-item cell: "Delete all". */
+function pgDeleteSpot(){
+  if(!pgCur) return;
+  if(pgCellKI){
+    var kind=pgCellKI.kind, i=pgCellKI.i, filled=pgSlotsFilled(kind,i);
+    if(filled.length>1 && !confirm("Delete all "+filled.length+" items in this spot?")) return;
+    for(var s=0;s<PG_CELL_MAX;s++){ pgSlotSet(kind,i,s,""); pgStamp(pgSlotKey(kind,i,s)); pgOcrClearSug(pgSlotKey(kind,i,s)); }
+    pgCloseSheet(); pgTouch(); toast(filled.length ? "Spot cleared" : "Emptied"); return;
+  }
+  pgCur.set(""); pgOcrClearSug(pgCur.key); pgStampRender(pgCur.key); pgCloseSheet(); pgTouch(); toast("Emptied");
+}
+/* The "+" (add another): file the current DB item, then reopen the cell on the
+   next empty slot with a blank live line \u2014 "save this, add another". */
+function pgAddItem(){
+  if(!pgCellKI || !pgSel) return;
+  var kind=pgCellKI.kind, i=pgCellKI.i, nm=pgSel;
+  pgCommit(nm);
+  pgEdit(pgSlotKey(kind,i,0));
+  var inp=document.getElementById("pgSheetInput"); if(inp) inp.focus();
+  toast("Added: "+nmShort(nm));
+}
+/* Saved-item rows shown above the live line for a multi-item cell. */
+function pgRenderStack(){
+  var box=document.getElementById("pgStack"); if(!box) return;
+  if(!pgCellKI){ box.innerHTML=""; return; }
+  var kind=pgCellKI.kind, i=pgCellKI.i;
+  box.innerHTML = pgSlotsFilled(kind,i).map(function(f){
+    return '<div class="pg-srow"><span class="pg-sname">'+nmNameHtml(f.v)+'</span>'
+      + '<button class="pg-sx" type="button" onclick="pgDelStackItem(\''+kind+'\','+i+','+f.s+')" aria-label="Delete item">\u00d7</button></div>';
+  }).join("");
+}
+/* The x on a saved row: delete that one item (collapse up), refresh the sheet. */
+function pgDelStackItem(kind,i,s){ pgDelSlot(kind,i,s); pgEdit(pgSlotKey(kind,i,0)); }
+/* In-field clear (x): wipe the live line only. */
+function pgClearInput(){ var inp=document.getElementById("pgSheetInput"); if(!inp) return; inp.value=""; pgOnType(""); inp.focus(); }
+/* Show/hide the in-field x and enable/disable the "+" (needs a valid DB item + room). */
+function pgSyncInputBtns(){
+  var inp=document.getElementById("pgSheetInput"), clr=document.getElementById("pgClr"), add=document.getElementById("pgAddBtn");
+  var has = !!(inp && inp.value.trim());
+  if(clr) clr.classList.toggle("on", has);
+  if(add && pgCellKI){ var room = pgSlotsFilled(pgCellKI.kind,pgCellKI.i).length < PG_CELL_MAX; add.disabled = !(pgSel && room); }
+}
 function pgAddMissing(){
   const inp = document.getElementById("pgSheetInput"); const v = inp ? inp.value.trim() : "";
   if(!v || !pgCur) return;
@@ -14694,7 +14786,7 @@ function pgOnEnter(){
   if(hits.length){ pgAssign(String(hits[0].name||"").replace(/\s*\(Organic\)\s*$/i,"")); }
   else { pgAddMissing(); }
 }
-function pgCloseSheet(){ document.getElementById("pgScrim").classList.remove("show"); document.getElementById("pgSheet").classList.remove("show"); pgStopMic(); }
+function pgCloseSheet(){ document.getElementById("pgScrim").classList.remove("show"); document.getElementById("pgSheet").classList.remove("show"); pgStopMic(); pgCellKI=null; }
 
 /* ---- voice (same engine as Scrap/Restock) ---- */
 let pgRec = null, pgMicLive = false;

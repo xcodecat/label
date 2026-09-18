@@ -1872,11 +1872,13 @@
      table, so neither can be mistaken for a run at a glance. */
   .pg-att{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;
     margin:0 0 11px 0;border-left:3px solid var(--ac)}
-  .pg-att-h{display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:1px solid var(--line)}
+  .pg-att-h{display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer}
   .pg-att-tag{font-family:var(--mono);font-size:10px;letter-spacing:.07em;font-weight:800;color:var(--ac);
     border:1px solid var(--ac);border-radius:20px;padding:4px 10px;white-space:nowrap}
   .pg-att-sub{font-family:var(--mono);font-size:9px;letter-spacing:.09em;color:var(--muted);text-transform:uppercase}
   .pg-att-h .pg-menubtn{margin-left:auto}
+  .pg-att:not(.open) .pg-att-h{border-bottom:0}
+  .pg-att-caret{flex:none;width:12px;font-size:11px;line-height:1;color:var(--muted)}
   .pg-rackgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:11px}
   .pg-rackgrid .pg-slot{margin-top:0}
 
@@ -1926,8 +1928,8 @@
   .pg-srow .pg-sx{flex:none;width:34px;height:34px;border:0;border-radius:9px;background:none;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;display:grid;place-items:center}
   .pg-srow .pg-sx:active{background:var(--laser);color:#fff}
   .pg-editrow{display:flex;gap:9px;align-items:center}
-  .pg-inwrap{position:relative;flex:1;display:flex}
-  .pg-inwrap input{flex:1;height:50px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
+  .pg-inwrap{position:relative;flex:1;min-width:0;display:flex}
+  .pg-inwrap input{flex:1;min-width:0;width:100%;height:50px;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;
     padding:0 84px 0 14px;color:var(--paper);font-size:15px;outline:0;font-family:var(--sans)}
   .pg-inwrap input:focus{border-color:var(--laser)}
   .pg-clr{position:absolute;right:50px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;
@@ -2034,7 +2036,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=137">
+  <link rel="manifest" href="./manifest.json?v=138">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2667,7 +2669,7 @@
     <div id="pgStack"></div>
     <div class="pg-editrow" id="pgEditRow">
       <div class="pg-inwrap">
-        <input id="pgSheetInput" placeholder="Type an item…" autocomplete="off" oninput="pgOnType(this.value)">
+        <input id="pgSheetInput" size="1" placeholder="Type an item…" autocomplete="off" oninput="pgOnType(this.value)">
         <button class="pg-clr" id="pgClr" type="button" onclick="pgClearInput()" aria-label="Clear">&times;</button>
         <button class="pg-mic" id="pgMic" type="button" onclick="pgToggleMic()" aria-label="Speak the item"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></svg></button>
       </div>
@@ -6767,7 +6769,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v137";
+const APP_VERSION = "v138";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -14348,28 +14350,35 @@ function pgAttHtml(ri,pos,ai,a){
   const tag = PG_RUN_DEF[ri] ? PG_RUN_DEF[ri].tag : (ri+1);
   const ctx = "att-"+ri+"-"+pos+"-"+ai;
   const where = (pos === "b" ? "before" : "after") + " run " + tag;
-  if(a.type === "rack"){
-    const colR = function(side){
-      const arr = side === "hmr" ? a.hmr : a.wet;
-      return (arr||[]).map(function(v,bi){
-        return '<div class="pg-slot '+(v?'':'pg-blank')+'" id="pgspot-'+ctx+'-box-'+side+'-'+bi+'" onclick="pgEdit(\''+ctx+'-box-'+side+'-'+bi+'\')">'+(nmNameHtml(v)||'tap to add')+'</div>';
-      });
-    };
-    return '<div class="pg-att" style="--ac:'+PG_ATT_C.rack+'">'
-      + '<div class="pg-att-h"><span class="pg-att-tag">SILVER RACK</span>'
-      + '<span class="pg-att-sub">'+esc(where)+'</span>'
-      + '<button class="pg-menubtn" type="button" onclick="pgMenu(event,\''+ctx+'\')" aria-label="Silver rack options">'+PG_ICON_GRID+'</button></div>'
-      + pgEndsAligned(colR("hmr"), colR("wet"))
-      + '</div>';
+  const open = !!pgAttOpen[ctx];
+  const isRack = (a.type === "rack");
+  const ac = isRack ? PG_ATT_C.rack : PG_ATT_C.table;
+  const caret = '<span class="pg-att-caret">'+(open?'\u25be':'\u25b8')+'</span>';
+  const kicker = isRack ? "SILVER RACK" : "SMALL TABLE";
+  const sub = isRack ? esc(where) : ('pair \u00b7 '+esc(where));
+  const aria = isRack ? "Silver rack options" : "Small table options";
+  const head = '<div class="pg-att-h" onclick="pgToggleAtt(\''+ctx+'\')">'
+    + caret
+    + '<span class="pg-att-tag">'+kicker+'</span>'
+    + '<span class="pg-att-sub">'+sub+'</span>'
+    + '<button class="pg-menubtn" type="button" onclick="event.stopPropagation();pgMenu(event,\''+ctx+'\')" aria-label="'+aria+'">'+PG_ICON_GRID+'</button></div>';
+  let body = "";
+  if(open){
+    if(isRack){
+      const colR = function(side){
+        const arr = side === "hmr" ? a.hmr : a.wet;
+        return (arr||[]).map(function(v,bi){
+          return '<div class="pg-slot '+(v?'':'pg-blank')+'" id="pgspot-'+ctx+'-box-'+side+'-'+bi+'" onclick="pgEdit(\''+ctx+'-box-'+side+'-'+bi+'\')">'+(nmNameHtml(v)||'tap to add')+'</div>';
+        });
+      };
+      body = pgEndsAligned(colR("hmr"), colR("wet"));
+    } else {
+      const tHmr = '<div class="pg-slot '+(a.hmr?'':'pg-blank')+'" id="pgspot-'+ctx+'-tbl-hmr" onclick="pgEdit(\''+ctx+'-tbl-hmr\')">'+(nmNameHtml(a.hmr)||'tap to add')+'</div>';
+      const tWet = '<div class="pg-slot '+(a.wet?'':'pg-blank')+'" id="pgspot-'+ctx+'-tbl-wet" onclick="pgEdit(\''+ctx+'-tbl-wet\')">'+(nmNameHtml(a.wet)||'tap to add')+'</div>';
+      body = pgEndsAligned([tHmr], [tWet]);
+    }
   }
-  const tHmr = '<div class="pg-slot '+(a.hmr?'':'pg-blank')+'" id="pgspot-'+ctx+'-tbl-hmr" onclick="pgEdit(\''+ctx+'-tbl-hmr\')">'+(nmNameHtml(a.hmr)||'tap to add')+'</div>';
-  const tWet = '<div class="pg-slot '+(a.wet?'':'pg-blank')+'" id="pgspot-'+ctx+'-tbl-wet" onclick="pgEdit(\''+ctx+'-tbl-wet\')">'+(nmNameHtml(a.wet)||'tap to add')+'</div>';
-  return '<div class="pg-att" style="--ac:'+PG_ATT_C.table+'">'
-    + '<div class="pg-att-h"><span class="pg-att-tag">SMALL TABLE</span>'
-    + '<span class="pg-att-sub">pair \u00b7 '+esc(where)+'</span>'
-    + '<button class="pg-menubtn" type="button" onclick="pgMenu(event,\''+ctx+'\')" aria-label="Small table options">'+PG_ICON_GRID+'</button></div>'
-    + pgEndsAligned([tHmr], [tWet])
-    + '</div>';
+  return '<div class="pg-att'+(open?' open':'')+'" style="--ac:'+ac+'">' + head + body + '</div>';
 }
 function pgRenderRuns(){
   const el = document.getElementById("pgRuns"); if(!el) return;
@@ -14558,7 +14567,7 @@ function pgRackSlots(ri,pos,ai,d){
 }
 
 /* ---- editor ---- */
-let pgCur = null, pgCellKI = null, pgExpand = {};
+let pgCur = null, pgCellKI = null, pgExpand = {}, pgAttOpen = {};
 let pgPendingSpot = null;   // planogram <-> Add round-trip (Pass C hard block)
 let pgSel = null;           // resolved DB item ready to Save into the spot
 const PG_SPOT_LABEL = { pod1:"POD 1", pod2:"POD 2", mango:"POD 1 \u00b7 MANGO", run:"ENDCAP", lot:"CASE LOT", rack:"SILVER RACK", table:"SMALL TABLE" };
@@ -14598,6 +14607,7 @@ function pgCellTitle(cell){
   return base + (n ? " \u00b7 "+n+" item"+(n>1?"s":"") : "");
 }
 function pgToggleExpand(kind,i){ var k=kind+"-"+i; if(pgExpand[k]) delete pgExpand[k]; else pgExpand[k]=1; renderPlanogram(); }
+function pgToggleAtt(ctx){ if(pgAttOpen[ctx]) delete pgAttOpen[ctx]; else pgAttOpen[ctx]=1; renderPlanogram(); }
 function pgSetBrand(v){
   const inp = document.getElementById("pgSheetInput"); if(!inp) return;
   const p = nmNormalize(inp.value || "");
@@ -14996,7 +15006,11 @@ function pgShortToggle(i){
   if(el) el.classList.toggle("open");
 }
 function pgFlash(key){
-  const el = document.getElementById("pgspot-"+key);
+  var el = document.getElementById("pgspot-"+key);
+  if(!el && /^att-\d+-[ab]-\d+-/.test(key)){          // spot lives on a collapsed rack/table -> open it first
+    var mctx = key.match(/^(att-\d+-[ab]-\d+)-/);
+    if(mctx){ pgAttOpen[mctx[1]] = 1; renderPlanogram(); el = document.getElementById("pgspot-"+key); }
+  }
   if(!el) return;
   try{ el.scrollIntoView({ behavior:"smooth", block:"center" }); }catch(e){ el.scrollIntoView(); }
   el.classList.remove("pg-flash"); void el.offsetWidth; el.classList.add("pg-flash");
@@ -15185,6 +15199,8 @@ function pgFullPrompt(){
     "Output ONLY the block below. No commentary, no markdown, no PLU numbers, no prices.",
     "Keep these exact headers as plain text \u2014 no bold, bullets, numbers or extra words on the header lines.",
     "Under each header, one product per line, left to right then top to bottom.",
+    "Orientation: the board side printed with the heading 'Atlantic Store with 5 Produce Runs' faces the WET CASES - put those items under RUN{n} WET; the opposite side faces the HMR department - put those under RUN{n} HMR.",
+    "Next to the run endcaps you may see extra fixtures: usually small tables (which normally list only ONE item - that is the tell), sometimes silver racks. Use these only to tell the two sides apart; do NOT list their items in the block below.",
     "If the photo shows only part of the planogram, include just the headers you can actually see and skip the rest \u2014 a partial paste is fine.",
     "",
     "POD1",

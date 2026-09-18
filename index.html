@@ -2036,7 +2036,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=138">
+  <link rel="manifest" href="./manifest.json?v=138.1">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6769,7 +6769,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v138";
+const APP_VERSION = "v138.1";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -12347,7 +12347,7 @@ function nmShort(raw){
   const pack  = nm.tags.filter(t=>nmTagKind(t)==="pack");
   return [brand.join(" "), nm.core, bulk.join(" "), pack.join(" ")].filter(Boolean).join(" ").trim() || String(raw||"").trim();
 }
-function nmBadgesHtml(tags){ return (tags&&tags.length) ? tags.map(t=>'<span class="nm-bdg '+nmTagKind(t)+'">'+esc(t)+'</span>').join("") : ""; }
+function nmBadgesHtml(tags){ return (tags&&tags.length) ? tags.map(function(t){ var k=nmTagKind(t); var lbl=(k==="pack")?String(t).toUpperCase():t; return '<span class="nm-bdg '+k+'">'+esc(lbl)+'</span>'; }).join("") : ""; }
 function cleanWt(s){
   s = String(s||"").trim();
   const m = s.match(/(\d+(?:\.\d+)?)\s*(kg|lbs|lb|oz|ml|g|l)\b/i);
@@ -14427,7 +14427,7 @@ function pgSetPods(n){ pgState.podN = n; document.getElementById("pgPodCount").c
 function pgClearAll(){
   appConfirm("Reset to default board?", "This can't be undone.", "Reset", function(){
     pgState = pgDefault();                 // now an empty board (no seed to resurrect)
-    pgCur = null; pgPendingSpot = null; pgSel = null;
+    pgCur = null; pgPendingSpot = null; pgSel = null; pgStore = null;
     try{ pgCloseSheet(); }catch(e){}
     pgOcrSug = {};                          // drop any pending + suggestions
     pgStampAll();
@@ -14570,6 +14570,7 @@ function pgRackSlots(ri,pos,ai,d){
 let pgCur = null, pgCellKI = null, pgExpand = {}, pgAttOpen = {};
 let pgPendingSpot = null;   // planogram <-> Add round-trip (Pass C hard block)
 let pgSel = null;           // resolved DB item ready to Save into the spot
+let pgStore = null;         // badged string actually written (sel + Bulk/brand/pack)
 const PG_SPOT_LABEL = { pod1:"POD 1", pod2:"POD 2", mango:"POD 1 \u00b7 MANGO", run:"ENDCAP", lot:"CASE LOT", rack:"SILVER RACK", table:"SMALL TABLE" };
 function pgSpotMeta(key){
   /* att-<ri>-<pos>-<ai>-box-<wet|hmr>-<n>  (silver rack)  |  att-<ri>-<pos>-<ai>-tbl-<wet|hmr> */
@@ -14634,6 +14635,7 @@ function pgEdit(key){
     if(bsel){ const b=nmNormalize(inp.value||"").tags.filter(t=>nmTagKind(t)==="brand"); bsel.value=b[0]||""; } }
   document.getElementById("pgMatches").innerHTML = "";
   pgSel = inp.value.trim() ? inp.value.trim() : null;
+  pgStore = pgSel;
   pgSaveEnable(!!pgSel);
   // A paste read left a "+" guess on this blank box: pre-load the raw text so the
   // closest DB names surface right away \u2014 one tap to file, no typing.
@@ -14675,10 +14677,36 @@ function pgRenderSug(){
     return `<button class="pg-chip" type="button" onclick='pgAssign(${JSON.stringify(x.name)})'>${esc(x.name)} ${meta}</button>`;
   }).join("");
 }
+/* v138.1: deterministic name overrides for phrases the fuzzy DB search snaps
+   wrong (generic term -> over-specific variety). Keyed by rkDupKey(core) so
+   singular/plural both hit. Each maps to a real DB canonical; bulk:true adds a
+   Bulk badge to the stored value. The canonical MUST exist in the DB so Save's
+   "real DB item" gate (and the restock list) still holds. */
+const PG_SNAP = {
+  "red pepper":    { name:"Peppers Red Sweet", bulk:true },
+  "orange pepper": { name:"Peppers Bell, Field Grown - Orange", bulk:true }
+};
+/* Resolve a typed value to { sel, store, snap }:
+     sel   = DB canonical to validate/pin against (a real DB name)
+     store = what we actually save = canonical core + the user's Bulk/brand/pack
+             badges (plus an override's Bulk), ordered by nmShort
+   Returns null when nothing resolves (Save stays disabled -> Add-to-DB path). */
+function pgResolve(q){
+  q = String(q||"").trim();
+  if(!q) return null;
+  const nm = nmNormalize(q);
+  const snap = PG_SNAP[rkDupKey(nm.core)];
+  const core = snap ? snap.name : (pgExactName(q) || pgExactName(nm.core));
+  if(!core) return null;
+  let tags = (nm.tags||[]).slice();
+  if(snap && snap.bulk && !tags.some(function(t){ return nmTagKind(t)==="bulk"; })) tags.push("Bulk");
+  const store = nmShort(core + (tags.length ? " " + tags.join(" ") : ""));
+  return { sel: core, store: store, snap: !!snap };
+}
 function pgOnType(v){
   const q = String(v||"").trim();
   const box = document.getElementById("pgMatches");
-  if(!q){ box.innerHTML=""; pgSel=null; pgSaveEnable(false); pgSyncInputBtns(); return; }
+  if(!q){ box.innerHTML=""; pgSel=null; pgStore=null; pgSaveEnable(false); pgSyncInputBtns(); return; }
   // Unified PLU + Barcode search (same stream the Add tab uses).
   const seen = new Set(); const hits = [];
   searchEntries(q).forEach(e=>{
@@ -14688,7 +14716,12 @@ function pgOnType(v){
   });
   const top = hits.slice(0,6);
   const exact = pgExactName(q);                 // null unless a name matches exactly
+  const res = pgResolve(q);                     // override + bulk/brand/pack-aware
   let html = "";
+  if(res && res.snap){                          // a mapped phrase (e.g. red pepper -> Peppers Red Sweet + Bulk)
+    html += `<div class="pg-matchhdr">Match</div>`
+      + `<button class="pg-chip pg-chip-on" type="button" onclick='pgPick(${JSON.stringify(res.store)})'>${nmNameHtml(res.store)}</button>`;
+  }
   if(top.length){
     html += `<div class="pg-matchhdr">PLU / Barcode DB</div>`
       + top.map(d=>{
@@ -14698,14 +14731,15 @@ function pgOnType(v){
           return `<button class="pg-chip${on}" type="button" onclick='pgPick(${JSON.stringify(d.name)})'>${esc(d.name)} ${badge}</button>`;
         }).join("");
   }
-  // Offer "Add to DB" whenever there is no EXACT match, even if partial matches exist.
-  if(!exact){
+  // Offer "Add to DB" whenever there is no EXACT match and no override, even if partial matches exist.
+  if(!exact && !(res && res.snap)){
     html += `<div class="pg-nomatch">${top.length ? "" : "No match in the PLU or Barcode DB. "}`
       + `<button class="pg-addmiss" type="button" onclick="pgAddMissing()">Add \u201c${esc(q)}\u201d to the database</button>`
       + `<span class="pg-hint2">Items must exist in the DB so the restock list can find them.</span></div>`;
   }
   box.innerHTML = html;
-  pgSel = exact || null;
+  pgSel = (res && res.sel) || exact || null;
+  pgStore = (res && res.store) || exact || null;
   pgSaveEnable(!!pgSel);
   pgSyncInputBtns();
 }
@@ -14728,9 +14762,17 @@ function pgExactName(v){
   return found;
 }
 /* Tap a suggestion chip: fill the field and light up Save (does not commit). */
-function pgPick(name){ const inp = document.getElementById("pgSheetInput"); if(inp){ inp.value = name; pgOnType(name); } }
+function pgPick(name){
+  const inp = document.getElementById("pgSheetInput");
+  if(inp){
+    const prior = nmNormalize(inp.value||"");           // badges the user had typed
+    const keep = (prior.tags||[]).filter(function(t){ var k=nmTagKind(t); return k==="bulk"||k==="brand"||k==="pack"; });
+    const merged = keep.length ? nmShort(name + " " + keep.join(" ")) : name;
+    inp.value = merged; pgOnType(merged);
+  }
+}
 /* Save button: commit the resolved DB item to the spot. */
-function pgSaveSpot(){ if(pgSel && pgCur) pgAssign(pgSel); }
+function pgSaveSpot(){ if(pgSel && pgCur) pgAssign(pgStore || pgSel); }
 /* Delete button. Single spot: empty it. Multi-item cell: "Delete all". */
 function pgDeleteSpot(){
   if(!pgCur) return;
@@ -15196,18 +15238,16 @@ function pgFullPrompt(){
   const runs = (pgState.runs||[]).length || PG_RUNS_N;
   const L = [
     "Read this produce planogram photo and list every product, in shelf order.",
-    "Output ONLY the block below. No commentary, no markdown, no PLU numbers, no prices.",
-    "Keep these exact headers as plain text \u2014 no bold, bullets, numbers or extra words on the header lines.",
-    "Under each header, one product per line, left to right then top to bottom.",
-    "Orientation: the board side printed with the heading 'Atlantic Store with 5 Produce Runs' faces the WET CASES - put those items under RUN{n} WET; the opposite side faces the HMR department - put those under RUN{n} HMR.",
-    "Next to the run endcaps you may see extra fixtures: usually small tables (which normally list only ONE item - that is the tell), sometimes silver racks. Use these only to tell the two sides apart; do NOT list their items in the block below.",
-    "If the photo shows only part of the planogram, include just the headers you can actually see and skip the rest \u2014 a partial paste is fine.",
+    "For each section below, write the section header exactly as shown, then a colon, then that section's products left-to-right separated by \" | \" (space pipe space). Put each section on its own line.",
+    "No commentary, no markdown, no PLU numbers, no prices. If a section is not visible in the photo, skip its line \u2014 a partial paste is fine.",
+    "Orientation: the board side printed with the heading 'Atlantic Store with 5 Produce Runs' faces the WET CASES (list those under RUN<n> WET); the opposite side faces the HMR department (list those under RUN<n> HMR).",
+    "Next to the run endcaps you may see extra fixtures: usually small tables (which normally list only ONE item \u2014 that is the tell), sometimes silver racks. Use these only to tell the two sides apart; do NOT list their items below.",
     "",
-    "POD1",
-    "POD2",
-    "CASE LOTS"
+    "POD1:",
+    "POD2:",
+    "CASE LOTS:"
   ];
-  for(let i=0;i<runs;i++){ L.push("RUN"+(i+1)+" WET"); L.push("RUN"+(i+1)+" HMR"); }
+  for(let i=0;i<runs;i++){ L.push("RUN"+(i+1)+" WET:"); L.push("RUN"+(i+1)+" HMR:"); }
   return L.join("\n");
 }
 /* Classify one raw line: header (returns {key}), a header we deliberately
@@ -15238,13 +15278,22 @@ function pgFullHdr(raw){
   return { item:s };
 }
 function pgFullParse(text){
-  const map = {}; let cur = null;
-  String(text||"").split(/\r?\n/).forEach(function(raw){
-    const r = pgFullHdr(raw);
-    if(r.blank || r.ignore) return;
-    if(r.key){ cur = (map[r.key] = map[r.key] || []); return; }
-    if(cur && r.item) cur.push(r.item);
-  });
+  const map = {};
+  const s = String(text||"");
+  // Split at header boundaries so it parses even when the source dropped newlines
+  // (header + items run together on one line). The old one-item-per-line format
+  // still works. Items within a section split on "|" or newline.
+  const HRE = /(POD\s?(?:1|2|ONE|TWO)|CASE\s?LOTS?|LOTS|R(?:UN)?\s?\d+\s?(?:WET|HMR)(?:\s?CASES?)?|(?:WET|HMR)\s?R(?:UN)?\s?\d+)\s*:?/ig;
+  const parts = s.split(HRE);                 // [pre, header, between, header, between, ...]
+  for(let i=1;i<parts.length;i+=2){
+    const h = pgFullHdr(parts[i]);
+    if(!h.key) continue;
+    const cur = (map[h.key] = map[h.key] || []);
+    String(parts[i+1]||"").split(/[|\n]+/).forEach(function(raw){
+      const it = pgFullHdr(raw);
+      if(it.item) cur.push(it.item);
+    });
+  }
   return map;
 }
 function pgFullApply(map){

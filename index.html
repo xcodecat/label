@@ -1916,9 +1916,10 @@
   .pg-scrim.show{opacity:1;pointer-events:auto}
   .pg-sheet{position:fixed;left:0;right:0;bottom:0;max-width:var(--appw,480px);margin:0 auto;background:var(--surface);
     border-radius:18px 18px 0 0;border:1px solid var(--line);border-bottom:0;transform:translateY(100%);
-    transition:.22s cubic-bezier(.2,.8,.2,1);z-index:61;padding:16px 16px calc(18px + env(safe-area-inset-bottom))}
+    transition:.22s cubic-bezier(.2,.8,.2,1);z-index:61;padding:16px 16px calc(18px + env(safe-area-inset-bottom));
+    max-height:82vh;max-height:82dvh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
   .pg-sheet.show{transform:translateY(0)}
-  .pg-sheet .pg-bar{width:38px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 14px}
+  .pg-sheet .pg-bar{width:38px;height:4px;border-radius:2px;background:var(--line);margin:2px auto 14px;position:sticky;top:-2px}
   .pg-sheet .pg-lbl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
   .pg-sheet h4{margin:3px 0 12px;font-size:16px}
   #pgStack{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
@@ -2036,7 +2037,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=138.1">
+  <link rel="manifest" href="./manifest.json?v=139">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6769,7 +6770,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v138.1";
+const APP_VERSION = "v139";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -14662,6 +14663,15 @@ function pgRenderSug(){
   if(pgCur.type==="pod2" && list.length<3){
     PG_POD2_PRIORITY.forEach(p=>{ if(!list.find(x=>x.name===p.name)) list.push({name:p.name, count:0, pref:p.n}); });
   }
+  // v139: the OTHER candidates read for this spot (box autofilled with the
+  // highlighted one). One tap swaps to any of them. These sit above the learned
+  // list; the primary's own "+" guesses (below) go above these.
+  const alts = pgCur && pgOcrAlt[pgCur.key];
+  if(alts && alts.length){
+    const altItems = alts.map(n=>({name:n, count:0, alt:true}));
+    const have = new Set(altItems.map(x=>x.name));
+    list = altItems.concat(list.filter(x=>!have.has(x.name)));
+  }
   // The camera+/paste "+" guess for THIS box goes first: closest DB names, one tap to file.
   const pend = pgCur && pgOcrSug[pgCur.key];
   if(pend && pend.matches && pend.matches.length){
@@ -14673,7 +14683,7 @@ function pgRenderSug(){
   if(!list.length){ hdr.style.display="none"; box.innerHTML=""; return; }
   hdr.style.display="";
   box.innerHTML = list.slice(0,8).map(x=>{
-    const meta = x.ocr ? `<span class="pg-plu">+</span>` : (x.count ? `<span class="pg-learn">\u00d7${x.count}</span>` : (x.pref ? `<span class="pg-plu">${x.pref}</span>` : ""));
+    const meta = (x.ocr||x.alt) ? `<span class="pg-plu">+</span>` : (x.count ? `<span class="pg-learn">\u00d7${x.count}</span>` : (x.pref ? `<span class="pg-plu">${x.pref}</span>` : ""));
     return `<button class="pg-chip" type="button" onclick='pgAssign(${JSON.stringify(x.name)})'>${esc(x.name)} ${meta}</button>`;
   }).join("");
 }
@@ -14885,8 +14895,104 @@ function pgClosest(text){
    pgState. Cleared the moment the box is filled or emptied. Drives the "+"
    marker on the board and the pre-loaded chips when the box is tapped. */
 let pgOcrSug = {};
-function pgOcrClearSug(key){ if(key && pgOcrSug[key]) delete pgOcrSug[key]; }
+/* v139: alternative candidates for a box that was AUTOFILLED from a multi-candidate
+   spot ("A, B / C" -> box gets A, B is stashed here). Edit-sheet only \u2014 shown as
+   one-tap chips when the box is opened, NO board "+" (the box already holds a value).
+   Same lifecycle as pgOcrSug: cleared the moment the box is set, emptied, or committed. */
+let pgOcrAlt = {};
+function pgOcrClearSug(key){ if(key){ if(pgOcrSug[key]) delete pgOcrSug[key]; if(pgOcrAlt[key]) delete pgOcrAlt[key]; } }
 function pgMk(key){ return (pgOcrSug && pgOcrSug[key]) ? '<span class="pg-mk" aria-label="Suggestion waiting">+</span>' : ""; }
+/* Shared OCR/paste name resolver \u2014 the SAME brains the edit sheet uses, so a
+   pasted read gets brand aliasing (NNNI->NNI), the PG_SNAP overrides, and bulk/
+   pack badges instead of the old exact-name-only match. Returns the DB canonical
+   (badged) to file, or null.
+     1) exact DB name
+     2) pgResolve: nmNormalize core + PG_SNAP override + brand/bulk/pack badges
+     3) pgCtPkMatch: SAME product+brand where the only difference is ct<->pk (a
+        typo per Faisal) and/or singular/plural \u2014 accept the DB row. */
+function pgResolveOcr(text){
+  const t = String(text||"").trim(); if(!t) return null;
+  const exact = pgExactName(t); if(exact) return nmShort(exact);
+  const res = pgResolve(t); if(res && res.sel) return res.store || res.sel;
+  const ck = pgCtPkMatch(t); if(ck) return nmShort(ck);
+  return null;
+}
+/* Loose SKU identity: dup-keyed canonical core + brand set + pack counts, with
+   ct and pk folded to the same token. Lets "romaine hearts 3ct" match a DB
+   "Romaine Heart 3pk" (plural + ct/pk typo) WITHOUT matching a genuinely
+   different brand or a different weight (6lb stays 6lb). */
+function pgSkuKeyLoose(str){
+  const nn = nmNormalize(str);
+  const core = rkDupKey(rkCanonCore(nn.core));
+  if(!core) return "";
+  const brand = (nn.tags||[]).filter(t=>nmTagKind(t)==="brand").map(t=>rkBrandAbbr(t).toUpperCase()).sort().join(",");
+  const packs = (nn.tags||[]).filter(t=>nmTagKind(t)==="pack").map(function(t){
+    const m = String(t).toLowerCase().match(/^(\d+)(ct|pk)$/); return m ? (m[1]+"cnt") : String(t).toLowerCase();
+  }).sort().join(",");
+  return core + "#" + brand + "#" + packs;
+}
+function pgCtPkMatch(text){
+  const want = pgSkuKeyLoose(text); if(!want) return null;
+  // Only fold when the input actually carries a ct/pk pack (else this is just
+  // exact-by-another-name and pgExactName/pgResolve already had their shot).
+  if(!/\b\d{1,2}\s*(?:ct|cts?|counts?|pk|packs?)\b/i.test(text)) return null;
+  let hit = null;
+  searchEntries(text).some(function(e){
+    const nm = String(e.name||"").replace(/\s*\(Organic\)\s*$/i,"");
+    if(!nm) return false;
+    if(pgSkuKeyLoose(nm) === want){ hit = nm; return true; }
+    return false;
+  });
+  return hit;
+}
+/* Split a RUN endcap's parsed items into exactly n boxes on ' / '. Robust to the
+   model using '|' (already pipe-split into items) or the literal '/'; the last
+   box soaks up any extra slashes so a stray '/' inside a name can't shift boxes. */
+function pgSplitBoxes(items, n){
+  const joined = (items||[]).map(s=>String(s||"").trim()).filter(Boolean).join(" / ");
+  const parts = joined.split("/");
+  const boxes = [];
+  for(let i=0;i<n;i++) boxes.push((i===n-1 ? parts.slice(i).join("/") : (parts[i]||"")).trim());
+  return boxes;
+}
+/* Candidates within one box, comma-separated, highlighted/marked one first (the
+   model is told to order them that way). */
+function pgSplitCands(boxStr){
+  return String(boxStr||"").split(",").map(s=>s.trim()).filter(Boolean);
+}
+/* Fill ONE run box from its candidate list: resolve each, autofill the primary
+   (first = highlighted), stash the rest as edit-sheet-only alternatives. Never
+   overwrites a box that already holds a value. */
+function pgFillBox(key, cands, getVal, setVal, spot, counters){
+  if(!cands || !cands.length) return;
+  if(getVal && String(getVal()||"").trim()){ pgStashAlts(key, cands); return; }  // occupied: only refresh alts
+  const primary = pgResolveOcr(cands[0]);
+  if(primary){
+    const nm = nmShort(primary);
+    setVal(nm); pgOcrClearSug(key);
+    if(spot) pgRemember(spot, nm);
+    counters.autofilled++;
+    pgStashAlts(key, cands.slice(1));
+  } else {
+    // primary didn't resolve -> leave the box blank, stash a "+" with closest names
+    pgOcrSug[key] = { raw: cands[0], matches: pgClosest(cands[0]) };
+    counters.suggested++;
+    pgStashAlts(key, cands.slice(1));
+  }
+}
+/* Resolve a set of alternative candidate strings to DB names and keep them for
+   the edit sheet. Resolved names win; an unresolved alt falls back to its single
+   closest DB name so the chip still files a real item. */
+function pgStashAlts(key, rest){
+  const alts = [];
+  (rest||[]).forEach(function(c){
+    const r = pgResolveOcr(c);
+    if(r){ alts.push(nmShort(r)); }
+    else { const cl = pgClosest(c); if(cl && cl[0] && cl[0].name) alts.push(cl[0].name); }
+  });
+  const uniq = alts.filter(function(n,i){ return n && alts.indexOf(n)===i; });
+  if(uniq.length) pgOcrAlt[key] = uniq; else if(pgOcrAlt[key]) delete pgOcrAlt[key];
+}
 
 /* Auto-pick the pod count from how many items were read. Snap to 4/6/8, but only
    when the read lands within +-1 of an option (ties go to the larger — 8 items
@@ -14916,9 +15022,9 @@ function pgApplyOcr(section, end, items, opts){
 
   const place = (key, text, getVal, setVal, spot)=>{
     if(!text) return;                       // model saw an empty spot -> leave the box alone
-    const exact = pgExactName(text);
-    if(exact){                              // exact DB hit: fill (or correct) the box, 0 taps
-      const nm = nmShort(exact);
+    const hit = pgResolveOcr(text);         // exact + brand-alias + PG_SNAP override + ct/pk typo
+    if(hit){                                // resolved DB item: fill (or correct) the box, 0 taps
+      const nm = nmShort(hit);
       setVal(nm); pgOcrClearSug(key);
       if(spot) pgRemember(spot, nm);
       autofilled++;
@@ -14949,7 +15055,14 @@ function pgApplyOcr(section, end, items, opts){
   else if(section.indexOf("run-") === 0){
     const ri = +section.split("-")[1]; const col = end === 0 ? "wet" : "hmr";
     const arr = pgState.runs[ri][col];
-    items.slice(0,arr.length).forEach((t,i)=> place("run-"+ri+"-"+col+"-"+i, t, ()=>arr[i], v=>{ arr[i] = v; }, "run"+(ri+1)+"-"+col));
+    const counters = { autofilled:0, suggested:0 };
+    const boxes = pgSplitBoxes(items, arr.length);       // '/' splits the endcap's two boxes
+    boxes.forEach((boxStr,i)=>{
+      if(i>=arr.length) return;
+      const cands = pgSplitCands(boxStr);                // comma-separated candidates, highlighted first
+      pgFillBox("run-"+ri+"-"+col+"-"+i, cands, ()=>arr[i], v=>{ arr[i]=v; }, "run"+(ri+1)+"-"+col, counters);
+    });
+    autofilled += counters.autofilled; suggested += counters.suggested;
     for(let i=0;i<arr.length;i++) pgStamp("run-"+ri+"-"+col+"-"+i);
   }
   else {
@@ -15238,9 +15351,13 @@ function pgFullPrompt(){
   const runs = (pgState.runs||[]).length || PG_RUNS_N;
   const L = [
     "Read this produce planogram photo and list every product, in shelf order.",
-    "For each section below, write the section header exactly as shown, then a colon, then that section's products left-to-right separated by \" | \" (space pipe space). Put each section on its own line.",
-    "No commentary, no markdown, no PLU numbers, no prices. If a section is not visible in the photo, skip its line \u2014 a partial paste is fine.",
+    "For each section below, write the section header exactly as shown, then a colon, then that section's contents. Put each section on its own line. No commentary, no markdown, no PLU numbers, no prices. If a section is not visible in the photo, skip its line \u2014 a partial paste is fine.",
     "Orientation: the board side printed with the heading 'Atlantic Store with 5 Produce Runs' faces the WET CASES (list those under RUN<n> WET); the opposite side faces the HMR department (list those under RUN<n> HMR).",
+    "IMPORTANT \u2014 the runs are NOT in number order across the board. Facing the wet cases, reading LEFT to RIGHT, the run endcaps are in this fixed order: Root veg & Onions = RUN5, then Cucumber/Tomato/Potato = RUN4, then Citrus & melons (cantaloupe/mango) = RUN3, then Berries & Bananas (grapes) = RUN2, then Apples & Pears = RUN1. Number the runs by these CONTENTS, and ignore any printed 'Run' tag on the board. The HMR side reads in the SAME left-to-right order.",
+    "A tall mostly-empty bulk column may sit at the far left, before Root veg & Onions. It is NOT a run \u2014 skip it.",
+    "Each RUN endcap has exactly TWO boxes, separated by ' / ' (space slash space): write box-1 ' / ' box-2. Keep that single slash so both boxes land in the right spot.",
+    "If a box lists more than one possible product for the same spot, list EVERY candidate for that box separated by ', ' (comma), and put any highlighted or marked one (e.g. green highlighter) FIRST.",
+    "For POD and CASE LOTS sections, separate the products left-to-right with ' | ' (space pipe space), one product per spot.",
     "Next to the run endcaps you may see extra fixtures: usually small tables (which normally list only ONE item \u2014 that is the tell), sometimes silver racks. Use these only to tell the two sides apart; do NOT list their items below.",
     "",
     "POD1:",

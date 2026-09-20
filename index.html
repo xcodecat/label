@@ -1960,6 +1960,7 @@
   .pg-chip:active{border-color:var(--muted)}
   .pg-chip .pg-learn{font-family:var(--mono);font-size:9px;color:var(--r1)}
   .pg-chip .pg-plu{font-family:var(--mono);font-size:9px;color:var(--muted)}
+  .pg-chip .pg-cnm.org{color:#3ecf8e}   /* v140: organic suggestion in green */
   .pg-matchhdr{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--muted);margin:14px 0 6px;text-transform:uppercase}
   .pg-sheet .pg-hint{font-size:12px;color:var(--muted);margin-top:12px}
   .pg-nomatch{display:flex;flex-direction:column;gap:8px;margin:12px 0 2px;font-size:13px;color:var(--muted)}
@@ -2037,7 +2038,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=139">
+  <link rel="manifest" href="./manifest.json?v=140">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6770,7 +6771,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v139";
+const APP_VERSION = "v140";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -14016,6 +14017,17 @@ function hoOpenAssign(id){
    fully client-side and the "+" DB-match suggestions still fire on a paste. */
 
 const KEY_PLANO = "label_planogram_v1";
+/* v140: local (per-phone, NOT synced) side-stores.
+   - KEY_PGLOCK: slot keys the user set by hand. A paste never overwrites these;
+     the box unlocks when it's emptied, or when the whole board is reset.
+   - KEY_PGOCR : the last paste's pending "+"/alternatives, kept across logout. */
+const KEY_PGLOCK = "label_pg_locked_v1";
+const KEY_PGOCR  = "label_pg_ocr_v1";
+function pgLockLoad(){ try{ return JSON.parse(localStorage.getItem(KEY_PGLOCK)||"{}") || {}; }catch(e){ return {}; } }
+let pgLocked = pgLockLoad();
+function pgLockSave(){ try{ localStorage.setItem(KEY_PGLOCK, JSON.stringify(pgLocked)); }catch(e){} }
+function pgLockSet(key){ if(key){ pgLocked[key]=1; pgLockSave(); } }
+function pgUnlock(){ let ch=false; for(let i=0;i<arguments.length;i++){ const k=arguments[i]; if(k && pgLocked[k]){ delete pgLocked[k]; ch=true; } } if(ch) pgLockSave(); }
 
 const PG_RUN_DEF = [
   { tag:1, name:"Apple",                       c:"--r1" },
@@ -14070,7 +14082,7 @@ function pgSlotsFilled(kind,i){ var out=[]; for(var s=0;s<PG_CELL_MAX;s++){ var 
 function pgDelSlot(kind,i,s){
   var vals=[]; for(var k=0;k<PG_CELL_MAX;k++){ if(k!==s) vals.push(pgSlotGet(kind,i,k)); }
   vals.push("");
-  for(var k=0;k<PG_CELL_MAX;k++){ pgSlotSet(kind,i,k,vals[k]); pgStamp(pgSlotKey(kind,i,k)); pgOcrClearSug(pgSlotKey(kind,i,k)); }
+  for(var k=0;k<PG_CELL_MAX;k++){ pgSlotSet(kind,i,k,vals[k]); pgStamp(pgSlotKey(kind,i,k)); pgOcrClearSug(pgSlotKey(kind,i,k)); pgUnlock(pgSlotKey(kind,i,k)); }
   pgTouch();
 }
 function pgNow(){ return Date.now(); }
@@ -14430,7 +14442,8 @@ function pgClearAll(){
     pgState = pgDefault();                 // now an empty board (no seed to resurrect)
     pgCur = null; pgPendingSpot = null; pgSel = null; pgStore = null;
     try{ pgCloseSheet(); }catch(e){}
-    pgOcrSug = {};                          // drop any pending + suggestions
+    pgOcrSug = {}; pgOcrAlt = {}; pgOcrSave();   // drop any pending + suggestions
+    pgLocked = {}; pgLockSave();                 // manual locks clear with the board
     pgStampAll();
     pgTouch();
     toast("Board reset");
@@ -14684,8 +14697,17 @@ function pgRenderSug(){
   hdr.style.display="";
   box.innerHTML = list.slice(0,8).map(x=>{
     const meta = (x.ocr||x.alt) ? `<span class="pg-plu">+</span>` : (x.count ? `<span class="pg-learn">\u00d7${x.count}</span>` : (x.pref ? `<span class="pg-plu">${x.pref}</span>` : ""));
-    return `<button class="pg-chip" type="button" onclick='pgAssign(${JSON.stringify(x.name)})'>${esc(x.name)} ${meta}</button>`;
+    return `<button class="pg-chip" type="button" onclick='pgAssign(${JSON.stringify(x.name)})'>${pgSugCoreHtml(x.name)} ${meta}</button>`;
   }).join("");
+}
+/* v140: chip label = core name (left) + brand & pack-size badges to its right, so
+   names line up. Bulk shows nothing; organic tints the name green. */
+function pgSugCoreHtml(name){
+  const n = nmNormalize(name);
+  const isOrg = /\(organic\)/i.test(String(name||"")) || (n.tags||[]).some(t=>nmTagKind(t)==="org");
+  const brand = (n.tags||[]).filter(t=>nmTagKind(t)==="brand");
+  const pack  = (n.tags||[]).filter(t=>nmTagKind(t)==="pack");
+  return '<span class="pg-cnm'+(isOrg?" org":"")+'">'+esc(n.core)+'</span>' + nmBadgesHtml(brand) + nmBadgesHtml(pack);
 }
 /* v138.1: deterministic name overrides for phrases the fuzzy DB search snaps
    wrong (generic term -> over-specific variety). Keyed by rkDupKey(core) so
@@ -14694,7 +14716,11 @@ function pgRenderSug(){
    "real DB item" gate (and the restock list) still holds. */
 const PG_SNAP = {
   "red pepper":    { name:"Peppers Red Sweet", bulk:true },
-  "orange pepper": { name:"Peppers Bell, Field Grown - Orange", bulk:true }
+  "orange pepper": { name:"Peppers Bell, Field Grown - Orange", bulk:true },
+  // v140: a bare "banana"/"regular banana" read is the 4011 loose Cavendish, not
+  // a variety (Mini/Leaves/Red). No bulk badge — 4011 is sold loose either way.
+  "banana":         { name:"Bananas" },
+  "regular banana": { name:"Bananas" }
 };
 /* Resolve a typed value to { sel, store, snap }:
      sel   = DB canonical to validate/pin against (a real DB name)
@@ -14754,7 +14780,7 @@ function pgOnType(v){
   pgSyncInputBtns();
 }
 /* Commit a DB item to the active slot WITHOUT closing (pgTouch re-renders). */
-function pgCommit(name){ name = nmShort(name); pgCur.set(name); pgRemember(pgCur.spot, name); pgOcrClearSug(pgCur.key); pgStampRender(pgCur.key); pgTouch(); }
+function pgCommit(name){ name = nmShort(name); pgCur.set(name); pgRemember(pgCur.spot, name); pgLockSet(pgCur.key); pgOcrClearSug(pgCur.key); pgStampRender(pgCur.key); pgTouch(); }
 function pgAssign(name){ var nm = nmShort(name); pgCommit(nm); pgCloseSheet(); toast("Filed: "+nm); }
 function pgSaveEnable(on){ const b = document.getElementById("pgSaveBtn"); if(b) b.disabled = !on; }
 /* Exact DB name match (case-insensitive, minus the (Organic) suffix). Returns
@@ -14789,10 +14815,10 @@ function pgDeleteSpot(){
   if(pgCellKI){
     var kind=pgCellKI.kind, i=pgCellKI.i, filled=pgSlotsFilled(kind,i);
     if(filled.length>1 && !confirm("Delete all "+filled.length+" items in this spot?")) return;
-    for(var s=0;s<PG_CELL_MAX;s++){ pgSlotSet(kind,i,s,""); pgStamp(pgSlotKey(kind,i,s)); pgOcrClearSug(pgSlotKey(kind,i,s)); }
+    for(var s=0;s<PG_CELL_MAX;s++){ pgSlotSet(kind,i,s,""); pgStamp(pgSlotKey(kind,i,s)); pgOcrClearSug(pgSlotKey(kind,i,s)); pgUnlock(pgSlotKey(kind,i,s)); }
     pgCloseSheet(); pgTouch(); toast(filled.length ? "Spot cleared" : "Emptied"); return;
   }
-  pgCur.set(""); pgOcrClearSug(pgCur.key); pgStampRender(pgCur.key); pgCloseSheet(); pgTouch(); toast("Emptied");
+  pgCur.set(""); pgUnlock(pgCur.key); pgOcrClearSug(pgCur.key); pgStampRender(pgCur.key); pgCloseSheet(); pgTouch(); toast("Emptied");
 }
 /* The "+" (add another): file the current DB item, then reopen the cell on the
    next empty slot with a blank live line \u2014 "save this, add another". */
@@ -14837,9 +14863,11 @@ function pgReturnFromAdd(key, nm){
   showView("planogram");
   const meta = pgSpotMeta(key);
   if(!meta){ toast("That spot changed on another phone \u2014 pick it again"); return; }
-  pgEdit(key);
-  const inp = document.getElementById("pgSheetInput");
-  if(inp){ inp.value = nm; pgOnType(nm); }   // new record now matches -> Save lights up, tap to file
+  pgEdit(key);                 // sets pgCur for the spot
+  // v140: auto-file the just-added item into the spot it was added from (0 taps).
+  // pgAssign -> pgCommit learns + locks it, so it's now a one-tap suggestion here
+  // and a later paste won't clobber it.
+  pgAssign(nm);
 }
 function pgOnEnter(){
   const inp = document.getElementById("pgSheetInput"); const v = inp ? inp.value.trim() : "";
@@ -14900,7 +14928,12 @@ let pgOcrSug = {};
    one-tap chips when the box is opened, NO board "+" (the box already holds a value).
    Same lifecycle as pgOcrSug: cleared the moment the box is set, emptied, or committed. */
 let pgOcrAlt = {};
-function pgOcrClearSug(key){ if(key){ if(pgOcrSug[key]) delete pgOcrSug[key]; if(pgOcrAlt[key]) delete pgOcrAlt[key]; } }
+/* v140: keep the last paste's pending "+"/alternatives across logout (per-phone,
+   not synced). Load once; save on every change; cleared per-box on commit/empty
+   and wholesale on board reset. */
+function pgOcrSave(){ try{ localStorage.setItem(KEY_PGOCR, JSON.stringify({ sug:pgOcrSug, alt:pgOcrAlt })); }catch(e){} }
+(function(){ try{ const o = JSON.parse(localStorage.getItem(KEY_PGOCR)||"null"); if(o){ if(o.sug) Object.assign(pgOcrSug, o.sug); if(o.alt) Object.assign(pgOcrAlt, o.alt); } }catch(e){} })();
+function pgOcrClearSug(key){ if(key){ if(pgOcrSug[key]) delete pgOcrSug[key]; if(pgOcrAlt[key]) delete pgOcrAlt[key]; pgOcrSave(); } }
 function pgMk(key){ return (pgOcrSug && pgOcrSug[key]) ? '<span class="pg-mk" aria-label="Suggestion waiting">+</span>' : ""; }
 /* Shared OCR/paste name resolver \u2014 the SAME brains the edit sheet uses, so a
    pasted read gets brand aliasing (NNNI->NNI), the PG_SNAP overrides, and bulk/
@@ -14912,9 +14945,14 @@ function pgMk(key){ return (pgOcrSug && pgOcrSug[key]) ? '<span class="pg-mk" ar
         typo per Faisal) and/or singular/plural \u2014 accept the DB row. */
 function pgResolveOcr(text){
   const t = String(text||"").trim(); if(!t) return null;
+  // v140: a PG_SNAP override wins over a coincidental exact DB row (a bare "banana"
+  // is the 4011 loose banana, not a singular "Banana" barcode row).
+  const _snapCore = nmNormalize(t).core;
+  if(_snapCore && PG_SNAP[rkDupKey(_snapCore)]){ const rsnap = pgResolve(t); if(rsnap && rsnap.sel) return rsnap.store || rsnap.sel; }
   const exact = pgExactName(t); if(exact) return nmShort(exact);
   const res = pgResolve(t); if(res && res.sel) return res.store || res.sel;
   const ck = pgCtPkMatch(t); if(ck) return nmShort(ck);
+  const ws = pgWordSetMatch(t); if(ws) return ws;   // v140: same words, different order
   return null;
 }
 /* Loose SKU identity: dup-keyed canonical core + brand set + pack counts, with
@@ -14945,6 +14983,55 @@ function pgCtPkMatch(text){
   });
   return hit;
 }
+/* v140: order-insensitive word-set match. When the read's core words are the SAME
+   SET as a DB item's, just in a different order ("asian yellow pear" vs the DB
+   "Pears Asian Yellow"), treat it as that item. Returns a name ONLY on a confident
+   unique match, so a miss just falls through to the "+" suggestion path — never a
+   silent wrong write. Ties break by size (a size token in the read -> the sized
+   row; none -> the bulk/no-size row) and last by the store badge as a confirmer
+   (never a hard gate). Returns the DB canonical (badged), or null. */
+function pgWordSetKey(raw){
+  const c = nmNormalize(raw).core || "";
+  const k = rkDupKey(c);
+  return k ? k.split(/\s+/).filter(Boolean).sort().join(" ") : "";
+}
+function pgPackSet(tags){
+  return (tags||[]).filter(t=>nmTagKind(t)==="pack").map(t=>String(t).toUpperCase()).sort().join(",");
+}
+function pgBrandSet(tags){
+  return (tags||[]).filter(t=>nmTagKind(t)==="brand").map(t=>String(t).toUpperCase()).sort().join(",");
+}
+function pgWordSetMatch(text){
+  const nn = nmNormalize(text);
+  const want = pgWordSetKey(nn.core);
+  if(!want) return null;
+  if(want.split(" ").filter(Boolean).length < 2) return null;   // 1 word: too risky order-free
+  const inPack = pgPackSet(nn.tags), inBrand = pgBrandSet(nn.tags);
+  let cands = []; const seen = {};
+  searchEntries(nn.core).forEach(function(e){                    // searchEntries preserves rank order
+    const nm = String(e.name||"").replace(/\s*\(Organic\)\s*$/i,""); if(!nm) return;
+    const lk = nm.toLowerCase(); if(seen[lk]) return;
+    const en = nmNormalize(nm);
+    if(pgWordSetKey(en.core) === want){ seen[lk]=1; cands.push({ name:nm, store:!!e.store,
+      pack:pgPackSet(en.tags), brand:pgBrandSet(en.tags), bulk:(en.tags||[]).some(t=>nmTagKind(t)==="bulk") }); }
+  });
+  if(!cands.length) return null;
+  // never attach a brand the read didn't have: if the read is unbranded and an
+  // unbranded row exists, drop the branded rows.
+  if(!inBrand){ const nb = cands.filter(c=>!c.brand); if(nb.length) cands = nb; }
+  if(cands.length === 1) return nmShort(cands[0].name);
+  // size tie-break: read has a size -> the row with that size; read has none -> the bulk/no-size row.
+  let pool = cands.filter(c=>c.pack === inPack);
+  if(!pool.length && !inPack){ const b = cands.filter(c=>c.bulk || !c.pack); if(b.length) pool = b; }
+  if(!pool.length) pool = cands;
+  if(pool.length === 1) return nmShort(pool[0].name);
+  // duplicate rows (same words, size, brand — differ only by spelling/plural): take the best-ranked
+  if(new Set(pool.map(c=>c.pack+"|"+c.brand)).size === 1){ return nmShort((pool.find(c=>c.store)||pool[0]).name); }
+  // store badge as a last confirmer (never a hard gate)
+  const stored = pool.filter(c=>c.store);
+  if(stored.length === 1) return nmShort(stored[0].name);
+  return null;                                      // still ambiguous -> "+" suggestion
+}
 /* Split a RUN endcap's parsed items into exactly n boxes on ' / '. Robust to the
    model using '|' (already pipe-split into items) or the literal '/'; the last
    box soaks up any extra slashes so a stray '/' inside a name can't shift boxes. */
@@ -14964,6 +15051,7 @@ function pgSplitCands(boxStr){
    (first = highlighted), stash the rest as edit-sheet-only alternatives. Never
    overwrites a box that already holds a value. */
 function pgFillBox(key, cands, getVal, setVal, spot, counters){
+  if(pgLocked[key]) return;                 // v140: hand-set box is off-limits to paste
   if(!cands || !cands.length) return;
   if(getVal && String(getVal()||"").trim()){ pgStashAlts(key, cands); return; }  // occupied: only refresh alts
   const primary = pgResolveOcr(cands[0]);
@@ -15021,6 +15109,7 @@ function pgApplyOcr(section, end, items, opts){
   let autofilled = 0, suggested = 0, podResult = null;
 
   const place = (key, text, getVal, setVal, spot)=>{
+    if(pgLocked[key]) return;               // v140: hand-set box is off-limits to paste
     if(!text) return;                       // model saw an empty spot -> leave the box alone
     const hit = pgResolveOcr(text);         // exact + brand-alias + PG_SNAP override + ct/pk typo
     if(hit){                                // resolved DB item: fill (or correct) the box, 0 taps
@@ -15426,6 +15515,7 @@ function pgFullApply(map){
   }
   if(!any){ toast("No sections found \u2014 keep the POD1 / RUN1 WET headers"); return; }
   pgTouch();
+  pgOcrSave();                               // v140: keep the pending +/alts across logout
   const bits = [];
   if(fill) bits.push(fill + " filled");
   if(sug)  bits.push(sug + " to confirm (+)");
@@ -15468,6 +15558,7 @@ function pgPasteGo(){
   if(!section) return;
   if(!items.length){ toast("Nothing to read"); return; }
   pgApplyOcr(section, end, items);
+  pgOcrSave();                               // v140: keep the pending +/alts across logout
 }
 {
   const _px = document.getElementById("pgPasteX"); if(_px) _px.addEventListener("click", pgPasteClose);

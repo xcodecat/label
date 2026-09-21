@@ -1449,6 +1449,13 @@
   .store-check input:checked ~ .store-box svg{opacity:1}
   .store-check input:focus-visible ~ .store-box{box-shadow:0 0 0 3px rgba(232,68,46,.3)}
   .store-lbl{font-weight:600;letter-spacing:.01em}
+  /* v141: informational "duplicate" badge by the Add-manually title — fires when the
+     entered barcode or PLU already exists in the DB under another name (the clash
+     searchEntries silently collapses). Purely a heads-up to go delete one; changes
+     nothing on save. */
+  .dup-bdg{display:inline-block;margin-left:9px;padding:2px 8px;border-radius:6px;
+    background:rgba(232,68,46,.16);border:1px solid var(--laser);color:var(--laser);
+    font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;vertical-align:middle}
   /* Store as a segment sitting on the EA/kg row: same height (qty-row stretches),
      coloured like .useg — bordered when off, laser-filled when on — so the three
      read as one uniform control instead of a separate widget. */
@@ -1470,6 +1477,13 @@
   .store-tog.on{background:var(--laser);border-color:var(--laser)}
   .store-tog.on .store-box{border-color:#fff}
   .store-tog.on .store-box svg{opacity:1}
+  /* v141: .field label{display:block} (line ~137) out-specifies .store-tog’s
+     display:flex, so the check span rendered as a block in the segment’s top-left
+     instead of centered. A .field-scoped rule beats it; drop the inherited label
+     margin, and size the box up so it reads as a real checkbox in the slab. */
+  .field label.store-tog{display:flex;align-items:center;justify-content:center;margin-bottom:0}
+  .store-tog .store-box{width:28px;height:28px;border-radius:7px}
+  .store-tog .store-box svg{width:18px;height:18px}
   .rk-tr{position:fixed;inset:0;z-index:80;background:var(--ink);display:none;flex-direction:column;
     padding:calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom))}
   .rk-tr.open{display:flex}
@@ -2038,7 +2052,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=140">
+  <link rel="manifest" href="./manifest.json?v=141">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -3074,7 +3088,7 @@
   <div class="modal" role="dialog" aria-label="Add item manually">
     <div class="perf"></div>
     <div class="modal-head">
-      <h2>Add manually</h2>
+      <h2>Add manually</h2><span id="mDupBadge" class="dup-bdg" style="display:none" title="">duplicate</span>
       <button class="modal-close" id="manClose" aria-label="Close">✕</button>
     </div>
     <div class="field" id="mBcPreviewWrap" style="display:none;text-align:center">
@@ -3812,6 +3826,37 @@ function applyStoreOverrides(){
 }
 function dbHitForPlu(plu){ return dbPluMap()[String(plu||"").replace(/\D/g,"")] || null; }
 function dbHitForCode(code){ return dbBcMap()[String(code||"").replace(/\D/g,"")] || null; }
+/* v141: does this exact barcode / PLU carry two or more DIFFERENT names across the
+   DB sources? searchEntries dedups by code/plu and silently keeps the first, hiding
+   the clash — these surface it so the Add form can flag it. Informational only. */
+function mDupNamesForCode(code){
+  code = String(code||"").replace(/\D/g,""); if(!code) return [];
+  const seen = new Set(), names = [];
+  const add = n=>{ n = String(n||"").replace(/\s*\(Organic\)\s*$/i,"").trim(); if(!n) return; const k = n.toLowerCase(); if(seen.has(k)) return; seen.add(k); names.push(n); };
+  const cb = catalogByCode(code); if(cb) add(cb.name);
+  const dh = dbBcMap()[code]; if(dh) add(dh.name);
+  if(typeof STORE_ITEMS!=="undefined") STORE_ITEMS.forEach(it=>{ if(it && it.t==="bc" && String(it.k||"").replace(/\D/g,"")===code) add(it.n); });
+  return names;
+}
+function mDupNamesForPlu(plu){
+  plu = String(plu||"").replace(/\D/g,""); if(!plu) return [];
+  const seen = new Set(), names = [];
+  const add = n=>{ n = String(n||"").replace(/\s*\(Organic\)\s*$/i,"").trim(); if(!n) return; const k = n.toLowerCase(); if(seen.has(k)) return; seen.add(k); names.push(n); };
+  const dh = dbPluMap()[plu]; if(dh) add(dh.name);
+  if(typeof DEFAULT_PLU!=="undefined") DEFAULT_PLU.forEach(r=>{ if(r && String(r.plu||"").replace(/\D/g,"")===plu) add(r.name); });
+  if(typeof CATALOG!=="undefined") CATALOG.forEach(c=>{ if(c && String(c.plu||"").replace(/\D/g,"")===plu) add(c.name); });
+  return names;
+}
+function mDupUpdate(){
+  const badge = document.getElementById("mDupBadge"); if(!badge) return;
+  const code = (document.getElementById("mCode")||{}).value||"";
+  const plu  = (document.getElementById("mPlu")||{}).value||"";
+  const cN = mDupNamesForCode(code), pN = mDupNamesForPlu(plu), hits = [];
+  if(cN.length>1) hits.push("Barcode "+String(code).replace(/\D/g,"")+": "+cN.join(" / "));
+  if(pN.length>1) hits.push("PLU "+String(plu).replace(/\D/g,"")+": "+pN.join(" / "));
+  if(hits.length){ badge.style.display=""; badge.title = hits.join("\n"); }
+  else { badge.style.display="none"; badge.title=""; }
+}
 // When a PLU or barcode matches the Sheet database, drop in its default origin
 // and unit. "ea" -> counted each; kg/lb/gm -> by weight.
 function applyDbDefaults(plu, code){
@@ -4335,6 +4380,7 @@ function onScanSuccess(text){
     const hit = catalogByCode(text);
     if(hit){ fillFromCatalog(hit); confirmCatalogCode(text); toast(hit.name + " — barcode confirmed"); }
     else toast("Barcode " + text);
+    mDupUpdate();
     return;
   }
   if(target && target.type === "recode"){
@@ -4521,6 +4567,9 @@ document.getElementById("mPlu").addEventListener("input", e=>{
     applyDbDefaults(plu, null);
   }
 });
+// v141: keep the "duplicate" heads-up badge in sync as the barcode / PLU change.
+document.getElementById("mCode").addEventListener("input", mDupUpdate);
+document.getElementById("mPlu").addEventListener("input", mDupUpdate);
 document.getElementById("mUnitSeg").addEventListener("click", e=>{
   const b = e.target.closest("button"); if(!b) return;
   setManualUnit(b.dataset.u === "kg");
@@ -5859,6 +5908,7 @@ var _mResetKind = "", _mResetKey = "";
 function openManualPrefilled(c){
   ["mCode","mName","mPlu","mNotes","mArticle","mPack","mSize","mPackWt","mBrand"]
     .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=""; });
+  setTimeout(mDupUpdate,0);
   const mkn=document.getElementById("mKnown"); if(mkn) mkn.textContent="";
   mOrigins = []; drawMOrigins();
   document.getElementById("mQty").value = 1;
@@ -6771,7 +6821,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v140";
+const APP_VERSION = "v141";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -7368,6 +7418,7 @@ const manOverlay = document.getElementById("manualOverlay");
 document.getElementById("fabAdd").addEventListener("click", ()=>{
   ["mCode","mName","mPlu","mNotes","mArticle","mPack","mSize","mPackWt","mBrand"].forEach(id=>document.getElementById(id).value="");
   const mkn=document.getElementById("mKnown"); if(mkn) mkn.textContent="";
+  mDupUpdate();
   mOrigins = []; drawMOrigins();
   document.getElementById("mQty").value = 1;
   setManualUnit(unit() === "kg");     // start on whatever Settings weighs in
@@ -14696,7 +14747,7 @@ function pgRenderSug(){
   if(!list.length){ hdr.style.display="none"; box.innerHTML=""; return; }
   hdr.style.display="";
   box.innerHTML = list.slice(0,8).map(x=>{
-    const meta = (x.ocr||x.alt) ? `<span class="pg-plu">+</span>` : (x.count ? `<span class="pg-learn">\u00d7${x.count}</span>` : (x.pref ? `<span class="pg-plu">${x.pref}</span>` : ""));
+    const meta = (x.ocr||x.alt) ? `<span class="pg-plu">+</span>` : (x.pref ? `<span class="pg-plu">${x.pref}</span>` : "");   /* v141: dropped the ×N learn-count badge (pgSuggest still orders suggestions by count) */
     return `<button class="pg-chip" type="button" onclick='pgAssign(${JSON.stringify(x.name)})'>${pgSugCoreHtml(x.name)} ${meta}</button>`;
   }).join("");
 }
@@ -14746,6 +14797,7 @@ function pgOnType(v){
   // Unified PLU + Barcode search (same stream the Add tab uses).
   const seen = new Set(); const hits = [];
   searchEntries(q).forEach(e=>{
+    if(!e.store) return;   // v141: planogram hides not-carried catalogue rows — activate via Add first
     const nm = String(e.name||"").replace(/\s*\(Organic\)\s*$/i,"");
     if(!nm) return; const k = nm.toLowerCase(); if(seen.has(k)) return; seen.add(k);
     hits.push({ name:nm, plu:e.plu, code:e.code });
@@ -14911,6 +14963,7 @@ function pgClosest(text){
   const q = String(text||"").trim(); if(!q) return [];
   const seen = new Set(), out = [];
   searchEntries(q).forEach(e=>{
+    if(!e.store) return;   // v141: paste "+" guesses limited to carried items — activate via Add first
     const nm = String(e.name||"").replace(/\s*\(Organic\)\s*$/i,"");
     if(!nm) return; const k = nm.toLowerCase(); if(seen.has(k)) return; seen.add(k);
     out.push({ name:nm, plu:e.plu, code:e.code });

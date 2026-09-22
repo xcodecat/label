@@ -2052,7 +2052,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=143">
+  <link rel="manifest" href="./manifest.json?v=144">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2370,6 +2370,10 @@
         <b>Gallery +</b>
         <small>Pick a photo you already took — AI reads it. Needs signal.</small>
       </button>
+      <button class="route route-ai" id="apPrompt">
+        <b>AI prompt</b>
+        <small>Copy a prompt into your own AI app with the photos, paste its answer back. Several pages at once.</small>
+      </button>
       <button class="route" id="apPaste">
         <b>Paste text</b>
         <small>Sharpest. Your phone's own reader beats anything in here.</small>
@@ -2408,6 +2412,23 @@
       <div class="btn-row">
         <button class="btn btn-ghost" id="pasteGo">Read it</button>
         <button class="btn btn-primary" id="pasteAI">Read +</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- v144: AI prompt paste — copy a prompt to any AI app, paste its JSON back -->
+  <div class="overlay hidden" id="invPromptOverlay">
+    <div class="modal modal-tall">
+      <div class="modal-head"><h2 id="ipTitle">AI prompt</h2>
+        <button class="modal-close" id="ipClose" aria-label="Close">✕</button></div>
+      <p class="cd-src"><b>1.</b> Copy this and give it to your AI app along with the photos of the pages.</p>
+      <textarea id="ipPrompt" class="pastebox" readonly style="height:18vh"></textarea>
+      <button class="btn btn-ghost" id="ipCopy">Copy prompt</button>
+      <p class="cd-src" style="margin-top:12px"><b>2.</b> Paste its whole answer here. Every page files into <b id="ipKind">Shorted</b>.</p>
+      <textarea id="ipBox" class="pastebox" style="height:22vh" placeholder="Long-press here and choose Paste…"></textarea>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="ipClip">Paste from clipboard</button>
+        <button class="btn btn-primary" id="ipGo">Fill pages</button>
       </div>
     </div>
   </div>
@@ -6825,7 +6846,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v143";
+const APP_VERSION = "v144";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10390,6 +10411,117 @@ async function readOrderAI(f){
   aiEnqueue(f, "AI reader", activeKind);
 }
 document.getElementById("apPaste").addEventListener("click", ()=>{ closeAddPage(); openPaste(); });
+
+/* ---- v144: AI prompt paste ---------------------------------------------------
+   Same idea as the planogram's whole-board paste: hand Faisal a prompt to run
+   in his own AI app with the page photos, then paste the JSON it returns. The
+   shape is exactly Read+'s ({inv,date,rows:[{art,desc,pack,size,ord,ship}]}),
+   wrapped in pages[] so several pages land in one paste. Each page goes through
+   aiRowToRow + ingestOrder, so a pasted page is indistinguishable from a Read+
+   page (dupe check, art memory, "need a look" flags all apply). Files into the
+   tab that was active when the sheet opened, like Camera+. */
+let ipKind = "shorted";
+function invPromptText(kind){
+  const lead = (kind === "shipped")
+    ? "The attached photos are pages of a produce warehouse INVOICE (what shipped to the store)."
+    : "The attached photos are pages of a produce warehouse SHORT SUMMARY (the lines that shipped differently from what was ordered).";
+  return [
+    lead,
+    "Read EVERY page and extract EVERY line item on each page. The columns run left to right in this exact order: article number, description, pack, size, order quantity, ship quantity. Any columns to the right of ship quantity are irrelevant \u2014 ignore them.",
+    "article number is the 7-12 digit code at the start of the row. order quantity and ship quantity are whole numbers (either can be 0). A trailing minus on a quantity (e.g. \"2.000-\") means a negative number. If a number can't be read, use null. If pack or size is absent, use an empty string.",
+    "For each page also read the invoice number (inv), invoice date (date), and the page number (page) and total pages (of) from the page header if present, otherwise use empty strings.",
+    "Return ONLY one JSON object of exactly this shape, one entry in pages per photo, in page order. No prose, no markdown, no explanation:",
+    '{"pages":[{"inv":"","date":"","page":"","of":"","rows":[{"art":"","desc":"","pack":"","size":"","ord":0,"ship":0}]}]}'
+  ].join("\n\n");
+}
+/* Pull every top-level JSON value out of an AI answer: tolerant of ``` fences,
+   chatter before/after, and several objects pasted back to back. */
+function invPromptBlocks(text){
+  const s = String(text || "").replace(/```[a-z]*\s*/ig, "").replace(/```/g, "");
+  const OPEN = "{[", CLOSE = "}]";
+  const out = [];
+  let pos = 0;
+  while(pos < s.length){
+    let start = -1, depth = 0, inStr = false, bs = false, end = -1;
+    for(let i=pos;i<s.length;i++){
+      const c = s[i];
+      if(inStr){ if(bs) bs = false; else if(c === "\\") bs = true; else if(c === '"') inStr = false; continue; }
+      if(c === '"'){ if(depth > 0) inStr = true; continue; }
+      if(OPEN.indexOf(c) >= 0){ if(depth === 0) start = i; depth++; }
+      else if(CLOSE.indexOf(c) >= 0 && depth > 0){ depth--; if(depth === 0){ end = i; break; } }
+    }
+    if(start < 0) break;                              // no more openers
+    if(end < 0){ pos = start + 1; continue; }         // unclosed opener in chatter: skip it
+    try{ out.push(JSON.parse(s.slice(start, end + 1))); pos = end + 1; }
+    catch(e){ pos = start + 1; }                      // stray bracket in chatter: rescan just past it
+  }
+  return out;
+}
+/* Normalise whatever came back into a list of raw pages {inv,date,page,of,rows}. */
+function invPromptParse(text){
+  const pages = [];
+  const isRow  = o => o && typeof o === "object" && !Array.isArray(o) && ("art" in o || "desc" in o);
+  const isPage = o => o && typeof o === "object" && !Array.isArray(o) && Array.isArray(o.rows);
+  const take = v => {
+    if(!v || typeof v !== "object") return;
+    if(Array.isArray(v)){
+      if(v.length && v.every(isRow)) pages.push({ inv:"", date:"", page:"", of:"", rows:v });
+      else v.forEach(take);
+      return;
+    }
+    if(Array.isArray(v.pages)){ v.pages.forEach(take); return; }
+    if(isPage(v)) pages.push(v);
+  };
+  invPromptBlocks(text).forEach(take);
+  return pages;
+}
+function invPromptApply(pages, kind){
+  let n = 0, rowsN = 0, bad = 0;
+  pages.forEach(pg=>{
+    const rows = (pg.rows || []).map(aiRowToRow).filter(r=>r.art && r.art !== "?" && r.desc.length > 1);
+    if(!rows.length) return;
+    const head = { inv:String(pg.inv || "").replace(/\D/g,""), date:String(pg.date || ""), cust:"",
+                   page:String(pg.page || "").replace(/\D/g,""), pages:String(pg.of || pg.pages || "").replace(/\D/g,"") };
+    ingestOrder(rows, head, "", "AI prompt", "", kind, "");
+    n++; rowsN += rows.length; bad += rows.filter(r=>!r.ok).length;
+  });
+  return { pages:n, rows:rowsN, bad };
+}
+function invPromptOpen(){
+  ipKind = (activeKind === "shipped") ? "shipped" : "shorted";
+  document.getElementById("ipKind").textContent = ipKind === "shipped" ? "Shipped" : "Shorted";
+  document.getElementById("ipTitle").textContent = "AI prompt \u00b7 " + (ipKind === "shipped" ? "Shipped" : "Shorted");
+  document.getElementById("ipPrompt").value = invPromptText(ipKind);
+  document.getElementById("ipBox").value = "";
+  document.getElementById("invPromptOverlay").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+function invPromptClose(){
+  document.getElementById("invPromptOverlay").classList.add("hidden");
+  document.body.style.overflow = "";
+}
+document.getElementById("apPrompt").addEventListener("click", ()=>{ closeAddPage(); invPromptOpen(); });
+document.getElementById("ipClose").addEventListener("click", invPromptClose);
+document.getElementById("ipCopy").addEventListener("click", async ()=>{
+  const pr = document.getElementById("ipPrompt");
+  try{ await navigator.clipboard.writeText(pr.value); toast("Prompt copied"); }
+  catch(e){ pr.focus(); pr.select(); toast("Long-press to copy the prompt"); }
+});
+document.getElementById("ipClip").addEventListener("click", async ()=>{
+  try{ const t = await navigator.clipboard.readText(); if(!t || !t.trim()) return toast("Clipboard's empty"); document.getElementById("ipBox").value = t; }
+  catch(e){ toast("Long-press the box and choose Paste"); }
+});
+document.getElementById("ipGo").addEventListener("click", ()=>{
+  const t = document.getElementById("ipBox").value || "";
+  if(!t.trim()) return toast("Nothing to read");
+  const pages = invPromptParse(t);
+  if(!pages.length) return toast("No pages found \u2014 paste the AI's whole answer");
+  invPromptClose();
+  const r = invPromptApply(pages, ipKind);
+  if(!r.pages){ toast("No rows read \u2014 check the AI's answer"); return; }
+  toast(r.pages + " page" + (r.pages === 1 ? "" : "s") + " \u00b7 " + r.rows + " rows" +
+        (r.bad ? " \u00b7 " + r.bad + " need a look" : ""));
+});
 
 /* Once you've opened the paste sheet, the app knows you went off to copy
    something. So when you come back, it offers to read it — one tap, which is

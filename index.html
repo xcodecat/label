@@ -1328,7 +1328,7 @@
   @keyframes rkfresh{0%,100%{box-shadow:0 0 0 1px rgba(89,192,131,.5) inset}50%{box-shadow:0 0 0 2px rgba(89,192,131,.85) inset}}
   .rk-row.rk-fresh{background:rgba(89,192,131,.11);animation:rkfresh 1.35s ease-in-out infinite}
   .rk-go{width:28px;height:28px;flex:none;align-self:center;border:0;border-radius:50%;background:#565E67;color:#fff;
-    cursor:pointer;display:flex;align-items:center;justify-content:center;margin-left:6px;margin-right:6px}
+    cursor:pointer;display:flex;align-items:center;justify-content:center;margin-left:12px;margin-right:6px}
   .rk-go svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.8}
   .rk-row:last-child{border-bottom:0}
   .rk-row.rk-claimed{background:rgba(76,175,125,.05)}
@@ -2052,7 +2052,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=141">
+  <link rel="manifest" href="./manifest.json?v=143">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2651,10 +2651,14 @@
     </div>
     <div class="pg-findres" id="pgFindRes"></div>
 
+    <div id="pgAttPod1b"></div>
     <div class="pg-seccard" style="--rc:#9C7CE0"><div class="pg-run-h"><span class="pg-run-tag">POD <b>1</b></span><span class="pg-run-name">As it sits</span><button class="pg-menubtn" type="button" onclick="pgMenu(event,'sec-pod1')" aria-label="Pod 1 options"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></button></div><div class="pg-secbody"><div class="pg-grid2" id="pgPod1"></div><div class="pg-mango" id="pgMango"></div></div></div>
 
+    <div id="pgAttPod1a"></div>
+    <div id="pgAttPod2b"></div>
     <div class="pg-seccard" style="--rc:#A9CC3E"><div class="pg-run-h"><span class="pg-run-tag">POD <b>2</b></span><span class="pg-run-name">Numbered pods</span><button class="pg-toggle" type="button" style="display:none" onclick="document.getElementById('pgPodCount').classList.toggle('open')" aria-label="Pod count"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></button><button class="pg-menubtn" type="button" onclick="pgMenu(event,'sec-pod2')" aria-label="Pod 2 options"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg></button></div><div class="pg-secbody"><div class="pg-podcount" id="pgPodCount"><button data-n="4" type="button" onclick="pgSetPods(4)">4 pods</button><button data-n="6" type="button" onclick="pgSetPods(6)">6 pods</button><button data-n="8" type="button" onclick="pgSetPods(8)">8 pods</button></div><div class="pg-podgrid" id="pgPod2"></div></div></div>
 
+    <div id="pgAttPod2a"></div>
     <div class="pg-eyebrow">ENDCAPS</div>
     <div id="pgRuns"></div>
 
@@ -6821,7 +6825,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v141";
+const APP_VERSION = "v143";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -13091,6 +13095,7 @@ function rkRow(x, me){
   const wtB    = wtTags.map(t=>'<span class="nm-bdg wt">'+esc(t)+'</span>').join("");
   const pkB    = pkTags.map(t=>'<span class="nm-bdg pack">'+esc(t)+'</span>').join("");
   const orgB   = orgTags.map(t=>'<span class="nm-bdg org">'+esc(t)+'</span>').join("");
+  const bulkB  = tags.filter(t=>nmTagKind(t)==="bulk").map(t=>'<span class="nm-bdg bulk">'+esc(t)+'</span>').join("");
   const _ec = x.ec ? rkItemEndcap(x.name, x.tags) : null;   // live from planogram; never stored
   const ecB = _ec ? '<span class="nm-bdg ec '+(_ec.end==="hmr"?"h":"w")+'" title="'+(_ec.end==="hmr"?"HMR end":"Wet Cases end")+'">'+(_ec.end==="hmr"?"H":"W")+'</span>' : "";
   const newB = rkFreshItem(x) ? '<span class="rk-newb">NEW</span>' : "";
@@ -13108,7 +13113,7 @@ function rkRow(x, me){
     claimCell = '<button class="rk-claim" onclick="rkClaim(\''+x.id+'\')">Claim</button>';
   }
   return '<div class="rk-row'+(x.claimId?' rk-claimed':'')+(rkEditId===x.id?' rk-editing':'')+(rkFreshItem(x)?' rk-fresh':'')+'" id="rkrow-'+x.id+'">'+
-      '<div class="rk-left"><strong>'+esc(x.name)+'</strong>'+brandB+wtB+pkB+'</div>'+
+      '<div class="rk-left"><strong>'+esc(x.name)+'</strong>'+bulkB+brandB+wtB+pkB+'</div>'+
       '<div class="rk-mid">'+orgB+ecB+newB+'</div>'+
       '<div class="rk-ctl">'+qtyChip+claimCell+
         '<button class="rk-del" onclick="rkDel(\''+x.id+'\')" aria-label="Remove"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4h8v2"/><path d="M6 6l1 14h10l1-14"/></svg></button>'+
@@ -14163,6 +14168,7 @@ function pgStampAll(ts, st){
     for(i=0;i<wn;i++){ c["run-"+ri+"-wet-"+i]=ts; c["run-"+ri+"-hmr-"+i]=ts; }
     c["att-"+ri+"-b"]=ts; c["att-"+ri+"-a"]=ts;
   }
+  c["att-pod1-b"]=ts; c["att-pod1-a"]=ts; c["att-pod2-b"]=ts; c["att-pod2-a"]=ts;
   c["pinned"]=ts;
 }
 /* pre-B+ blob (no cellTs): stamp every key from updatedAt so the current
@@ -14179,6 +14185,8 @@ function pgMergeStruct(s){
   if(!Array.isArray(s.lots)) s.lots=[]; for(var li=0;li<s.lots.length;li++) s.lots[li]=pgArr3(s.lots[li]);
   if(!Array.isArray(s.runs)) s.runs=[];
   for(var ri=0;ri<PG_RUNS_N;ri++){ var r=s.runs[ri]=s.runs[ri]||{wet:["",""],hmr:["",""]}; if(!Array.isArray(r.wet))r.wet=["",""]; if(!Array.isArray(r.hmr))r.hmr=["",""]; while(r.hmr.length<r.wet.length)r.hmr.push(""); while(r.wet.length<r.hmr.length)r.wet.push(""); if(!Array.isArray(r.before))r.before=[]; if(!Array.isArray(r.after))r.after=[]; }
+  s.podAtts = s.podAtts || {};
+  ["pod1","pod2"].forEach(function(pk){ var pa=s.podAtts[pk]=s.podAtts[pk]||{}; if(!Array.isArray(pa.before))pa.before=[]; if(!Array.isArray(pa.after))pa.after=[]; });
   if(!s.cellTs) s.cellTs={}; if(!s.lenTs) s.lenTs={}; if(!s.learn) s.learn={}; if(!Array.isArray(s.pinned)) s.pinned=[];
   return s;
 }
@@ -14212,6 +14220,7 @@ function pgMerge(a,b){
     for(let j=0;j<rn;j++){ pick("run-"+ri+"-wet-"+j,()=>pgS(B.runs[ri].wet[j]),v=>{R.wet[j]=v;}); pick("run-"+ri+"-hmr-"+j,()=>pgS(B.runs[ri].hmr[j]),v=>{R.hmr[j]=v;}); }
     ["b","a"].forEach(pos=>{ const field=(pos==="b")?"before":"after"; const key="att-"+ri+"-"+pos; const tb=pgTsOf(B.cellTs,key), ta=pgTsOf(M.cellTs,key); if(tb>ta){ R[field]=JSON.parse(JSON.stringify(B.runs[ri][field]||[])); M.cellTs[key]=tb; } });
   }
+  ["pod1","pod2"].forEach(anchor=>{ ["b","a"].forEach(pos=>{ const field=(pos==="b")?"before":"after"; const key="att-"+anchor+"-"+pos; const tb=pgTsOf(B.cellTs,key), ta=pgTsOf(M.cellTs,key); if(tb>ta){ M.podAtts[anchor][field]=JSON.parse(JSON.stringify((B.podAtts[anchor]&&B.podAtts[anchor][field])||[])); M.cellTs[key]=tb; } }); });
   { const tb=pgTsOf(B.cellTs,"pinned"), ta=pgTsOf(M.cellTs,"pinned"); if(tb>ta){ M.pinned=JSON.parse(JSON.stringify(B.pinned||[])); M.cellTs["pinned"]=tb; } }
   M.learn=pgMergeLearn(M.learn,B.learn);
   M.updatedBy=B.updatedBy||M.updatedBy||"";
@@ -14240,6 +14249,7 @@ function pgDefault(){
       { brand:"FM", kw:"carrot", pack:"lb", table:"root" },
       { brand:"FM", kw:"onion",  pack:"lb", table:"root" }
     ],
+    podAtts:{ pod1:{before:[],after:[]}, pod2:{before:[],after:[]} },
     learn:{}, updatedBy:"", updatedAt:"", cellTs:{}, lenTs:{}
   };
 }
@@ -14310,14 +14320,50 @@ function pgNorm(s){
   if(!Array.isArray(s.mango) || s.mango.length < 2){ s.mango = Array.isArray(s.mango) ? s.mango : []; while(s.mango.length < 2) s.mango.push(""); }
   if(!Array.isArray(s.pod2)) s.pod2 = pgDefault().pod2;
   while(s.pod2.length < 8) s.pod2.push(""); for(var pni=0;pni<s.pod2.length;pni++) s.pod2[pni]=pgArr3(s.pod2[pni]);
+  /* v143: pod-anchored attachments \u2014 ensure shape + normalise entries like runs */
+  s.podAtts = s.podAtts || {};
+  ["pod1","pod2"].forEach(function(pk){
+    var pa = s.podAtts[pk] = s.podAtts[pk] || {};
+    ["before","after"].forEach(function(key){
+      if(!Array.isArray(pa[key])) pa[key] = [];
+      pa[key].forEach(function(a){
+        if(!a) return;
+        if(a.type === "rack"){
+          if(!Array.isArray(a.wet) || !a.wet.length) a.wet = ["","",""];
+          if(!Array.isArray(a.hmr) || !a.hmr.length) a.hmr = ["","",""];
+          while(a.hmr.length < a.wet.length) a.hmr.push("");
+          while(a.wet.length < a.hmr.length) a.wet.push("");
+        } else { a.type = "table"; if(typeof a.wet !== "string") a.wet = ""; if(typeof a.hmr !== "string") a.hmr = ""; }
+      });
+    });
+  });
   pgSeedTs(s);   /* pre-B+ blobs get per-cell timestamps from updatedAt */
   return s;
 }
+/* v143: attachments hang off runs (numeric ri) AND the two pod anchors
+   ("pod1"/"pod2"), which live in pgState.podAtts. Everything downstream
+   (pgAttHtml / pgAddRack / pgRackSlots / pgDelAtt / pgEdit) routes through
+   pgAtts, so a string anchor is all it takes to reuse the whole rig. */
+function pgIsPodAnchor(ri){ return ri === "pod1" || ri === "pod2"; }
+function pgAnchorFromKey(x){ return (x === "pod1" || x === "pod2") ? x : +x; }
+function pgRiLit(ri){ return pgIsPodAnchor(ri) ? ("'"+ri+"'") : ri; }
+function pgAttWhere(ri,pos){
+  const pre = (pos === "b") ? "before" : "after";
+  if(pgIsPodAnchor(ri)) return pre + " " + (ri === "pod1" ? "Pod 1" : "Pod 2");
+  const tag = PG_RUN_DEF[ri] ? PG_RUN_DEF[ri].tag : (ri+1);
+  return pre + " run " + tag;
+}
 function pgAtts(ri,pos){
-  const r = pgState.runs[ri]; if(!r) return [];
   const k = (pos === "b") ? "before" : "after";
-  if(!Array.isArray(r[k])) r[k] = [];
-  return r[k];
+  let host;
+  if(pgIsPodAnchor(ri)){
+    if(!pgState.podAtts) pgState.podAtts = {};
+    host = pgState.podAtts[ri] = pgState.podAtts[ri] || { before:[], after:[] };
+  } else {
+    host = pgState.runs[ri]; if(!host) return [];
+  }
+  if(!Array.isArray(host[k])) host[k] = [];
+  return host[k];
 }
 function pgLoad(){
   try{
@@ -14411,9 +14457,8 @@ function pgEndHead(side){
   return '<h5 class="pg-eh-w"><span class="nm-bdg ec w">W</span>ET CASES<span class="pg-eh-ar">\u25b6</span></h5>';
 }
 function pgAttHtml(ri,pos,ai,a){
-  const tag = PG_RUN_DEF[ri] ? PG_RUN_DEF[ri].tag : (ri+1);
   const ctx = "att-"+ri+"-"+pos+"-"+ai;
-  const where = (pos === "b" ? "before" : "after") + " run " + tag;
+  const where = pgAttWhere(ri,pos);
   const open = !!pgAttOpen[ctx];
   const isRack = (a.type === "rack");
   const ac = isRack ? PG_ATT_C.rack : PG_ATT_C.table;
@@ -14465,6 +14510,14 @@ function pgRenderRuns(){
   });
   el.innerHTML = out;
 }
+/* v143: pod-anchored attachments render into 4 fixed slots bracketing the two
+   pod cards. Same pgAttHtml as runs; collapsed by default via pgAttOpen. */
+function pgRenderPodAtts(){
+  [["pod1","b","pgAttPod1b"],["pod1","a","pgAttPod1a"],["pod2","b","pgAttPod2b"],["pod2","a","pgAttPod2a"]].forEach(function(t){
+    var el = document.getElementById(t[2]); if(!el) return;
+    el.innerHTML = pgAtts(t[0],t[1]).map(function(a,ai){ return pgAttHtml(t[0],t[1],ai,a); }).join("");
+  });
+}
 function pgRenderLots(){
   const el = document.getElementById("pgLots"); if(!el) return;
   el.innerHTML = pgState.lots.map(function(v,i){
@@ -14475,7 +14528,7 @@ function pgRenderLots(){
   }).join("");
 }
 function renderPlanogram(){
-  pgRenderPod1(); pgRenderMango(); pgRenderPod2(); pgRenderRuns(); pgRenderLots(); pgDock();
+  pgRenderPod1(); pgRenderMango(); pgRenderPod2(); pgRenderPodAtts(); pgRenderRuns(); pgRenderLots(); pgDock();
 }
 
 /* ---- banner + pod count ---- */
@@ -14513,12 +14566,26 @@ var PG_ICON_TBL = '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="7" height="
 function pgMi(icon,label,action,disabled){
   return '<button type="button"'+(disabled?' disabled':' onclick="pgMenuClose();'+action+'"')+'>'+icon+'<span>'+label+'</span></button>';
 }
+/* v143: the before/after silver-rack + small-tables block shared by both pod
+   section menus. Rack capped at one per anchor, matching the runs menu. */
+function pgAttAddMenu(anchor,label){
+  return ["b","a"].map(function(pos){
+    var when = (pos === "b" ? "before " : "after ") + label;
+    return '<hr><div class="pg-mh">Add ' + when + '</div>'
+      + pgMi(PG_ICON_RACK,"Silver rack","pgAddRack('"+anchor+"','"+pos+"')", pgAtts(anchor,pos).filter(function(a){return a.type==="rack";}).length >= 1)
+      + pgMi(PG_ICON_TBL,"Small tables (pair)","pgAddTables('"+anchor+"','"+pos+"')");
+  }).join("");
+}
 function pgMenuHtml(ctx){
-  if(ctx === "sec-pod1") return pgMi(PG_ICON_PASTE,"Paste +","pgPasteOpen('pod1',0,'Pod 1')");
+  if(ctx === "sec-pod1"){
+    return pgMi(PG_ICON_PASTE,"Paste +","pgPasteOpen('pod1',0,'Pod 1')")
+      + pgAttAddMenu("pod1","Pod 1");
+  }
   if(ctx === "sec-pod2"){
     return '<div class="pg-mh">How many pods</div>'
       + [4,6,8].map(function(n){ return pgMi(PG_ICON_ADD, n+" pods", "pgSetPods("+n+")", pgState.podN===n); }).join("")
-      + '<hr>' + pgMi(PG_ICON_PASTE,"Paste +","pgPasteOpen('pod2',0,'Pod 2')");
+      + '<hr>' + pgMi(PG_ICON_PASTE,"Paste +","pgPasteOpen('pod2',0,'Pod 2')")
+      + pgAttAddMenu("pod2","Pod 2");
   }
   if(ctx === "sec-lots"){
     return pgMi(PG_ICON_ADD,"Add a lot","pgLotSlots(1)")
@@ -14544,15 +14611,16 @@ function pgMenuHtml(ctx){
       + pgMi(PG_ICON_PASTE,"Paste + \u00b7 HMR","pgPasteOpen('run-"+ri+"',1,'Run "+tag+" \u00b7 HMR')");
   }
   if(ctx.indexOf("att-") === 0){
-    const p = ctx.split("-"), ri = +p[1], pos = p[2], ai = +p[3];
+    const p = ctx.split("-"), ri = pgAnchorFromKey(p[1]), pos = p[2], ai = +p[3];
     const a = pgAtts(ri,pos)[ai]; if(!a) return "";
+    const rl = pgRiLit(ri);
     if(a.type === "rack"){
       return '<div class="pg-mh">Boxes on this rack</div>'
-        + pgMi(PG_ICON_ADD,"Add a box \u2014 each side","pgRackSlots("+ri+",'"+pos+"',"+ai+",1)")
-        + pgMi(PG_ICON_SUB,"Remove last box \u2014 each side","pgRackSlots("+ri+",'"+pos+"',"+ai+",-1)", (a.wet||[]).length <= 1)
-        + '<hr>' + pgMi(PG_ICON_DEL,"Remove silver rack","pgDelAtt("+ri+",'"+pos+"',"+ai+")");
+        + pgMi(PG_ICON_ADD,"Add a box \u2014 each side","pgRackSlots("+rl+",'"+pos+"',"+ai+",1)")
+        + pgMi(PG_ICON_SUB,"Remove last box \u2014 each side","pgRackSlots("+rl+",'"+pos+"',"+ai+",-1)", (a.wet||[]).length <= 1)
+        + '<hr>' + pgMi(PG_ICON_DEL,"Remove silver rack","pgDelAtt("+rl+",'"+pos+"',"+ai+")");
     }
-    return pgMi(PG_ICON_DEL,"Remove small tables","pgDelAtt("+ri+",'"+pos+"',"+ai+")");
+    return pgMi(PG_ICON_DEL,"Remove small tables","pgDelAtt("+rl+",'"+pos+"',"+ai+")");
   }
   return "";
 }
@@ -14640,10 +14708,9 @@ const PG_SPOT_LABEL = { pod1:"POD 1", pod2:"POD 2", mango:"POD 1 \u00b7 MANGO", 
 function pgSpotMeta(key){
   /* att-<ri>-<pos>-<ai>-box-<wet|hmr>-<n>  (silver rack)  |  att-<ri>-<pos>-<ai>-tbl-<wet|hmr> */
   if(key.indexOf("att-") === 0){
-    const p = key.split("-"), ri = +p[1], pos = p[2], ai = +p[3], kind = p[4];
+    const p = key.split("-"), ri = pgAnchorFromKey(p[1]), pos = p[2], ai = +p[3], kind = p[4];
     const a = pgAtts(ri,pos)[ai]; if(!a) return null;
-    const tag = PG_RUN_DEF[ri] ? PG_RUN_DEF[ri].tag : (ri+1);
-    const at = (pos === "b" ? "before" : "after") + " run " + tag;
+    const at = pgAttWhere(ri,pos);
     if(kind === "box"){
       const side = p[5], bi = +p[6];
       const arrName = side === "hmr" ? "hmr" : "wet";
@@ -15252,6 +15319,24 @@ function pgSpotIndex(){
       });
     });
   });
+  [["pod1","Pod 1"],["pod2","Pod 2"]].forEach(function(pa){
+    ["b","a"].forEach(function(pos){
+      var side = pos === "b" ? "before" : "after";
+      pgAtts(pa[0],pos).forEach(function(a,ai){
+        var at = side + " " + pa[1];
+        if(a.type === "rack"){
+          ["hmr","wet"].forEach(function(sd){
+            var arr = sd === "hmr" ? a.hmr : a.wet; if(!Array.isArray(arr)) return;
+            var lbl = sd === "hmr" ? "HMR" : "Wet";
+            arr.forEach(function(v,bi){ if(v) idx.push({name:v, loc:"Silver Rack "+lbl+" #"+(bi+1)+" \u00b7 "+at, c:"--laser", key:"att-"+pa[0]+"-"+pos+"-"+ai+"-box-"+sd+"-"+bi}); });
+          });
+        } else {
+          if(a.wet) idx.push({name:a.wet, loc:"Small Table Wet \u00b7 "+at, c:"--laser", key:"att-"+pa[0]+"-"+pos+"-"+ai+"-tbl-wet"});
+          if(a.hmr) idx.push({name:a.hmr, loc:"Small Table HMR \u00b7 "+at, c:"--laser", key:"att-"+pa[0]+"-"+pos+"-"+ai+"-tbl-hmr"});
+        }
+      });
+    });
+  });
   pgState.lots.forEach((v,i)=>{ pgSlotsFilled("lot",i).forEach(f=> idx.push({name:f.v, loc:"next to the "+((PG_RUN_DEF[4]&&PG_RUN_DEF[4].name)||"Root veg & Onions")+" table", c:"--muted", key:pgSlotKey("lot",i,f.s)})); });
   return idx;
 }
@@ -15304,8 +15389,8 @@ function pgShortToggle(i){
 }
 function pgFlash(key){
   var el = document.getElementById("pgspot-"+key);
-  if(!el && /^att-\d+-[ab]-\d+-/.test(key)){          // spot lives on a collapsed rack/table -> open it first
-    var mctx = key.match(/^(att-\d+-[ab]-\d+)-/);
+  if(!el && /^att-(?:\d+|pod[12])-[ab]-\d+-/.test(key)){          // spot lives on a collapsed rack/table -> open it first
+    var mctx = key.match(/^(att-(?:\d+|pod[12])-[ab]-\d+)-/);
     if(mctx){ pgAttOpen[mctx[1]] = 1; renderPlanogram(); el = document.getElementById("pgspot-"+key); }
   }
   if(!el) return;

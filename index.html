@@ -1152,8 +1152,13 @@
   .rk-fab.rk-has .rk-fabmag{width:14px;height:14px;opacity:.7;margin-bottom:1px}
   .rk-fabcount{font-family:var(--mono);font-size:12px;font-weight:700;line-height:1;color:var(--paper)}
   .rk-addbar.rk-offline .rk-fabcount{color:#E0A43B}
-  .rk-abinner{display:none;align-items:center;width:100%;height:100%;padding:0 14px 0 4px;
+  /* v145: quick-add row rebuilt. The text box is the ONLY flexible item and may
+     shrink to nothing (min-width:0 — an <input>'s default min is ~174px, which
+     pushed the check into the corner at 360px). Every other item is fixed; the
+     check's inset comes from this padding alone (13px + 1px border = its 14px vertical gap). */
+  .rk-abinner{display:none;align-items:center;width:100%;height:100%;min-width:0;padding:0 13px 0 4px;
     position:relative;z-index:1}
+  #rkTin{flex:1 1 0;min-width:0;width:0}
   .rk-addbar.open .rk-abinner{display:flex}
   .rk-plus{flex:none;width:46px;height:46px;border-radius:12px;border:0;background:none;cursor:pointer;
     display:grid;place-items:center;color:var(--muted);position:relative}
@@ -1328,7 +1333,7 @@
   @keyframes rkfresh{0%,100%{box-shadow:0 0 0 1px rgba(89,192,131,.5) inset}50%{box-shadow:0 0 0 2px rgba(89,192,131,.85) inset}}
   .rk-row.rk-fresh{background:rgba(89,192,131,.11);animation:rkfresh 1.35s ease-in-out infinite}
   .rk-go{width:28px;height:28px;flex:none;align-self:center;border:0;border-radius:50%;background:#565E67;color:#fff;
-    cursor:pointer;display:flex;align-items:center;justify-content:center;margin-left:12px;margin-right:6px}
+    cursor:pointer;display:flex;align-items:center;justify-content:center;margin:0 0 0 12px}
   .rk-go svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.8}
   .rk-row:last-child{border-bottom:0}
   .rk-row.rk-claimed{background:rgba(76,175,125,.05)}
@@ -2052,7 +2057,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=144">
+  <link rel="manifest" href="./manifest.json?v=145">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2362,17 +2367,8 @@
     <div class="modal">
       <div class="modal-head"><h2>Add a page</h2>
         <button class="modal-close" id="apClose" aria-label="Close">✕</button></div>
-      <button class="route route-ai" id="apAIShot">
-        <b>Camera +</b>
-        <small>Shoot the page — AI reads the columns for you. Needs signal.</small>
-      </button>
-      <button class="route route-ai" id="apAIPick">
-        <b>Gallery +</b>
-        <small>Pick a photo you already took — AI reads it. Needs signal.</small>
-      </button>
       <button class="route route-ai" id="apPrompt">
-        <b>AI prompt</b>
-        <small>Copy a prompt into your own AI app with the photos, paste its answer back. Several pages at once.</small>
+        <b>Prompt</b>
       </button>
       <button class="route" id="apPaste">
         <b>Paste text</b>
@@ -2416,16 +2412,14 @@
     </div>
   </div>
 
-  <!-- v144: AI prompt paste — copy a prompt to any AI app, paste its JSON back -->
+  <!-- v145: Prompt paste (was v144 "AI prompt") -->
   <div class="overlay hidden" id="invPromptOverlay">
     <div class="modal modal-tall">
-      <div class="modal-head"><h2 id="ipTitle">AI prompt</h2>
+      <div class="modal-head"><h2 id="ipTitle">Prompt</h2>
         <button class="modal-close" id="ipClose" aria-label="Close">✕</button></div>
-      <p class="cd-src"><b>1.</b> Copy this and give it to your AI app along with the photos of the pages.</p>
       <textarea id="ipPrompt" class="pastebox" readonly style="height:18vh"></textarea>
       <button class="btn btn-ghost" id="ipCopy">Copy prompt</button>
-      <p class="cd-src" style="margin-top:12px"><b>2.</b> Paste its whole answer here. Every page files into <b id="ipKind">Shorted</b>.</p>
-      <textarea id="ipBox" class="pastebox" style="height:22vh" placeholder="Long-press here and choose Paste…"></textarea>
+      <textarea id="ipBox" class="pastebox" style="height:22vh;margin-top:12px" placeholder="Long-press here and choose Paste…"></textarea>
       <div class="btn-row">
         <button class="btn btn-ghost" id="ipClip">Paste from clipboard</button>
         <button class="btn btn-primary" id="ipGo">Fill pages</button>
@@ -2888,8 +2882,8 @@
       <div class="status" id="syncStatus"></div>
     </div>
     <div class="panel dev-only">
-      <h3>AI invoice reader</h3>
-      <p>Reads a photographed invoice page — article number, description, pack, size, order and ship quantity — straight into the Invoice tab. The AI key now lives on the Sheet backend (set once via <b>CatCaddy → Set AI key…</b> in the Sheet menu), so no phone needs its own key. Any approved phone with the shared secret can use it. Online only; the free tier covers well over 50 pages a day.</p>
+      <h3>Invoice reader</h3>
+      <p>Reads a photographed invoice page — article number, description, pack, size, order and ship quantity — straight into the Invoice tab. The reader key lives on the Sheet backend (set once via <b>CatCaddy → Set Gemini key…</b> in the Sheet menu), so no phone needs its own key. Any approved phone with the shared secret can use it. Online only; the free tier covers well over 50 pages a day.</p>
     </div>
     <div class="panel dev-only">
       <h3>PLU &amp; barcode database</h3>
@@ -6846,7 +6840,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v144";
+const APP_VERSION = "v145";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10119,28 +10113,11 @@ document.getElementById("apPick").addEventListener("click", ()=>{ closeAddPage()
    key is device-local (never synced into the shared blob) and, being a free-tier
    key, caps out at a daily quota rather than a bill. Numbers still get shown for
    review -- an LLM can misread a digit, and these back credit claims. */
-const aiCam = document.createElement("input");
-aiCam.type = "file"; aiCam.accept = "image/*"; aiCam.capture = "environment";
-const aiGal = document.createElement("input");
-aiGal.type = "file"; aiGal.accept = "image/*";
-aiGal.multiple = true;   // pick several at once; each one queues locally
-aiCam.addEventListener("change", e=> aiEnqueue(e.target.files && e.target.files[0], "AI reader", activeKind));
-aiGal.addEventListener("change", e=>{
-  const fs = e.target.files ? Array.from(e.target.files) : [];
-  fs.forEach(f=> aiEnqueue(f, "AI reader", activeKind));
-});
-document.getElementById("apAIShot").addEventListener("click", ()=>{
-  if(!aiReady()) return;
-  closeAddPage(); aiCam.value=""; aiCam.click();
-});
-document.getElementById("apAIPick").addEventListener("click", ()=>{
-  if(!aiReady()) return;
-  closeAddPage(); aiGal.value=""; aiGal.click();
-});
-
+/* v145: Camera + / Gallery + removed. The upload queue (aiEnqueue/aiPump/aiQueue)
+   is left dormant for revert safety; Read + and Prompt still use the reader. */
 function aiReady(){
   if(!proxyUrl()){ toast("Finish setup in Settings first"); return false; }
-  if(!navigator.onLine){ toast("AI needs a signal \u2014 use Paste or the built-in reader"); return false; }
+  if(!navigator.onLine){ toast("Needs a signal \u2014 use Paste or the built-in reader"); return false; }
   return true;
 }
 
@@ -10197,9 +10174,9 @@ async function aiRead1(opts){
   opts = opts || {};
   const f    = opts.imageFile || null;
   const text = String(opts.text || "").trim();
-  const how  = opts.how || "AI reader";
+  const how  = opts.how || "Reader";
   if(!f && !text) return { status:"error", msg:"Nothing to read", retryable:false };
-  if(!aiReady())  return { status:"error", msg:"AI needs setup or a signal", retryable:false };
+  if(!aiReady())  return { status:"error", msg:"Reader needs setup or a signal", retryable:false };
   let shot = "", b64 = "";
   try{
     if(f){
@@ -10234,16 +10211,16 @@ async function aiReadProvider(provider, b64, text, shot, how, signal){
     const aborted = err && (err.name === "AbortError" || /abort/i.test(em));
     const netFail = /failed to fetch|networkerror|load failed|network error/i.test(em);
     try{ queueError("AIREAD " + provider + " " + (aborted ? "timeout(90s)" : "fail") + " | " + (em ? em.slice(0,200) : "network error")); }catch(e){}
-    const msg = aborted ? "The AI reader took too long"
+    const msg = aborted ? "The reader took too long"
               : (authMessage(err) || (netFail ? "Lost the connection mid-read" : (em || "network error")));
     return { status: aborted ? "timeout" : "fail", msg, retryable:true };
   }
   if(!resp || resp.ok === false){
     const status = resp && resp.aiStatus;
-    let msg = "AI reader failed" + (status ? " (" + status + ")" : "");
+    let msg = "Reader failed" + (status ? " (" + status + ")" : "");
     let retryable = true;
-    if(status === 429){ msg = "AI quota used up for today"; retryable = false; }
-    else if(status === 400 || status === 401 || status === 403){ msg = "AI key not accepted \u2014 check the key on the Sheet"; retryable = false; }
+    if(status === 429){ msg = "Reader quota used up for today"; retryable = false; }
+    else if(status === 400 || status === 401 || status === 403){ msg = "Reader key not accepted \u2014 check the key on the Sheet"; retryable = false; }
     else if(resp && resp.error) msg = resp.error;
     try{ queueError("AIREAD " + provider + " fail | status=" + (status || "?") + ((resp && resp.error) ? " | " + String(resp.error).slice(0,200) : "")); }catch(e){}
     return { status:"fail", msg, retryable };
@@ -10253,7 +10230,7 @@ async function aiReadProvider(provider, b64, text, shot, how, signal){
   catch(e){ parsed = null; }
   if(!parsed || !Array.isArray(parsed.rows)){
     try{ queueError("AIREAD " + provider + " noparse | " + String(resp.text || "").slice(0,160)); }catch(e){}
-    return { status:"noparse", msg:"The AI didn\u2019t return a readable table", retryable:true };
+    return { status:"noparse", msg:"The reader didn\u2019t return a readable table", retryable:true };
   }
   const rows = parsed.rows.map(aiRowToRow).filter(r=>r.art && r.art !== "?" && r.desc.length > 1);
   const head = { inv:String(parsed.inv || "").replace(/\D/g,""), date:String(parsed.date || ""), cust:"", page:"", pages:"" };
@@ -10274,7 +10251,7 @@ function aiRaceFirstOk(promises){
       if(done) return;
       if(r && r.status === "ok"){ done = true; resolve(r); return; }
       if(!firstFail || (r && r.retryable === false && firstFail.retryable !== false)) firstFail = r || firstFail;
-      if(--remaining <= 0){ done = true; resolve(firstFail || { status:"fail", msg:"AI reader failed", retryable:true }); }
+      if(--remaining <= 0){ done = true; resolve(firstFail || { status:"fail", msg:"Reader failed", retryable:true }); }
     };
     promises.forEach(pr=> Promise.resolve(pr).then(settle, err=> settle({ status:"fail", msg:(err&&err.message)||"network error", retryable:true })));
   });
@@ -10320,7 +10297,7 @@ function aiEnqueue(file, how, kind){
   if(!file) return;
   if(!aiReady()) return;
   const pk = ((kind || activeKind) === "shipped") ? "shipped" : "shorted";
-  aiQ.push({ id:"aj" + (++aiSeq), file, how: how || "AI reader", kind: pk,
+  aiQ.push({ id:"aj" + (++aiSeq), file, how: how || "Reader", kind: pk,
              status:"queued", msg:"", retryable:true, tries:0 });
   aiRenderQueue();
   aiPump();
@@ -10361,7 +10338,7 @@ async function aiPump(){
       job.status = "failed";
       job.msg = res.msg || "Failed";
       aiRenderQueue();
-      toast(res.msg || "AI read failed");
+      toast(res.msg || "Read failed");
     }
   }
   aiBusy = false;
@@ -10405,11 +10382,6 @@ document.getElementById("aiQueue").addEventListener("click", e=>{
   else if(b.dataset.act === "cancel"){ j.cancelled = true; if(j.ctrl) try{ j.ctrl.abort(); }catch(e){} const i = aiQ.indexOf(j); if(i >= 0) aiQ.splice(i, 1); aiRenderQueue(); }
   else{ const i = aiQ.indexOf(j); if(i >= 0) aiQ.splice(i, 1); aiRenderQueue(); }
 });
-// Camera + / Gallery + stay image-only; they funnel through the shared helper.
-async function readOrderAI(f){
-  if(!f) return;
-  aiEnqueue(f, "AI reader", activeKind);
-}
 document.getElementById("apPaste").addEventListener("click", ()=>{ closeAddPage(); openPaste(); });
 
 /* ---- v144: AI prompt paste ---------------------------------------------------
@@ -10482,15 +10454,14 @@ function invPromptApply(pages, kind){
     if(!rows.length) return;
     const head = { inv:String(pg.inv || "").replace(/\D/g,""), date:String(pg.date || ""), cust:"",
                    page:String(pg.page || "").replace(/\D/g,""), pages:String(pg.of || pg.pages || "").replace(/\D/g,"") };
-    ingestOrder(rows, head, "", "AI prompt", "", kind, "");
+    ingestOrder(rows, head, "", "Prompt", "", kind, "");
     n++; rowsN += rows.length; bad += rows.filter(r=>!r.ok).length;
   });
   return { pages:n, rows:rowsN, bad };
 }
 function invPromptOpen(){
   ipKind = (activeKind === "shipped") ? "shipped" : "shorted";
-  document.getElementById("ipKind").textContent = ipKind === "shipped" ? "Shipped" : "Shorted";
-  document.getElementById("ipTitle").textContent = "AI prompt \u00b7 " + (ipKind === "shipped" ? "Shipped" : "Shorted");
+  document.getElementById("ipTitle").textContent = "Prompt \u00b7 " + (ipKind === "shipped" ? "Shipped" : "Shorted");
   document.getElementById("ipPrompt").value = invPromptText(ipKind);
   document.getElementById("ipBox").value = "";
   document.getElementById("invPromptOverlay").classList.remove("hidden");
@@ -10515,10 +10486,10 @@ document.getElementById("ipGo").addEventListener("click", ()=>{
   const t = document.getElementById("ipBox").value || "";
   if(!t.trim()) return toast("Nothing to read");
   const pages = invPromptParse(t);
-  if(!pages.length) return toast("No pages found \u2014 paste the AI's whole answer");
+  if(!pages.length) return toast("No pages found \u2014 paste the whole answer");
   invPromptClose();
   const r = invPromptApply(pages, ipKind);
-  if(!r.pages){ toast("No rows read \u2014 check the AI's answer"); return; }
+  if(!r.pages){ toast("No rows read \u2014 check the answer"); return; }
   toast(r.pages + " page" + (r.pages === 1 ? "" : "s") + " \u00b7 " + r.rows + " rows" +
         (r.bad ? " \u00b7 " + r.bad + " need a look" : ""));
 });
@@ -10645,7 +10616,7 @@ document.getElementById("pasteAI").addEventListener("click", async ()=>{
   if(hasText) lastPaste = t;
   document.getElementById("pasteOverlay").classList.add("hidden");
   document.body.style.overflow = "";
-  const how = (hasText && pasteShot) ? "AI \u00b7 text + photo" : (hasText ? "AI \u00b7 text" : "AI reader");
+  const how = (hasText && pasteShot) ? "Read + \u00b7 text + photo" : (hasText ? "Read + \u00b7 text" : "Read + \u00b7 photo");
   const shot = pasteShot;
   pasteShot = null;
   await aiIngest({ text: hasText ? t : "", imageFile: shot || null, how });
@@ -11015,6 +10986,14 @@ document.getElementById("ordBody").addEventListener("click", e=>{
   openPage();
 });
 
+/* v145: pages saved before v145 carry "AI …" source labels; show the new names. */
+function srcLabel(src){
+  const m = { "AI reader":"Reader", "AI prompt":"Prompt",
+              "AI \u00b7 text + photo":"Read + \u00b7 text + photo", "AI \u00b7 text":"Read + \u00b7 text" };
+  if(!src) return "text";
+  if(m[src]) return m[src];
+  return src.replace(/\bAI\b\s*(\u00b7\s*)?/g, "").trim() || "Reader";
+}
 function openPage(){
   const dps = dayPages(activeDay, activeKind);
   const cur = dps[pgIdx]; if(!cur) return;
@@ -11024,7 +11003,7 @@ function openPage(){
   const cap = document.querySelector("#pageOverlay .cd-src");
   if(cap) cap.textContent = pg.img
     ? "Pinch or double-tap to zoom, drag to move. This photo is the truth when a number looks wrong."
-    : "Pasted from " + (pg.src || "text") + " — no photo kept for this page.";
+    : "Pasted from " + srcLabel(pg.src) + " — no photo kept for this page.";
   document.getElementById("pgWhich").textContent =
     (pgIdx+1) + " / " + dps.length + " photographed";
   document.getElementById("pgPrev").disabled = pgIdx <= 0;

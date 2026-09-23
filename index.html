@@ -1774,6 +1774,9 @@
   body.dev-on .devsec.dev-only{display:block}
   body.dev-on .panel.dev-only{display:block}
   body.dev-on .sec-h.dev-only{display:block}
+  /* v146: online-reader routes (Camera + / Gallery + / Read +) are developer-only */
+  body.dev-on .route.dev-only{display:block}
+  body.dev-on .btn.dev-only{display:inline-flex}
 
   /* settings header + Done */
   .set-head{display:flex;align-items:flex-end;justify-content:space-between;margin:0 0 4px;padding:2px 2px 0}
@@ -2057,7 +2060,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=145">
+  <link rel="manifest" href="./manifest.json?v=146">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2367,6 +2370,12 @@
     <div class="modal">
       <div class="modal-head"><h2>Add a page</h2>
         <button class="modal-close" id="apClose" aria-label="Close">✕</button></div>
+      <button class="route route-ai dev-only" id="apAIShot">
+        <b>Camera +</b>
+      </button>
+      <button class="route route-ai dev-only" id="apAIPick">
+        <b>Gallery +</b>
+      </button>
       <button class="route route-ai" id="apPrompt">
         <b>Prompt</b>
       </button>
@@ -2407,7 +2416,7 @@
       </div>
       <div class="btn-row">
         <button class="btn btn-ghost" id="pasteGo">Read it</button>
-        <button class="btn btn-primary" id="pasteAI">Read +</button>
+        <button class="btn btn-primary dev-only" id="pasteAI">Read +</button>
       </div>
     </div>
   </div>
@@ -6840,7 +6849,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v145";
+const APP_VERSION = "v146";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10113,8 +10122,27 @@ document.getElementById("apPick").addEventListener("click", ()=>{ closeAddPage()
    key is device-local (never synced into the shared blob) and, being a free-tier
    key, caps out at a daily quota rather than a bill. Numbers still get shown for
    review -- an LLM can misread a digit, and these back credit claims. */
-/* v145: Camera + / Gallery + removed. The upload queue (aiEnqueue/aiPump/aiQueue)
-   is left dormant for revert safety; Read + and Prompt still use the reader. */
+/* v146: Camera + / Gallery + restored (removed in v145), shown only in developer
+   mode (.dev-only). Each photo queues locally through aiEnqueue. */
+const aiCam = document.createElement("input");
+aiCam.type = "file"; aiCam.accept = "image/*"; aiCam.capture = "environment";
+const aiGal = document.createElement("input");
+aiGal.type = "file"; aiGal.accept = "image/*";
+aiGal.multiple = true;   // pick several at once; each one queues locally
+aiCam.addEventListener("change", e=> aiEnqueue(e.target.files && e.target.files[0], "Reader", activeKind));
+aiGal.addEventListener("change", e=>{
+  const fs = e.target.files ? Array.from(e.target.files) : [];
+  fs.forEach(f=> aiEnqueue(f, "Reader", activeKind));
+});
+document.getElementById("apAIShot").addEventListener("click", ()=>{
+  if(!aiReady()) return;
+  closeAddPage(); aiCam.value=""; aiCam.click();
+});
+document.getElementById("apAIPick").addEventListener("click", ()=>{
+  if(!aiReady()) return;
+  closeAddPage(); aiGal.value=""; aiGal.click();
+});
+
 function aiReady(){
   if(!proxyUrl()){ toast("Finish setup in Settings first"); return false; }
   if(!navigator.onLine){ toast("Needs a signal \u2014 use Paste or the built-in reader"); return false; }

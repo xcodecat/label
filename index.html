@@ -22,6 +22,7 @@
     --muted:#8A939C;
     --line:#343B42;
     --deck:#22DD77;
+    --sbar:#C8E45A;--sbar-ln:#5E7024;--sbar-bg:#1F2712;
     --mono:'IBM Plex Mono','Courier New',monospace;
     --sans:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
   }
@@ -42,6 +43,7 @@
     --muted:#6E6E73;       /* muted text / icons — iOS secondary label */
     --line:#D1D1D6;        /* separators / borders */
     --deck:#12A150;
+    --sbar:#557207;--sbar-ln:#A9C650;--sbar-bg:#F1F7DC;
   }
   body.light .modal{background:#FFFFFF}
   body.light .label-card{background:#FFFFFF}
@@ -1423,6 +1425,12 @@
   #fabSync{display:none}
   .cat-nm .own{display:inline-block;font-size:9px;background:var(--laser);color:#fff;padding:2px 5px;border-radius:4px;margin-left:6px;vertical-align:middle;font-weight:700;letter-spacing:.02em}
   .cat-nm .deck{display:inline-block;font-size:9px;background:var(--deck);color:#0c1a10;padding:2px 5px;border-radius:4px;margin-left:5px;vertical-align:middle;font-weight:800;letter-spacing:.02em}
+  /* v147: SBar (salad bar) — lime OUTLINE so it never reads as 5 DECK (solid emerald)
+     or Organic (mint outline). */
+  .sbar{display:inline-block;font-size:9px;color:var(--sbar);border:1px solid var(--sbar-ln);
+    background:var(--sbar-bg);padding:1px 5px;border-radius:4px;margin-left:5px;vertical-align:middle;
+    font-weight:800;letter-spacing:.02em;line-height:1.35}
+  .orow2 .d .sbar{font-size:8px;padding:0 4px}
   .cat-hint{font-family:var(--mono);font-size:9px;color:var(--ok);letter-spacing:0;margin-left:6px}
   /* Add-search grouping: carried up top, catalogue-only collapsed & muted below */
   .cat-rowtop{display:flex;align-items:center;gap:8px}
@@ -1489,6 +1497,16 @@
   .field label.store-tog{display:flex;align-items:center;justify-content:center;margin-bottom:0}
   .store-tog .store-box{width:28px;height:28px;border-radius:7px}
   .store-tog .store-box svg{width:18px;height:18px}
+  /* v147: Sold by is a compact fixed EA|kg pair; Store / SBar / 5 Deck share the
+     rest of the row equally. Header labels use the same widths + gap so each
+     label sits over its own control. */
+  .soldby-head-row{gap:8px}
+  .soldby-head-row .sb-lbl{flex:none;width:84px}
+  .soldby-head-row .st-lbl{flex:1 1 0;width:auto;min-width:0;white-space:nowrap}
+  .qty-row.flag-row{gap:8px}
+  .qty-row.flag-row #mUnitSeg{flex:none;width:84px}
+  .qty-row.flag-row #mUnitSeg button{flex:1 1 0;min-width:0;padding-left:4px;padding-right:4px}
+  .qty-row.flag-row .store-tog{flex:1 1 0;width:auto;min-width:0}
   .rk-tr{position:fixed;inset:0;z-index:80;background:var(--ink);display:none;flex-direction:column;
     padding:calc(12px + env(safe-area-inset-top)) 14px calc(12px + env(safe-area-inset-bottom))}
   .rk-tr.open{display:flex}
@@ -2060,7 +2078,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=146">
+  <link rel="manifest" href="./manifest.json?v=147">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -3161,20 +3179,30 @@
       <div class="soldby-head-row">
         <label class="sb-lbl">Sold by</label>
         <label class="st-lbl">Store</label>
+        <label class="st-lbl">SBar</label>
+        <label class="st-lbl">5 Deck</label>
       </div>
       <label id="mQtyLabel" style="display:none"></label>
-      <div class="qty-row">
+      <div class="qty-row flag-row">
         <span style="display:none">
           <button type="button" class="qty-btn" id="mQtyMinus">−</button>
           <input id="mQty" type="number" inputmode="numeric" value="1" min="0">
           <button type="button" class="qty-btn" id="mQtyPlus">+</button>
         </span>
-        <div class="useg" id="mUnitSeg" role="group" aria-label="Counted per each or by weight" style="display:flex;flex:1;">
-          <button type="button" class="on" data-u="each" aria-label="Per each" title="Per each" style="flex:1;">EA</button>
-          <button type="button" id="mUKG" data-u="kg" aria-label="By weight" title="By weight" style="flex:1;">kg</button>
+        <div class="useg" id="mUnitSeg" role="group" aria-label="Counted per each or by weight">
+          <button type="button" class="on" data-u="each" aria-label="Per each" title="Per each">EA</button>
+          <button type="button" id="mUKG" data-u="kg" aria-label="By weight" title="By weight">kg</button>
         </div>
         <label class="store-tog" id="mStoreSeg" for="mStore" aria-label="Store item">
           <input type="checkbox" id="mStore">
+          <span class="store-box"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-11"/></svg></span>
+        </label>
+        <label class="store-tog" id="mSbarSeg" for="mSbar" aria-label="Salad bar item">
+          <input type="checkbox" id="mSbar">
+          <span class="store-box"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-11"/></svg></span>
+        </label>
+        <label class="store-tog" id="mDeckSeg" for="mDeck" aria-label="5 Deck item">
+          <input type="checkbox" id="mDeck">
           <span class="store-box"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-11"/></svg></span>
         </label>
       </div>
@@ -3836,6 +3864,20 @@ function dbPluMap(){ try{ return JSON.parse(localStorage.getItem(KEY_DBPLU) || "
 function dbBcMap(){ try{ return JSON.parse(localStorage.getItem(KEY_DBBC) || "{}"); }catch(e){ return {}; } }
 let dbStoreCodes = new Set();   // barcodes the Sheet marks Store=YES
 let dbDeckCodes  = new Set();   // barcodes the Sheet marks Deck=YES (5 Deck shelf)
+let dbSbarCodes  = new Set();   // v147: barcodes the Sheet marks Saladbar=YES
+let _flagsReady  = false;       // v147: flag sets built at least once (lazy — boot may run before a pull)
+let dbSbarArts   = new Set();   // v147: article #s of every SBar item (barcode + PLU) — invoice match
+/* v147: an item's article # — the one saved with it, else the built-in catalog's
+   article for that barcode. Digits only. */
+function flagArt(rec, code){
+  const a = String((rec && rec.art) || "").replace(/\D/g,"");
+  if(a) return a;
+  if(code && typeof CAT_BY_CODE !== "undefined" && CAT_BY_CODE){
+    const c = CAT_BY_CODE.get(String(code)); if(c && c.art) return String(c.art).replace(/\D/g,"");
+  }
+  return "";
+}
+function invSbar(art){ if(!_flagsReady) applyStoreOverrides(); const a = String(art||"").replace(/\D/g,""); return !!(a && dbSbarArts.has(a)); }
 /* A Sheet "Store" cell overrides the baked-in store badge: YES turns it on,
    NO turns it off, blank leaves the built-in default alone. */
 function storeVal(v){ v=String(v==null?"":v).trim().toLowerCase();
@@ -3848,9 +3890,12 @@ function applyStoreOverrides(){
   for(const code in pm){ const sv=storeVal(pm[code].store); if(sv===null) continue;
     PLU.forEach(e=>{ if(String(e.plu)===String(code) && e.own!==sv){ e.own=sv; changed=true; } }); }
   if(changed) savePlu(PLU.slice());
-  const bm = dbBcMap(); dbStoreCodes = new Set(); dbDeckCodes = new Set();
+  const bm = dbBcMap(); dbStoreCodes = new Set(); dbDeckCodes = new Set(); dbSbarCodes = new Set(); dbSbarArts = new Set();
   for(const code in bm){ if(storeVal(bm[code].store)===true) dbStoreCodes.add(String(code));
-    if(storeVal(bm[code].deck)===true) dbDeckCodes.add(String(code)); }
+    if(storeVal(bm[code].deck)===true) dbDeckCodes.add(String(code));
+    if(storeVal(bm[code].sbar)===true){ dbSbarCodes.add(String(code)); const a = flagArt(bm[code], code); if(a) dbSbarArts.add(a); } }
+  for(const plu in pm){ if(storeVal(pm[plu].sbar)===true){ const a = flagArt(pm[plu], ""); if(a) dbSbarArts.add(a); } }
+  _flagsReady = true;
 }
 function dbHitForPlu(plu){ return dbPluMap()[String(plu||"").replace(/\D/g,"")] || null; }
 function dbHitForCode(code){ return dbBcMap()[String(code||"").replace(/\D/g,"")] || null; }
@@ -5376,8 +5421,8 @@ async function flushDbQueue(){
 async function pullDb(){
   const d = await callProxy({ action:"getDb" });
   if(d && d.ok){
-    const pMap = {}; (d.plu || []).forEach(r=>{ if(r.plu) pMap[r.plu] = { name:r.name, brand:r.brand, packWt:r.packWt, origin:r.origin, unit:r.unit, store:r.store }; });
-    const bMap = {}; (d.barcodes || []).forEach(r=>{ if(r.code) bMap[r.code] = { name:r.name, brand:r.brand, packWt:r.packWt, origin:r.origin, unit:r.unit, pack:r.pack, size:r.size, store:r.store, deck:r.deck }; });
+    const pMap = {}; (d.plu || []).forEach(r=>{ if(r.plu) pMap[r.plu] = { name:r.name, brand:r.brand, packWt:r.packWt, origin:r.origin, unit:r.unit, store:r.store, deck:r.deck, sbar:r.sbar, art:r.art }; });
+    const bMap = {}; (d.barcodes || []).forEach(r=>{ if(r.code) bMap[r.code] = { name:r.name, brand:r.brand, packWt:r.packWt, origin:r.origin, unit:r.unit, pack:r.pack, size:r.size, store:r.store, deck:r.deck, sbar:r.sbar, art:r.art }; });
     localStorage.setItem(KEY_DBPLU, JSON.stringify(pMap));
     localStorage.setItem(KEY_DBBC, JSON.stringify(bMap));
     _lbInval();   // a synced brand column may introduce new learned brands
@@ -5537,10 +5582,20 @@ function resumeAfterForm(){
    whole 2,290-entry database (plus anything you've scanned) and just show the
    answer. Nothing here saves anything. */
 function syncStoreSeg(){
-  const s=document.getElementById("mStoreSeg"), i=document.getElementById("mStore");
-  if(s && i) s.classList.toggle("on", i.checked);
+  [["mStoreSeg","mStore"],["mSbarSeg","mSbar"],["mDeckSeg","mDeck"]].forEach(([sid,iid])=>{
+    const s=document.getElementById(sid), i=document.getElementById(iid);
+    if(s && i) s.classList.toggle("on", i.checked);
+  });
+}
+/* v147: a flag value from an entry (true/false) or a raw Sheet cell (YES/NO/blank). */
+function flagOf(v){ return v === true || storeVal(v) === true; }
+function mSetFlags(sbar, deck){
+  const a=document.getElementById("mSbar"), b=document.getElementById("mDeck");
+  if(a) a.checked = !!sbar; if(b) b.checked = !!deck; syncStoreSeg();
 }
 document.getElementById("mStore").addEventListener("change", syncStoreSeg);
+document.getElementById("mSbar").addEventListener("change", syncStoreSeg);
+document.getElementById("mDeck").addEventListener("change", syncStoreSeg);
 document.getElementById("search").addEventListener("input", renderList);
 
 /* The whole-database lookup lives in INFO now, not Add.
@@ -5770,6 +5825,7 @@ function relScore(name, q){
   return s;
 }
 function searchEntries(q){
+  if(!_flagsReady) applyStoreOverrides();
   const out = [], seen = new Set();
   const push = (o)=>{
     const key = o.code ? ("B"+o.code) : (o.plu ? ("P"+o.plu) : ("N"+o.name.toLowerCase()));
@@ -5800,26 +5856,29 @@ function searchEntries(q){
     if(hit(_name, c.brand, code, "") || stemHit(_name)) push({ name:_name, code:String(code), plu:"",
       brand:c.brand||"", packWt:c.packWt||"", pack:c.pack||"", size:c.size||"", unit:c.unit||(_bi?_bi.u:"")||"",
       store:_bi ? true : (storeVal(c.store)===true),
-      deck:(c.deck!==undefined && c.deck!=="") ? (storeVal(c.deck)===true) : (_bi ? !!_bi.d : false) }); }
+      deck:(c.deck!==undefined && c.deck!=="") ? (storeVal(c.deck)===true) : (_bi ? !!_bi.d : false),
+      sbar:storeVal(c.sbar)===true, art:flagArt(c, code) }); }
   // hardcoded store barcodes (offline source of truth)
   if(typeof STORE_ITEMS !== "undefined") STORE_ITEMS.forEach(it=>{
     if(it.t !== "bc") return;
     if(hit(it.n, it.b, it.k, "") || stemHit(it.n)) push({ name:it.n, code:String(it.k), plu:"",
-      brand:it.b||"", packWt:it.w||"", pack:"", size:"", unit:it.u||"ea", store:true, deck:!!it.d });
+      brand:it.b||"", packWt:it.w||"", pack:"", size:"", unit:it.u||"ea", store:true, deck:!!it.d, art:flagArt(null, it.k) });
   });
   // built-in barcode catalogue
   if(typeof CATALOG !== "undefined") CATALOG.forEach(c=>{
     if(c && c.name && (hit(c.name, c.brand, c.code, c.plu) || stemHit(c.name)))
       push({ name:c.name, code:String(c.code||""), plu:c.plu||"", brand:c.brand||"",
              packWt:wtFrom(c), pack:c.pack||"", size:c.size||"", unit:c.unit||"",
-             store:dbStoreCodes.has(String(c.code||"")), deck:dbDeckCodes.has(String(c.code||"")) });
+             store:dbStoreCodes.has(String(c.code||"")), deck:dbDeckCodes.has(String(c.code||"")),
+             sbar:dbSbarCodes.has(String(c.code||"")), art:String(c.art||"") });
   });
   // Sheet PLU DB
   const pm = dbPluMap();
   for(const plu in pm){ const c = pm[plu];
     if(hitPlu(c.name, c.brand, plu)) push({ name:c.name||"", code:"", plu:String(plu),
       brand:c.brand||"", packWt:c.packWt||"", pack:"", size:"", unit:c.unit||"",
-      store:storeVal(c.store)===true }); }
+      store:storeVal(c.store)===true, deck:storeVal(c.deck)===true, sbar:storeVal(c.sbar)===true,
+      art:flagArt(c, "") }); }
   // hardcoded store PLUs (offline source of truth)
   if(typeof STORE_ITEMS !== "undefined") STORE_ITEMS.forEach(it=>{
     if(it.t !== "plu") return;
@@ -5862,7 +5921,7 @@ function _catHlKey(o){ return o.code ? ("c:"+o.code) : (o.plu ? ("p:"+o.plu) : (
 function catRow2(o, dim){
   const pw = o.packWt ? '<span class="nm-bdg pack">'+esc(cleanWt(o.packWt))+'</span>' : "";
   const badge = o.store ? '<span class="own">store</span>' : "";
-  const dbadge = o.deck ? '<span class="deck">5 DECK</span>' : "";
+  const dbadge = (o.sbar ? '<span class="sbar">SBar</span>' : "") + (o.deck ? '<span class="deck">5 DECK</span>' : "");
   const nm = nmNameHtml((o.brand?o.brand+" ":"")+o.name);
   // muted catalogue rows get an explicit + (the whole row still opens the form too)
   // Pick-list mode: in-store rows get a laser + that adds to the pick list;
@@ -5912,7 +5971,8 @@ function catFindHtml(q){
 function openEntry(i){
   const o = _searchEnts[i]; if(!o) return;
   openManualPrefilled({ name:o.name, code:o.code, plu:o.plu, brand:o.brand,
-                        packWt:o.packWt, pack:o.pack, size:o.size, unit:o.unit, store:o.store, art:"" });
+                        packWt:o.packWt, pack:o.pack, size:o.size, unit:o.unit, store:o.store,
+                        deck:!!o.deck, sbar:!!o.sbar, art:o.art||"" });
 }
 /* Tap a catalogue result to open the SAME add form, pre-filled. (Manual +,
    scan, and tapping a result all land on one identical form now.) */
@@ -5954,6 +6014,7 @@ function openManualPrefilled(c){
     if(_rb) _rb.classList.toggle("hidden", !_mResetKind);
   }
   { const st=document.getElementById("mStore"); if(st){ st.checked = !!(c && c.store && c.store !== "NO"); syncStoreSeg(); } }
+  mSetFlags(c ? flagOf(c.sbar) : false, c ? flagOf(c.deck) : false);
   if(c){
     const set=(id,v)=>{ const el=document.getElementById(id); if(el && v!=null && v!=="") el.value=v; };
     set("mName", c.name); set("mCode", c.code); set("mPlu", c.plu);
@@ -6849,7 +6910,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v146";
+const APP_VERSION = "v147";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -7448,6 +7509,7 @@ document.getElementById("fabAdd").addEventListener("click", ()=>{
   const mkn=document.getElementById("mKnown"); if(mkn) mkn.textContent="";
   mDupUpdate();
   mOrigins = []; drawMOrigins();
+  mSetFlags(false, false);            // v147: a new item starts un-flagged
   document.getElementById("mQty").value = 1;
   setManualUnit(unit() === "kg");     // start on whatever Settings weighs in
   document.getElementById("mSave").textContent = "Add item";
@@ -7518,6 +7580,11 @@ document.getElementById("mSave").addEventListener("click", ()=>{
   const pack = document.getElementById("mPack").value.trim();
   const size = document.getElementById("mSize").value.trim();
   const store = document.getElementById("mStore").checked ? "YES" : "NO";
+  // v147: always an explicit YES/NO so an untick clears on every phone (the
+  // backend skips blanks). Article # is saved so invoices can match SBar items.
+  const sbar = document.getElementById("mSbar").checked ? "YES" : "NO";
+  const deck = document.getElementById("mDeck").checked ? "YES" : "NO";
+  const art = article.replace(/\D/g,"");
   if(!name && !code && !plu) return toast("Enter a name, barcode or PLU");
   // If this is a known catalog article and you edited any field, save the fix.
   let corrected = false;
@@ -7544,26 +7611,29 @@ document.getElementById("mSave").addEventListener("click", ()=>{
   if(code){
     const bm = dbBcMap();
     bm[code] = { name:name||"", brand:brand||"", packWt:packWt, origin:originStr,
-                 unit:unitStr, pack:pack, size:size, store:store };
+                 unit:unitStr, pack:pack, size:size, store:store, deck:deck, sbar:sbar, art:art };
     try{ localStorage.setItem(KEY_DBBC, JSON.stringify(bm)); }catch(e){}
     confirmCatalogCode(code);
     dbUpsert("bc", { barcode:code, brand:brand, name:name, packWt:packWt,
-                     origin:originStr, unit:unitStr, pack:pack, size:size, store:store, caseCount:pack });
+                     origin:originStr, unit:unitStr, pack:pack, size:size, store:store, caseCount:pack,
+                     deck:deck, sbar:sbar, article:art });
     toast(navigator.onLine ? "Saved \u2713" : "Saved \u2014 will sync when online");
   } else if(plu){
     const pm = dbPluMap();
     pm[plu] = { name:name||"", brand:brand||"", packWt:packWt, origin:originStr,
-                unit:unitStr, store:store };
+                unit:unitStr, store:store, deck:deck, sbar:sbar, art:art };
     try{ localStorage.setItem(KEY_DBPLU, JSON.stringify(pm)); }catch(e){}
     if(name && !PLU.some(e=>e.plu === plu && e.name.toLowerCase() === name.toLowerCase())){
       savePlu(PLU.concat([{ plu, name, e:!mKg, own:true }])); VOCAB = null; SEED_KEYS = null;
     }
     dbUpsert("plu", { plu:plu, brand:brand, name:name, packWt:packWt,
-                      origin:originStr, unit:unitStr, store:store, caseCount:pack });
+                      origin:originStr, unit:unitStr, store:store, caseCount:pack,
+                      deck:deck, sbar:sbar, article:art });
     toast(navigator.onLine ? "Saved \u2713" : "Saved \u2014 will sync when online");
   } else {
     return toast("Add a barcode or PLU to save it to the database");
   }
+  applyStoreOverrides();   // v147: refresh flag sets (SBar badge + invoice match) right away
   rememberUnit({ article, code, name }, mKg);
   const _pgRet = pgPendingSpot;   // capture before closeManual() clears it
   renderList(); closeManual();
@@ -10987,7 +11057,7 @@ function renderOrder(){
     '<div class="otable">' +
     '<div class="ohead"><span>Item</span><span>Ord</span><span>Ship</span><span>Diff</span></div>' +
     rows.map(r=>`<div class="orow2${r.ok?"":" flag"}" data-art="${esc(r.art)}">
-        <div class="d">${r.brand ? '<b class="brand" title="' + esc(r.brandFull) + '">' + esc(r.brand) + '</b>' : ""}${esc(r.label || r.item || r.desc)}${r.merged ? '<b class="warn">2 items ran together — check the photo</b>' : ""}${confBadge(r)}<small>${esc(r.art)}${r.size ? " · " + esc(r.size) : ""}</small></div>
+        <div class="d">${r.brand ? '<b class="brand" title="' + esc(r.brandFull) + '">' + esc(r.brand) + '</b>' : ""}${esc(r.label || r.item || r.desc)}${invSbar(r.art) ? '<span class="sbar">SBar</span>' : ""}${r.merged ? '<b class="warn">2 items ran together — check the photo</b>' : ""}${confBadge(r)}<small>${esc(r.art)}${r.size ? " · " + esc(r.size) : ""}</small></div>
         <b>${r.ord==null?"?":r.ord}</b><b>${r.ship==null?"?":r.ship}</b>
         <b class="${r.diff>0?"diff":(r.diff<0?"over":"")}">${r.diff==null?"?":(r.diff>0?"-"+r.diff:(r.diff<0?"+"+Math.abs(r.diff):"0"))}</b>
       </div>`).join("") + '</div>';

@@ -1161,6 +1161,11 @@
   .rk-abinner{display:none;align-items:center;width:100%;height:100%;min-width:0;padding:0 13px 0 4px;
     position:relative;z-index:1}
   #rkTin{flex:1 1 0;min-width:0;width:0}
+  /* v148: in-row clear. Fixed size (flex:none) so #rkTin stays the ONLY flexible item. */
+  .rk-clr{flex:none;width:19px;height:19px;margin:0 6px 0 4px;border-radius:50%;border:0;padding:0;cursor:pointer;
+    background:var(--muted);color:var(--ink);font-size:10px;line-height:1;display:none;align-items:center;justify-content:center}
+  .rk-clr.on{display:flex}
+  .rk-clr:active{background:var(--paper)}
   .rk-addbar.open .rk-abinner{display:flex}
   .rk-plus{flex:none;width:46px;height:46px;border-radius:12px;border:0;background:none;cursor:pointer;
     display:grid;place-items:center;color:var(--muted);position:relative}
@@ -2078,7 +2083,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=147">
+  <link rel="manifest" href="./manifest.json?v=148">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2654,6 +2659,7 @@
             <span class="rk-plusglyph" id="rkPlusGlyph"></span>
           </button>
           <input id="rkTin" class="rk-tin" placeholder="Type or say an item…" autocomplete="off" enterkeyhint="done">
+          <button class="rk-clr" id="rkClr" type="button" aria-label="Clear">&#10005;</button>
           <span class="rk-idiv2"></span>
           <input id="rkQty" class="rk-qghost" placeholder="#" autocomplete="off" inputmode="numeric" enterkeyhint="done">
           <button class="rk-go" id="rkGo" type="button" onclick="rkAddManual()" aria-label="Add / update"><svg viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></button>
@@ -6910,7 +6916,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v147";
+const APP_VERSION = "v148";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -8581,10 +8587,14 @@ document.getElementById("savedWrap").addEventListener("click", e=>{
     downloadCsv(rows, x.list + "-" + new Date(x.ts).toISOString().slice(0,16).replace(/[:T]/g,"-") + ".csv");
     return;
   }
-  if(act === "del"){
-    const keep = all.filter(v=>v.id !== x.id);
-    saveSessions(keep); renderSaved();
-    toastUndo("List deleted", ()=>{ const cur = sessions(); cur.unshift(x); saveSessions(cur); renderSaved(); });
+  if(act === "del"){                // v148: one Yes/No gate, no undo toast
+    const _n = x.rows.length;
+    appConfirm("Delete permanently?",
+      LIST_META[x.list].label + " \u00b7 " + new Date(x.ts).toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"}) + " \u00b7 " + _n + " item" + (_n===1?"":"s"),
+      "Yes", ()=>{
+        saveSessions(sessions().filter(v=>v.id !== x.id)); renderSaved();
+        toast("List deleted");
+      }, { cancelLabel:"No", okClass:"stop" });
   }
 });
 
@@ -12944,14 +12954,28 @@ function pgMainTok(name){
   const w = String(name||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(x=>x.length>2 && !RK_GEN.has(x));
   return w.sort((a,b)=>b.length-a.length)[0] || "";
 }
+/* v148: every meaningful word you typed must be in the cell, not just the
+   longest one. pgMainTok alone turned "Grape tomatoes" into "tomatoes", so any
+   tomato on a pod/endcap (cherry, Campari, on-the-vine…) triggered the
+   "where does it need filling?" prompt. Plurals fold (tomato = tomatoes). */
+function pgToks(name){
+  return Array.from(new Set(String(name||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/)
+    .filter(x=>x.length>2 && !RK_GEN.has(x))));
+}
+function pgStem(w){ w = String(w||""); if(/ies$/.test(w) && w.length>4) return w.slice(0,-3)+"y"; if(/oes$/.test(w)) return w.slice(0,-2); if(/(ch|sh|x|ss)es$/.test(w)) return w.slice(0,-2); if(/s$/.test(w) && !/ss$/.test(w)) return w.slice(0,-1); return w; }
+function pgHitAll(cell, toks){
+  if(!toks || !toks.length) return false;
+  const have = new Set(String(cell||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").split(/\s+/).filter(Boolean).map(pgStem));
+  return toks.every(t=>have.has(pgStem(t)));
+}
 function pgHit(cell, tok){ if(!tok) return false; try{ return new RegExp("\\b"+String(tok).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).test(String(cell||"").toLowerCase()); }catch(e){ return String(cell||"").toLowerCase().indexOf(tok)!==-1; } }
 function pgLocationsFor(name, tags){
   const s = pgLoad2(); if(!pgFresh(s)) return [];
-  const tok = pgMainTok(name); if(!tok) return [];
+  const toks = pgToks(name); if(!toks.length) return [];
   const out = [];
-  (s.pod1||[]).forEach(p=>{ if(!p) return; if(pgHit(p.name, tok) || pgArr3(p.extra).some(x=>pgHit(x,tok))) out.push({kind:"pod", id:"pod1", label:"Pod 1"}); });
-  (s.pod2||[]).forEach(v=>{ if(pgArr3(v).some(x=>pgHit(x,tok))) out.push({kind:"pod", id:"pod2", label:"Pod 2"}); });
-  (s.runs||[]).forEach((r,ri)=>{ ["wet","hmr"].forEach(function(end){ (r[end]||[]).forEach(function(v){ if(pgHit(v, tok)){
+  (s.pod1||[]).forEach(p=>{ if(!p) return; if(pgHitAll(p.name, toks) || pgArr3(p.extra).some(x=>pgHitAll(x,toks))) out.push({kind:"pod", id:"pod1", label:"Pod 1"}); });
+  (s.pod2||[]).forEach(v=>{ if(pgArr3(v).some(x=>pgHitAll(x,toks))) out.push({kind:"pod", id:"pod2", label:"Pod 2"}); });
+  (s.runs||[]).forEach((r,ri)=>{ ["wet","hmr"].forEach(function(end){ (r[end]||[]).forEach(function(v){ if(pgHitAll(v, toks)){
     const tid = RK_RUN_IDS[ri] || "root";
     out.push({kind:"endcap", ri:ri, end:end, slot:v, table:tid, label:(RK_BY_ID[tid]?RK_BY_ID[tid].name:("Run "+(ri+1)))+" \u2014 endcap"});
   }}); }); });
@@ -13783,6 +13807,38 @@ document.addEventListener("visibilitychange", ()=>{
   if(_rkTin) _rkTin.addEventListener("keydown", _rkCommit);
   if(_rkQty) _rkQty.addEventListener("keydown", _rkCommit);
   let _rkPrevT = null;
+  /* v148: clear (✕) — shows as soon as the item box or # has anything in it
+     (typed, spoken or filled from a row), one tap empties BOTH. A table you
+     pinned by hand stays pinned; an auto preview guess is dropped. Clearing
+     while editing a row's count abandons that edit. */
+  const _rkClr = document.getElementById("rkClr");
+  if(_rkClr && _rkTin){
+    const _rkClrSync = function(){ _rkClr.classList.toggle("on", !!(_rkTin.value || (_rkQty && _rkQty.value))); };
+    [_rkTin, _rkQty].forEach(function(el){
+      if(!el) return;
+      el.addEventListener("input", _rkClrSync);
+      try{   // mic / row-tap / reset set .value in code (no "input" event) — keep the ✕ in step
+        const _d = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value");
+        if(_d && _d.get && _d.set){
+          Object.defineProperty(el, "value", { configurable:true,
+            get(){ return _d.get.call(this); },
+            set(v){ _d.set.call(this, v); _rkClrSync(); } });
+        }
+      }catch(e){}
+    });
+    _rkClr.addEventListener("mousedown", function(e){ e.preventDefault(); });   // keep the keyboard up
+    _rkClr.addEventListener("click", function(e){
+      e.preventDefault(); e.stopPropagation();
+      clearTimeout(_rkPrevT);
+      _rkTin.value = ""; if(_rkQty) _rkQty.value = "";
+      const h = document.getElementById("rkHeard"); if(h){ h.textContent = ""; h.classList.remove("show"); }
+      if(rkEditId){ rkEditId = null; rkPinned = false; const sl = document.getElementById("rkSel"); if(sl) sl.selectedIndex = 0; rkReflectTarget(); renderRestock(); }
+      else if(!rkPinned) rkReflectTarget("");
+      _rkClrSync();
+      _rkTin.focus();
+    });
+    _rkClrSync();
+  }
   if(_rkTin) _rkTin.addEventListener("input", function(){
     clearTimeout(_rkPrevT);
     _rkPrevT = setTimeout(function(){

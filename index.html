@@ -2083,7 +2083,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=149">
+  <link rel="manifest" href="./manifest.json?v=150">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6928,7 +6928,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v149";
+const APP_VERSION = "v150";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -8260,7 +8260,7 @@ function bcMatches(name){
     });
   }
   const seen = new Set(), out = [];
-  for(const e of ents){ const key = String(e.code||"").replace(/^0+/,""); if(seen.has(key)) continue; seen.add(key); out.push(e); if(out.length>=8) break; }
+  for(const e of ents){ const key = String(e.code||"").replace(/^0+/,""); if(seen.has(key)) continue; seen.add(key); out.push(e); if(out.length>=20) break; }   // v150: 8 -> 20 so the code sheet can list every relevant barcode
   return out;
 }
 function strictBarcodeMatches(name){ return bcMatches(name); }
@@ -8269,25 +8269,62 @@ function barcodeSuggest(name){
   out.sort((a,b)=> (looksLikeBarcodeItem(b.name)?1:0) - (looksLikeBarcodeItem(a.name)?1:0));
   return out.slice(0,6);
 }
+/* ---- v150: code-sheet relevance ----
+   Product words of a name (brand, sizes, filler stripped, plurals folded). */
+function sheetToks(q){
+  return pluTokens(coreProductQuery(q)).filter(t=> t.length >= 3 && !/\d/.test(t) &&
+    !GENERIC.has(t) && !STOPWORDS.has(t)).map(stem);
+}
+function sheetHas(cand, t){ return cand.has(t) || [...cand].some(c=> c.length >= 4 && t.length >= 4 && (c.startsWith(t) || t.startsWith(c))); }
+function sheetRel(toks, candName, all){
+  if(!toks.length) return true;
+  const cand = new Set(pluTokens(candName).map(stem));
+  return all ? toks.every(t=> sheetHas(cand, t)) : sheetHas(cand, toks[toks.length - 1]);
+}
+function sheetScore(q, toks, sb, b){
+  const full = (b.brand ? b.brand + " " : "") + b.name;
+  let sc = 0;
+  if(sb.length && brandAgrees(sb, b.name, b.brand)) sc += 100;
+  else if(!sb.length && !brandTagsOf(full).length) sc += 10;     // no brand said: unbranded is closer
+  if(sizeToks(q).length && sizesAgree(q, full + " " + (b.packWt||"") + " " + (b.size||""))) sc += 50;
+  const ct = sheetToks(full);
+  if(ct.length) sc += 20 * toks.filter(t=> sheetHas(new Set(ct), t)).length / Math.max(ct.length, toks.length);
+  return sc;
+}
 /* ---- code sheet: PLU, barcode, or one we've seen before ---- */
 function openCodeSheet(r, list){
-  // v149: a misheard short word ("NNI Line") searched for "line" and listed
-  // nothing. If the name finds nothing, search its one-letter store fix instead.
-  let qn = r.name;
-  if(qn.trim() && !barcodeSuggest(qn).length && !pluPairs(coreProductQuery(qn)).length){
-    const alt = oneEditName(qn); if(alt) qn = alt;
+  // v150: every row in the sheet must be about the item you named (all its
+  // product words, else its head noun) -- "NNI Lime" never lists mushrooms.
+  // Store items first, then closest match: same brand, same size, tightest name.
+  const lists = (qn)=>{
+    const toks = sheetToks(qn), sb = brandTagsOf(qn);
+    const known = qn.trim() ? knownFor(qn) : null;
+    const kName = known ? (nameForCode(known.code) || known.name) : "";
+    let bsAll = bcMatches(qn);
+    // nothing in the size you said -> still list the item's other sizes (ranked by closeness)
+    if(!bsAll.length && sizeToks(qn).length) bsAll = bcMatches((sb.join(" ") + " " + coreProductQuery(qn)).trim());
+    const ppAll = qn.trim() ? pluPairs(coreProductQuery(qn)) : [];
+    const bNm = b=> (b.brand ? b.brand + " " : "") + b.name;
+    // every product word, judged across the WHOLE sheet: if anything names them
+    // all, nothing weaker is listed ("romaine hearts" never pads with celery hearts)
+    let bs = bsAll.filter(b=> sheetRel(toks, bNm(b), true));
+    let pairs = ppAll.filter(pp=> sheetRel(toks, pp.name, true));
+    let kOk = !!known && sheetRel(toks, kName, true);
+    if(!bs.length && !pairs.length && !kOk){
+      bs = bsAll.filter(b=> sheetRel(toks, bNm(b), false));
+      pairs = ppAll.filter(pp=> sheetRel(toks, pp.name, false));
+    }
+    const k = (kOk && brandAgrees(sb, kName)) ? known : null;
+    bs = bs.map(b=> Object.assign({}, b, { _st: isStoreCode(b.code), _sc: sheetScore(qn, toks, sb, b) }));
+    bs.sort((a,b)=> (b._st?1:0) - (a._st?1:0) || b._sc - a._sc);
+    return { known:k, bs, pairs };
+  };
+  let qn = r.name, L = lists(qn);
+  if(qn.trim() && !L.bs.length && !L.pairs.length && !L.known){
+    // v149: a misheard short word ("NNI Line") lists nothing -> its one-letter store fix
+    const alt = oneEditName(qn); if(alt){ qn = alt; L = lists(qn); }
   }
-  const known = r.name.trim() ? knownFor(r.name) : null;
-  let pairs = qn.trim() ? pluPairs(coreProductQuery(qn)) : [];
-  { const _cw = coreProductQuery(qn).toLowerCase().split(/\s+/).filter(Boolean);
-    if(_cw.length > 1){
-      const inc = (pp,w) => String(pp.name||"").toLowerCase().indexOf(w) >= 0;
-      const all = pairs.filter(pp => _cw.every(w => inc(pp,w)));
-      if(all.length){ pairs = all; }                 // exact "white mushroom"
-      else { const head = _cw[_cw.length-1];          // else keep to the noun: mushrooms only
-             const hh = pairs.filter(pp => inc(pp, head));
-             if(hh.length) pairs = hh; }
-    } }
+  const known = L.known, pairs = L.pairs;
   document.getElementById("pickHead").textContent = r.name || "Pick a code";
   document.getElementById("pickNote").textContent = r.name
     ? "Produce takes a PLU; packaged goods take a barcode."
@@ -8301,10 +8338,8 @@ function openCodeSheet(r, list){
       </div></div>`;
   }
   // v149 (C): store items first and badged "store"; non-store items are still
-  // listed (pickable) but carry no badge.
-  const _bs = barcodeSuggest(qn).map(b=>Object.assign({}, b, { _st: isStoreCode(b.code) }));
-  _bs.sort((a,b)=> (b._st?1:0) - (a._st?1:0));
-  _bs.forEach(b=>{
+  // listed (pickable) but carry no badge. v150: closest match first within each.
+  L.bs.forEach(b=>{
     html += `<div class="pick-row">
       <div class="pn">${nmNameHtml((b.brand?b.brand+" ":"")+b.name)}${b.packWt?'<span class="eachtag">'+esc(cleanWt(b.packWt))+'</span>':''}${b._st?'<span class="own">store</span>':''}</div>
       <div class="pick-btns">
@@ -8422,20 +8457,35 @@ function storeMeta(key, isPlu){
   const e = (isPlu ? dbPluMap() : dbBcMap())[key] || {};
   return { unit:String(e.unit||"").toLowerCase(), packWt:e.packWt||"" };
 }
+/* ---- v150: a spoken brand must match the barcode's brand ----
+   "PC lime" never fills the NNI Lime barcode. No brand said = no brand rule
+   (restock in a rush still matches). Tags compared exactly: PC != PCO.     */
+function brandTagsOf(s){
+  try{ return nmNormalize(normPack(String(s||""))).tags.filter(t=> nmTagKind(t) === "brand").map(t=> String(t).toUpperCase()); }
+  catch(e){ return []; }
+}
+function brandAgrees(spoken, candName, candBrand){
+  if(!spoken || !spoken.length) return true;
+  const cb = brandTagsOf((candBrand ? candBrand + " " : "") + (candName || ""));
+  return cb.some(t=> spoken.indexOf(t) >= 0);
+}
 function codeForName(name, opts){
   // v149: { storeOnly:true } (scrap) autofills ONLY store items. A confident
   // match that isn't a store item comes back as a name with no code (C).
   const storeOnly = !!(opts && opts.storeOnly);
   name = normPack(name);
+  const sb = brandTagsOf(name);                       // v150: brand said, if any
   const okCode = c => !storeOnly || isStoreCode(c);
   let nameOnly = "", nameOnlyWt = "";
   const eachy = hasEachHint(name) || isBarcodeException(name);
   if(eachy){
     const k = knownFor(name);
     // a remembered barcode must agree on size: "romaine 3pk" never reuses a 6pk
-    if(k && k.code && okCode(k.code) && sizesAgree(name, k.name + " " + (storeMeta(k.code,false).packWt||"")))
+    if(k && k.code && okCode(k.code) && brandAgrees(sb, nameForCode(k.code) || k.name) &&
+       sheetRel(sheetToks(name), nameForCode(k.code) || k.name, true) &&     // v150: the code's own item must be this item
+       sizesAgree(name, k.name + " " + (storeMeta(k.code,false).packWt||"")))
       return { code:k.code, plu:"", packWt:cleanWt(storeMeta(k.code,false).packWt||""), unit:"ea", name:nameForCode(k.code) };
-    let bc = strictBarcodeMatches(name);
+    let bc = strictBarcodeMatches(name).filter(b=> brandAgrees(sb, b.name, b.brand));   // v150
     if(storeOnly){
       const st = bc.filter(b=> isStoreCode(b.code));
       if(!st.length && bc.length === 1){ nameOnly = (bc[0].brand?bc[0].brand+" ":"")+bc[0].name; nameOnlyWt = cleanWt(bc[0].packWt||""); }
@@ -8443,6 +8493,9 @@ function codeForName(name, opts){
     }
     if(bc.length === 1) return { code:bc[0].code, plu:"", packWt:cleanWt(bc[0].packWt||""), unit:"ea", name:(bc[0].brand?bc[0].brand+" ":"")+bc[0].name };
     if(bc.length > 1)   return { plu:"", code:"", packWt:"", unit:"" };   // ambiguous -> let them pick
+    // v150: a branded item is packaged -- scrap never falls back to a loose PLU
+    // for it. Blank code; the code sheet lists the closest items to pick from.
+    if(storeOnly && sb.length) return { plu:"", code:"", packWt:nameOnlyWt, unit:"", name:nameOnly };
     // hinted but no barcode on file -> fall through to PLU
   }
   const _q = coreProductQuery(name);
@@ -8459,7 +8512,8 @@ function codeForName(name, opts){
   if(storeOnly && !nameOnly && _commit(_all)) nameOnly = _all[0].name;
   if(!eachy){
     const k = knownFor(name);
-    if(k && k.code && okCode(k.code) && !isWeighed(name)) return { code:k.code, plu:"", packWt:cleanWt(storeMeta(k.code,false).packWt||""), unit:"ea", name:nameForCode(k.code) };
+    if(k && k.code && okCode(k.code) && brandAgrees(sb, nameForCode(k.code) || k.name) &&
+       sheetRel(sheetToks(name), nameForCode(k.code) || k.name, true) && !isWeighed(name)) return { code:k.code, plu:"", packWt:cleanWt(storeMeta(k.code,false).packWt||""), unit:"ea", name:nameForCode(k.code) };
   }
   return { plu:"", code:"", packWt:nameOnlyWt, unit:"", name:nameOnly };
 }
@@ -8625,6 +8679,10 @@ function renderSaved(){
   const mine = sessions().filter(x=>x.list === activeList);
   const wrap = document.getElementById("savedWrap");
   if(!mine.length){ wrap.innerHTML = ""; return; }
+  // v150: a redraw used to leave every barcode strip blank white (only the main
+  // list drew them) and snap every open card shut. Keep both.
+  const wasOpen = new Set([...wrap.querySelectorAll(".sess.open")].map(c=> c.dataset.id));
+  const allTxt = (wrap.querySelector("#allSess") || {}).textContent || "";
 
   const days = {};
   mine.forEach(x=>{
@@ -8656,7 +8714,7 @@ function renderSaved(){
           // Always print both halves, even when one is zero. A card that hides
           // its empty half shifts the columns and nothing lines up down the page.
           const brk = ea + " ea · " + wFull(kgs);
-          return `<div class="sess${x.from?' shared':''}" data-id="${x.id}">
+          return `<div class="sess${x.from?' shared':''}${wasOpen.has(x.id)?' open':''}" data-id="${x.id}">
             <div class="sess-h">
               <span class="caret">▶</span>
               <span class="tag ${LIST_META[x.list].cls}"></span>
@@ -8687,6 +8745,8 @@ function renderSaved(){
           </div>`;
         }).join("");
     }).join("");
+  const _as = wrap.querySelector("#allSess"); if(_as && allTxt) _as.textContent = allTxt;
+  renderRowBarcodes();
 }
 
 document.getElementById("savedWrap").addEventListener("click", e=>{
@@ -10220,11 +10280,15 @@ function saveOrders(v){
    as the restock board). Photos never sync — see the invoice-sync module. */
 const KEY_INV_TOMB = "label_inv_tomb_v1";
 let invDirty = false, invSyncing = false, invPollTimer = null, invSyncTimer = null;
+/* v150: bumped on every local invoice change. A pull or sync that started
+   before the change must not overwrite it (a Prompt paste right after coming
+   back to the app used to vanish when the return-pull landed). */
+let invGen = 0, invSyncAgain = false;
 function invTombs(){ try{ const t = JSON.parse(localStorage.getItem(KEY_INV_TOMB) || "{}"); return { inv:(t.inv||{}), pg:(t.pg||{}) }; }catch(e){ return { inv:{}, pg:{} }; } }
 function saveInvTombs(t){ try{ localStorage.setItem(KEY_INV_TOMB, JSON.stringify(t)); }catch(e){} }
 function invTombInvoice(inv){ const t = invTombs(); t.inv[inv] = Date.now(); saveInvTombs(t); }
 function invTombPage(inv, fp){ const t = invTombs(); t.pg[inv + "|" + fp] = Date.now(); saveInvTombs(t); }
-function invMarkDirty(){ invDirty = true; invAutoSync(); }
+function invMarkDirty(){ invDirty = true; invGen++; invAutoSync(); }
 
 /* ---- Article memory: learn item identity per article number over time ----
    Every confirmed read teaches a tally of description / pack / size against the
@@ -11511,19 +11575,26 @@ function invMergeShared(shared){
   saveOrders(out);
 }
 async function invSync(manual){
-  if(invSyncing) return;
+  if(invSyncing){ invSyncAgain = true; return; }        // v150: run again once this one lands
   if(!proxyUrl()){ if(manual) toast("Not set up yet \u2014 see Settings"); return; }
   invSyncing = true;
   try{
     const t = invTombs();
+    const gen0 = invGen;
     const state = { invoices: invStripForSync(orders()), tombInv:t.inv, tombPg:t.pg,
                     updatedBy: (localStorage.getItem(KEY_ME_NAME)||""), updatedAt: new Date().toISOString() };
     const d = await callProxy({ action:"invoicesSync", state });
     if(d && d.ok && d.state){
-      invMergeShared(d.state);
-      saveInvTombs({ inv:{}, pg:{} });     // the server now carries the tombstones for everyone
-      invDirty = false;
-      if(document.getElementById("view-order").classList.contains("active")) renderOrder();
+      if(invGen !== gen0){
+        // v150: something changed locally while this was in flight. The server
+        // merge is a union, so just send again -- don't apply this stale answer.
+        invSyncAgain = true;
+      }else{
+        invMergeShared(d.state);
+        saveInvTombs({ inv:{}, pg:{} });     // the server now carries the tombstones for everyone
+        invDirty = false;
+        if(document.getElementById("view-order").classList.contains("active")) renderOrder();
+      }
     }
     if(manual) toast("Invoices synced");
   }catch(err){
@@ -11531,6 +11602,7 @@ async function invSync(manual){
     // else: stay dirty and retry on the next edit / foreground / online
   }finally{
     invSyncing = false;
+    if(invSyncAgain){ invSyncAgain = false; invAutoSync(); }
   }
 }
 function invAutoSync(){
@@ -11540,8 +11612,10 @@ function invAutoSync(){
 async function invPull(){
   if(!proxyUrl() || !navigator.onLine) return;
   if(invDirty || invSyncing) return;                          // never clobber unsent local edits
+  const gen0 = invGen;
   try{
     const d = await callProxy({ action:"invoicesGet" });
+    if(invGen !== gen0 || invDirty || invSyncing) return;      // v150: a local edit landed meanwhile
     if(d && d.ok && d.state && Array.isArray(d.state.invoices)){
       invMergeShared(d.state);
       if(document.getElementById("view-order").classList.contains("active")) renderOrder();

@@ -2173,7 +2173,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=151.2">
+  <link rel="manifest" href="./manifest.json?v=151.3">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -5515,6 +5515,11 @@ const KEY_DBQ = "label_dbq_v1";
 function queueDbUpsert(kind,row){ try{ const q=JSON.parse(localStorage.getItem(KEY_DBQ)||"[]"); q.push({kind,row}); localStorage.setItem(KEY_DBQ, JSON.stringify(q)); }catch(e){} }
 async function dbUpsert(kind,row){
   if(!proxyUrl()) return;
+  // v151.3: a brand typed into the name goes to the Brand column (never over a different brand)
+  if(row && row.name && typeof splitNameBrand === "function"){
+    const sp = splitNameBrand(row.name, row.brand);
+    if(sp && !sp.conflict){ row = Object.assign({}, row, { name:sp.name, brand:sp.brand }); }
+  }
   if(!navigator.onLine){ queueDbUpsert(kind,row); return; }
   try{ await callProxy({ action:"dbUpsert", kind, row }); }catch(e){ queueDbUpsert(kind,row); }
 }
@@ -5526,17 +5531,115 @@ async function flushDbQueue(){
   for(const it of q){ try{ await callProxy({ action:"dbUpsert", kind:it.kind, row:it.row }); }catch(e){ rest.push(it); } }
   try{ localStorage.setItem(KEY_DBQ, JSON.stringify(rest)); }catch(e){}
 }
-async function pullDb(){
+/* ---- v151.3: brand belongs in the Brand column, never in the Name ----------
+   One rule set, IDENTICAL to the backend's BRAND_RULES_ (google-apps-script.gs
+   v112). Order matters: PCO/PCBM before PC.                                  */
+const BRAND_RULES = [
+  { tag:"NNI",  re:/\b(no\s*name\s*naturally\s*imperfect|naturally\s*imperfect|no\s*name|nn+i)\b/ig },
+  { tag:"PCBM", re:/\b(pc\s*blue\s*menu|blue\s*menu|pcbm)\b/ig },
+  { tag:"PCO",  re:/\b(president'?s?\s*choice\s*organic|pc\s*organic|pco)\b/ig },
+  { tag:"FM",   re:/\b(farmer'?s?\s*market|farmers?\s*mkt|fm)\b/ig },
+  { tag:"PC",   re:/\b(president'?s?\s*choice|pc)\b/ig },
+  { tag:"TF",   re:/\b(taylor\s*farms?)\b/ig }
+];
+function brandRuleTags(s){
+  let rest = String(s||"").replace(/[\u2018\u2019]/g,"'");
+  const tags = [];
+  BRAND_RULES.forEach(r=>{ rest = rest.replace(r.re, ()=>{ if(tags.indexOf(r.tag) < 0) tags.push(r.tag); return " "; }); });
+  rest = rest.replace(/\(\s*\)/g," ").replace(/\s{2,}/g," ")
+             .replace(/^[\s,\-\u2013\u00b7|/]+|[\s,\-\u2013\u00b7|/]+$/g,"").trim();
+  return { tags, rest };
+}
+/* {name, brand} to store, or {conflict} when it isn't safe to move, or null
+   when the name carries no brand. Never overwrites a different brand.       */
+function splitNameBrand(name, brand){
+  const n = brandRuleTags(name);
+  if(!n.tags.length) return null;
+  if(n.tags.length > 1) return { conflict:"two brands in the name" };
+  if(!n.rest) return { conflict:"name is only a brand" };
+  const b = String(brand||"").trim();
+  if(!b) return { name:n.rest, brand:n.tags[0] };
+  const bt = brandRuleTags(b);
+  if(bt.tags.length === 1 && bt.tags[0] === n.tags[0] && !bt.rest) return { name:n.rest, brand:b };
+  return { conflict:"brand column says " + b };
+}
+/* the built-in store item's brand for a Sheet key (barcode or PLU) */
+function builtinBrand(kind, key){
+  if(typeof STORE_ITEMS === "undefined") return "";
+  const k = String(key||"").replace(/^0+/,"");
+  const it = STORE_ITEMS.find(x=> x.t === kind && String(x.k).replace(/^0+/,"") === k);
+  return (it && it.b) || "";
+}
+/* Normalise one pulled row in place; returns what the Sheet needs (if anything). */
+function dbRowNormalise(kind, key, r){
+  const out = { split:false, fill:"", conflict:"" };
+  const sp = splitNameBrand(r.name, r.brand);
+  if(sp && sp.conflict) out.conflict = sp.conflict;
+  else if(sp){ r.name = sp.name; r.brand = sp.brand; out.split = true; }
+  if(!String(r.brand||"").trim()){
+    const bb = builtinBrand(kind, key);
+    if(bb){ r.brand = bb; out.fill = bb; }
+  }
+  return out;
+}
+const KEY_BRANDHEAL = "label_brandheal_v1";
+let _brandHealing = false;
+/* Self-heal the Sheet after a pull: brands out of names (backend v112's safe
+   stripBrands, version-gated -- older backends did it unsafely, and unknown
+   actions fall through to the scan sync), and blank Brand cells on built-in
+   store items filled from the built-in list. Idempotent; at most every 10 min. */
+async function dbBrandHeal(splitN, fills, conflicts, manual){
+  if(_brandHealing) return null;
+  if(!manual){
+    const last = parseInt(localStorage.getItem(KEY_BRANDHEAL)||"0",10) || 0;
+    if(Date.now() - last < 10*60*1000) return null;
+  }
+  if(!proxyUrl() || !navigator.onLine) return null;
+  if(!splitN && !fills.length && !manual) return null;
+  _brandHealing = true;
+  try{ localStorage.setItem(KEY_BRANDHEAL, String(Date.now())); }catch(e){}
+  const res = { moved:0, filled:0, conflicts:[], oldBackend:false };
+  try{
+    if(splitN || manual){
+      const h = await callProxy({ action:"hello" });
+      const v = parseInt(String((h && h.ver) || "").replace(/\D/g,""),10) || 0;
+      if(v >= 112){
+        const d = await callProxy({ action:"stripBrands" });
+        if(d && d.ok){ res.moved = d.moved || 0; res.conflicts = d.conflicts || []; }
+      } else res.oldBackend = true;
+    }
+    for(const f of fills.slice(0, 40)){
+      try{ await callProxy({ action:"dbUpsert", kind:f.kind, row:f.row }); res.filled++; }catch(e){ break; }
+    }
+    if(res.moved || res.filled || res.conflicts.length || conflicts.length)
+      queueError("BRANDFIX moved:" + res.moved + " filled:" + res.filled + (res.oldBackend ? " (backend < v112: names not moved)" : "") +
+        " | conflicts: " + (res.conflicts.length ? res.conflicts : conflicts).slice(0,12).map(c=> c.key + " " + c.name + " [" + (c.brand||"-") + "] " + c.why).join(" ; "));
+  }catch(e){}
+  finally{ _brandHealing = false; }
+  return res;
+}
+async function pullDb(opts){
   const d = await callProxy({ action:"getDb" });
   if(d && d.ok){
     const pMap = {}; (d.plu || []).forEach(r=>{ if(r.plu) pMap[r.plu] = { name:r.name, brand:r.brand, packWt:r.packWt, origin:r.origin, unit:r.unit, store:r.store, deck:r.deck, sbar:r.sbar, art:r.art }; });
     const bMap = {}; (d.barcodes || []).forEach(r=>{ if(r.code) bMap[r.code] = { name:r.name, brand:r.brand, packWt:r.packWt, origin:r.origin, unit:r.unit, pack:r.pack, size:r.size, store:r.store, deck:r.deck, sbar:r.sbar, art:r.art }; });
+    // v151.3: brand out of the name + blank brand from the built-in item, so
+    // every reader (search, autofill, nameForCode) sees clean rows whatever
+    // state the Sheet is in. The Sheet itself is healed in the background.
+    let _splitN = 0; const _fills = [], _conf = [];
+    const _norm = (kind, map)=>{ for(const k in map){ const o = dbRowNormalise(kind, k, map[k]);
+      if(o.split) _splitN++;
+      if(o.conflict) _conf.push({ key:k, name:map[k].name, brand:map[k].brand, why:o.conflict });
+      if(o.fill) _fills.push({ kind: kind === "bc" ? "bc" : "plu", row: kind === "bc" ? { barcode:k, brand:o.fill } : { plu:k, brand:o.fill } }); } };
+    _norm("plu", pMap); _norm("bc", bMap);
+    d.brandSplit = _splitN; d.brandFills = _fills; d.brandConflicts = _conf;
     localStorage.setItem(KEY_DBPLU, JSON.stringify(pMap));
     localStorage.setItem(KEY_DBBC, JSON.stringify(bMap));
     _lbInval();   // a synced brand column may introduce new learned brands
     localStorage.setItem(KEY_DBAT, d.at || new Date().toISOString());
     applyStoreOverrides();
     d.pluCount = Object.keys(pMap).length; d.bcCount = Object.keys(bMap).length;
+    if(!(opts && opts.noHeal)) dbBrandHeal(_splitN, _fills, _conf, false);   // fire and forget
   }
   return d;
 }
@@ -5961,8 +6064,9 @@ function searchEntries(q){
     const _norm = String(code).replace(/^0+/, "");
     const _bi = storeBcNorm().has(_norm) ? (storeBcByNorm().get(_norm) || null) : null;
     const _name = c.name || (_bi ? _bi.n : "");
-    if(hit(_name, c.brand, code, "") || stemHit(_name)) push({ name:_name, code:String(code), plu:"",
-      brand:c.brand||"", packWt:c.packWt||"", pack:c.pack||"", size:c.size||"", unit:c.unit||(_bi?_bi.u:"")||"",
+    const _brand = c.brand || (_bi ? _bi.b : "") || "";   // v151.3 (D1): blank Sheet brand -> built-in brand
+    if(hit(_name, _brand, code, "") || stemHit(_name)) push({ name:_name, code:String(code), plu:"",
+      brand:_brand, packWt:c.packWt||"", pack:c.pack||"", size:c.size||"", unit:c.unit||(_bi?_bi.u:"")||"",
       store:_bi ? true : (storeVal(c.store)===true),
       deck:(c.deck!==undefined && c.deck!=="") ? (storeVal(c.deck)===true) : (_bi ? !!_bi.d : false),
       sbar:storeVal(c.sbar)===true, art:flagArt(c, code) }); }
@@ -7030,7 +7134,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v151.2";
+const APP_VERSION = "v151.3";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -8591,9 +8695,11 @@ function cfnProbeKnown(k, name, sb){
     " rel:" + (sheetRel(sheetToks(name), nfc || k.name, true)?1:0) +
     " sz:" + (sizesAgree(name, k.name + " " + (storeMeta(k.code,false).packWt||""))?1:0);
 }
+let P_NAME = "";
 function cfnProbeBc(b, sb){
   return b.code + ":" + _pt((b.brand?b.brand+" ":"") + b.name, 26) + (b.packWt?"/"+cleanWt(b.packWt):"") +
-    " st" + (isStoreCode(b.code)?1:0) + " br" + (brandAgrees(sb, b.name, b.brand)?1:0);
+    " st" + (isStoreCode(b.code)?1:0) + " br" + (brandAgrees(sb, b.name, b.brand)?1:0) +
+    " w" + (sheetRel(sheetToks(P_NAME), (b.brand?b.brand+" ":"") + b.name, true)?1:0);
 }
 function cfnProbeEnd(P, path, o){
   if(typeof micDbgOn === "function" && !micDbgOn()) return;
@@ -8624,8 +8730,10 @@ function codeForName(name, opts){
        sizesAgree(name, k.name + " " + (storeMeta(k.code,false).packWt||"")))
       return R("history", { code:k.code, plu:"", packWt:cleanWt(storeMeta(k.code,false).packWt||""), unit:"ea", name:nameForCode(k.code) });
     const _bcAll = strictBarcodeMatches(name);
-    if(P) P.bc = _bcAll.map(b=> cfnProbeBc(b, sb));
-    let bc = _bcAll.filter(b=> brandAgrees(sb, b.name, b.brand));   // v150
+    if(P){ P_NAME = name; P.bc = _bcAll.map(b=> cfnProbeBc(b, sb)); }
+    const _tk = sheetToks(name);                       // v151.3 (D2): every product word you said
+    let bc = _bcAll.filter(b=> brandAgrees(sb, b.name, b.brand) &&
+                               sheetRel(_tk, (b.brand ? b.brand + " " : "") + b.name, true));   // v150 brand + v151.3 words
     if(storeOnly){
       const st = bc.filter(b=> isStoreCode(b.code));
       if(!st.length && bc.length === 1){ nameOnly = (bc[0].brand?bc[0].brand+" ":"")+bc[0].name; nameOnlyWt = cleanWt(bc[0].packWt||""); }
@@ -9086,9 +9194,16 @@ document.getElementById("btnStripBrand").addEventListener("click", async ()=>{
   if(!proxyUrl()) return toast("Set up the Sheet link first");
   s.textContent = "Moving brands…";
   try{
-    const d = await callProxy({ action:"stripBrands" });
-    if(d && d.ok){ s.textContent = "Moved " + d.moved + " brand(s) into the Brand column."; await pullDb(); renderList(); }
-    else s.textContent = "Couldn't do it: " + ((d && d.error) || "unknown");
+    const p = await pullDb({ noHeal:true });
+    const r = await dbBrandHeal((p && p.brandSplit) || 0, (p && p.brandFills) || [], (p && p.brandConflicts) || [], true);
+    if(!r) s.textContent = "Couldn't do it right now \u2014 try again.";
+    else if(r.oldBackend) s.textContent = "Update the Sheet script to v112 first, then try again.";
+    else {
+      const c = r.conflicts.length ? r.conflicts : ((p && p.brandConflicts) || []);
+      s.textContent = "Moved " + r.moved + " brand(s) into the Brand column. Filled " + r.filled + " missing brand(s)." +
+        (c.length ? " Left alone (check by hand): " + c.slice(0,10).map(x=> x.name + " [" + (x.brand||"-") + "]").join(", ") + (c.length > 10 ? " +" + (c.length-10) + " more" : "") : "");
+      await pullDb({ noHeal:true }); renderList();
+    }
   }catch(e){ s.textContent = "Couldn't do it: " + (authMessage(e) || e.message); }
 });
 document.getElementById("btnSyncStore").addEventListener("click", async ()=>{

@@ -663,6 +663,40 @@
   .inv-date{font-family:var(--mono);font-size:14px;color:var(--muted);
     margin:2px 0 8px;letter-spacing:.04em}
   .pgrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  /* v151: one heading per invoice in the day view */
+  .inv-hd{margin:0 0 10px;padding:8px 10px 0;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+  .inv-hd-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;min-width:0}
+  .inv-no{flex:1 1 auto;min-width:0;font-family:var(--mono);font-size:12px;color:var(--paper);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .inv-dt{flex:none;display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 9px;border-radius:6px;
+    border:1px solid var(--line);background:var(--surface-2);color:var(--paper);font-family:var(--mono);font-size:12px;cursor:pointer}
+  .inv-dt svg{width:13px;height:13px;color:var(--muted)}
+  .inv-del{flex:none;width:32px;height:30px;border-radius:6px;border:1px solid var(--line);background:none;
+    color:var(--laser);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+  .inv-del svg{width:15px;height:15px}
+  .inv-dt:active,.inv-del:active{transform:scale(.94)}
+  .inv-hd .pgrow{margin-bottom:8px}
+  /* v151: invoice date calendar */
+  .inv-cal{max-width:360px}
+  .ic-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .ic-arrow{flex:none;width:40px;height:36px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);
+    color:var(--paper);font-size:20px;line-height:1;cursor:pointer}
+  .ic-arrow:disabled{opacity:.3;cursor:default}
+  .ic-mon{font-family:var(--mono);font-size:15px;color:var(--paper);letter-spacing:.04em;text-align:center}
+  .ic-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .ic-wd{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center;padding:4px 0}
+  .ic-d{position:relative;aspect-ratio:1;min-width:0;border-radius:8px;border:1px solid transparent;background:var(--surface-2);
+    color:var(--paper);font-family:var(--mono);font-size:14px;cursor:pointer;padding:0}
+  .ic-d.today{border-color:var(--muted)}
+  .ic-d.sel{background:var(--laser);border-color:var(--laser);color:#fff;font-weight:700}
+  .ic-d.rd::after{content:"";position:absolute;left:50%;bottom:4px;width:5px;height:5px;margin-left:-2.5px;
+    border-radius:50%;background:var(--ok)}
+  .ic-d.sel.rd::after{background:#fff}
+  .ic-d:disabled{opacity:.25;cursor:default}
+  .ic-d.blank{visibility:hidden}
+  .ic-key{display:flex;align-items:center;gap:7px;margin-top:12px;font-size:12px;color:var(--muted)}
+  .ic-key i{flex:none;width:6px;height:6px;border-radius:50%;background:var(--ok)}
+  .ic-key[hidden]{display:none}
   .pgdot{position:relative;min-width:38px;height:32px;border-radius:6px;border:none;background:var(--laser);
     color:#fff;font-family:var(--mono);font-size:13px;font-weight:600;cursor:pointer;
     display:flex;align-items:center;justify-content:center;padding:0 8px}
@@ -2083,7 +2117,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=150">
+  <link rel="manifest" href="./manifest.json?v=151">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2456,6 +2490,20 @@
         <button class="btn btn-ghost" id="ipClip">Paste from clipboard</button>
         <button class="btn btn-primary" id="ipGo">Fill pages</button>
       </div>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="invCalOverlay">
+    <div class="modal inv-cal">
+      <div class="modal-head"><h2 id="icTitle">Date</h2>
+        <button class="modal-close" id="icClose" aria-label="Close">✕</button></div>
+      <div class="ic-nav">
+        <button class="ic-arrow" id="icPrev" aria-label="Previous month">‹</button>
+        <div class="ic-mon" id="icMon"></div>
+        <button class="ic-arrow" id="icNext" aria-label="Next month">›</button>
+      </div>
+      <div class="ic-grid" id="icGrid"></div>
+      <div class="ic-key" id="icKey" hidden><i></i><span id="icKeyTxt"></span></div>
     </div>
   </div>
 
@@ -6928,7 +6976,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v150";
+const APP_VERSION = "v151";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -10373,7 +10421,37 @@ let activeKind = "shorted";                       // which sub-tab (shorted|ship
    invoice onto today's list instead of hiding it on an old day. */
 function ymdLocal(d){ const z=n=>String(n).padStart(2,"0"); return d.getFullYear()+"-"+z(d.getMonth()+1)+"-"+z(d.getDate()); }
 function maxTs(inv){ const ts=((inv&&inv.pages)||[]).map(p=>p.ts||0); return ts.length?Math.max(...ts):0; }
-function invDay(inv){ const t=maxTs(inv); return ymdLocal(new Date(t||Date.now())); }
+/* v151: an invoice can be filed under a picked day (inv.day, synced with
+   inv.dayTs -- newest pick wins on every phone). Without one it sits on the
+   day it was uploaded, as before. The backend's 4-day live window still counts
+   by UPLOAD day, so an old-dated invoice stays on the phones just as long. */
+function invUploadDay(inv){ const t=maxTs(inv); return ymdLocal(new Date(t||Date.now())); }
+function invDay(inv){ return (inv && /^\d{4}-\d{2}-\d{2}$/.test(inv.day||"")) ? inv.day : invUploadDay(inv); }
+function dayShort(ymd){
+  try{ const a=ymd.split("-").map(Number); return new Date(a[0],a[1]-1,a[2]).toLocaleDateString(undefined,{month:"short",day:"numeric"}); }
+  catch(e){ return ymd; }
+}
+/* the date printed on the invoice (inv.date, free text from the reader) -> YYYY-MM-DD, or "" */
+const _INV_MON = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+function invParseDate(s){
+  s = String(s||"").trim(); if(!s) return "";
+  let y, m, d, mm;
+  if((mm = s.match(/(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/))){ y=+mm[1]; m=+mm[2]-1; d=+mm[3]; }
+  else if((mm = s.match(/(\d{1,2})\s*[-\/. ]?\s*([A-Za-z]{3})[A-Za-z]*\.?\s*[-\/. ,]?\s*(\d{2,4})/))){ d=+mm[1]; m=_INV_MON[mm[2].toLowerCase()]; y=+mm[3]; }
+  else if((mm = s.match(/([A-Za-z]{3})[A-Za-z]*\.?\s*(\d{1,2}),?\s*(\d{2,4})/))){ m=_INV_MON[mm[1].toLowerCase()]; d=+mm[2]; y=+mm[3]; }
+  else if((mm = s.match(/(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/))){
+    const a=+mm[1], b=+mm[2]; y=+mm[3];
+    if(b>12){ m=a-1; d=b; } else { d=a; m=b-1; }       // day-first unless it can't be
+  }
+  else return "";
+  if(m==null || isNaN(m)) return "";
+  if(y < 100) y += 2000;
+  if(y < 2000 || y > 2100) return "";                  // truncated year ("202") -> no guess
+  const dt = new Date(y, m, d);
+  if(dt.getFullYear()!==y || dt.getMonth()!==m || dt.getDate()!==d) return "";
+  return ymdLocal(dt);
+}
+function invNoLabel(inv){ const k=String(inv&&inv.inv||""); return k.startsWith("unknown-") ? "No invoice #" : "#" + k; }
 function dayNice(ymd){
   try{ const a=ymd.split("-").map(Number); return new Date(a[0],a[1]-1,a[2]).toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}); }
   catch(e){ return ymd; }
@@ -11205,15 +11283,15 @@ function todayNice(){
   try{ return new Date().toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" }); }
   catch(e){ return new Date().toDateString(); }
 }
-/* ---- date stepper: walk the last N distinct upload days (newest = default) ----
-   Reachable set = the last STEP_DAYS distinct upload days in local storage.
-   Older days stay stored/synced but drop off the stepper; the backend purges
-   them past the same window (INV_KEEP_DAYS) so the two never drift. */
-const STEP_DAYS = 4;   // matches the backend INV_KEEP_DAYS live window
-function stepDays(){ return [...new Set(orders().map(invDay))].sort().slice(-STEP_DAYS); }
+/* ---- date stepper: walk every day present (newest = default) ----
+   v151: a day is an invoice's picked day or its upload day (invDay). Every day
+   present is reachable -- an invoice moved back to an old date must not fall
+   off the stepper. The backend still purges by UPLOAD day past INV_KEEP_DAYS,
+   so the set stays small. */
+function stepDays(){ return [...new Set(orders().map(invDay))].sort(); }
 function dayTotalPages(day){ return invoicesOfDay(day).reduce((n,inv)=>n+(((inv&&inv.pages)||[]).length),0); }
 function renderStepper(){
-  const days = stepDays();                              // oldest→newest, ≤ STEP_DAYS
+  const days = stepDays();                              // oldest→newest
   const wrap = document.getElementById("ordStep");
   if(days.length < 2){ wrap.hidden = true; return; }    // one day (or none) → nothing to step
   wrap.hidden = false;
@@ -11278,12 +11356,26 @@ function renderOrder(){
   const rows = order.flatMap(k=>seen.get(k));
   const bad = rows.filter(r=>!r.ok).length;
 
+  // v151: one heading per invoice (number · pages, its date, delete), with that
+  // invoice's page dots under it. Rows below stay merged into one table.
+  const dot = (key, p)=>`<button class="pgdot${
+        p.rows.some(r=>!r.ok)?" bad":""}" data-inv="${esc(key)}" data-pg="${p.id}"
+        aria-label="Page ${esc(p.page)}, ${p.rows.length} rows">${esc(p.page)}${p.prov?`<span class="prov ${p.prov==='groq'?'gr':'ge'}">${p.prov==='groq'?'gr':'ge'}</span>`:""}</button>`;
+  const heads = invoicesOfDay(activeDay).map(inv=>{
+    const ps = pagesOfKind(inv, activeKind);
+    if(!ps.length) return "";
+    return `<div class="inv-hd">
+      <div class="inv-hd-top">
+        <span class="inv-no">${esc(invNoLabel(inv))} \u00b7 ${ps.length} page${ps.length===1?"":"s"}</span>
+        <button class="inv-dt" data-inv="${esc(inv.inv)}" aria-label="Change invoice date"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>${esc(dayShort(invDay(inv)))}</button>
+        <button class="inv-del" data-inv="${esc(inv.inv)}" aria-label="Delete invoice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+      </div>
+      <div class="pgrow">${ps.map(p=>dot(inv.inv, p)).join("")}</div>
+    </div>`;
+  }).join("");
+
   body.innerHTML =
-    dayHdr +
-    '<div class="pgrow">' + dps.map(d=>`<button class="pgdot${
-        d.p.rows.some(r=>!r.ok)?" bad":""}" data-inv="${esc(d.inv)}" data-pg="${d.p.id}"
-        aria-label="Page ${esc(d.p.page)}, ${d.p.rows.length} rows">${esc(d.p.page)}${d.p.prov?`<span class="prov ${d.p.prov==='groq'?'gr':'ge'}">${d.p.prov==='groq'?'gr':'ge'}</span>`:""}</button>`).join("") +
-    '</div>' +
+    dayHdr + heads +
     (bad ? `<p class="cd-src">${bad} row(s) didn't read cleanly — tap a page to check them
             against the photo.</p>` : "") +
     '<div class="otable">' +
@@ -11314,6 +11406,101 @@ document.getElementById("ordBody").addEventListener("click", e=>{
   pgIdx = dps.findIndex(d=>d.inv === c.dataset.inv && d.p.id === c.dataset.pg);
   if(pgIdx < 0) return;
   openPage();
+});
+
+/* ---- v151: per-invoice heading actions ----
+   Delete = one Yes/No gate (same as the saved-list delete), removes that
+   invoice's Shorted AND Shipped pages on every phone via the shared invoice
+   tombstone. Rows already archived to Invoice Analytics are untouched.
+   Date = in-app month calendar; picking a day files the invoice there. */
+document.getElementById("ordBody").addEventListener("click", e=>{
+  const dl = e.target.closest(".inv-del");
+  if(dl){ invDeleteAsk(dl.dataset.inv); return; }
+  const dt = e.target.closest(".inv-dt");
+  if(dt){ invCalOpen(dt.dataset.inv); return; }
+});
+function invDeleteAsk(key){
+  const inv = orders().find(x=>x.inv === key); if(!inv) return;
+  const n = (inv.pages||[]).length;
+  appConfirm("Delete this invoice permanently?",
+    invNoLabel(inv) + " \u00b7 " + n + " page" + (n===1?"":"s") + " \u00b7 Shorted + Shipped",
+    "Yes", ()=>{
+      const all = orders();
+      if(!all.some(x=>x.inv === key)){ renderOrder(); return; }
+      invTombInvoice(key);
+      saveOrders(all.filter(x=>x.inv !== key));
+      invMarkDirty();
+      renderOrder();
+      toast("Invoice deleted");
+    }, { cancelLabel:"No", okClass:"stop" });
+}
+let icKey = null, icY = 0, icM = 0;
+function invCalOpen(key){
+  const inv = orders().find(x=>x.inv === key); if(!inv) return;
+  icKey = key;
+  const today = ymdLocal(new Date());
+  let start = invParseDate(inv.date);                  // open on the printed date when it reads
+  if(!start || start > today) start = invDay(inv);
+  if(start > today) start = today;
+  const a = start.split("-").map(Number);
+  icY = a[0]; icM = a[1] - 1;
+  invCalRender();
+  document.getElementById("invCalOverlay").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+function invCalClose(){
+  document.getElementById("invCalOverlay").classList.add("hidden");
+  document.body.style.overflow = "";
+  icKey = null;
+}
+function invCalRender(){
+  const inv = orders().find(x=>x.inv === icKey);
+  if(!inv){ invCalClose(); return; }
+  const now = new Date(), today = ymdLocal(now);
+  const sel = invDay(inv), printed = invParseDate(inv.date);
+  document.getElementById("icTitle").textContent = invNoLabel(inv) + " \u00b7 date";
+  document.getElementById("icMon").textContent =
+    new Date(icY, icM, 1).toLocaleDateString(undefined, { month:"long", year:"numeric" });
+  document.getElementById("icNext").disabled =
+    icY > now.getFullYear() || (icY === now.getFullYear() && icM >= now.getMonth());
+  const first = new Date(icY, icM, 1).getDay();
+  const nDays = new Date(icY, icM + 1, 0).getDate();
+  let h = ["Su","Mo","Tu","We","Th","Fr","Sa"].map(w=>`<span class="ic-wd">${w}</span>`).join("");
+  for(let i = 0; i < first; i++) h += '<span class="ic-d blank"></span>';
+  for(let d = 1; d <= nDays; d++){
+    const ymd = ymdLocal(new Date(icY, icM, d));
+    const cls = ["ic-d"];
+    if(ymd === sel) cls.push("sel");
+    if(ymd === printed) cls.push("rd");
+    if(ymd === today) cls.push("today");
+    h += `<button class="${cls.join(" ")}" data-ymd="${ymd}"${ymd > today ? " disabled" : ""}>${d}</button>`;
+  }
+  document.getElementById("icGrid").innerHTML = h;
+  const key = document.getElementById("icKey");
+  if(printed){ key.hidden = false; document.getElementById("icKeyTxt").textContent = "On the invoice: " + dayNice(printed); }
+  else key.hidden = true;
+}
+function invSetDay(key, ymd){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(ymd) || ymd > ymdLocal(new Date())) return;   // never a future day
+  const all = orders();
+  const inv = all.find(x=>x.inv === key); if(!inv) return;
+  if(invDay(inv) === ymd) return;
+  inv.day = ymd; inv.dayTs = Date.now();
+  saveOrders(all);
+  invMarkDirty();
+  activeDay = ymd;
+  renderOrder();
+  toast("Moved to " + dayNice(ymd));
+}
+document.getElementById("icClose").addEventListener("click", invCalClose);
+document.getElementById("invCalOverlay").addEventListener("click", e=>{ if(e.target.id === "invCalOverlay") invCalClose(); });
+document.getElementById("icPrev").addEventListener("click", ()=>{ icM--; if(icM < 0){ icM = 11; icY--; } invCalRender(); });
+document.getElementById("icNext").addEventListener("click", ()=>{ icM++; if(icM > 11){ icM = 0; icY++; } invCalRender(); });
+document.getElementById("icGrid").addEventListener("click", e=>{
+  const b = e.target.closest(".ic-d[data-ymd]"); if(!b || b.disabled) return;
+  const key = icKey;
+  invCalClose();
+  invSetDay(key, b.dataset.ymd);
 });
 
 /* v145: pages saved before v145 carry "AI …" source labels; show the new names. */
@@ -11545,6 +11732,7 @@ function ordJumpKind(kind){
 function invStripForSync(list){
   return (list||[]).map(iv=>({
     inv: iv.inv, date: iv.date||"", dateGuess: !!iv.dateGuess, cust: iv.cust||"",
+    day: iv.day||"", dayTs: iv.dayTs||0,                  // v151: picked day, newest wins
     pages: (iv.pages||[]).map(p=>({
       fp:p.fp, id:p.id, page:p.page, of:p.of||"",
       kind: pageKind(p), rows:p.rows||[], ts:p.ts||0, src:p.src||""
@@ -11560,7 +11748,11 @@ function invMergeShared(shared){
   const tInv = (shared.tombInv||{}), tPg = (shared.tombPg||{});
   const out = [];
   shared.invoices.forEach(iv=>{
-    if(tInv[iv.inv] != null) return;                         // whole invoice deleted somewhere
+    // whole invoice deleted somewhere -- unless a page was re-added after the
+    // delete (v151: same rule as the backend; this used to drop a re-read
+    // invoice on every sync for as long as the tombstone lived)
+    const ti = tInv[iv.inv];
+    if(ti != null && !(iv.pages||[]).some(p=>(p.ts||0) > ti)) return;
     const pages = (iv.pages||[]).filter(p=>{
       const tt = tPg[iv.inv + "|" + p.fp];
       return !(tt != null && (p.ts||0) <= tt);               // page deleted (and not re-added newer)
@@ -11570,7 +11762,8 @@ function invMergeShared(shared){
       img: localImg[iv.inv + "|" + p.fp] || "",
       rows:p.rows||[], ts:p.ts||0, src:p.src||""
     }));
-    if(pages.length) out.push({ inv:iv.inv, date:iv.date||"", dateGuess:!!iv.dateGuess, cust:iv.cust||"", pages });
+    if(pages.length) out.push({ inv:iv.inv, date:iv.date||"", dateGuess:!!iv.dateGuess, cust:iv.cust||"",
+                                day:iv.day||"", dayTs:iv.dayTs||0, pages });
   });
   saveOrders(out);
 }

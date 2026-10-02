@@ -26,34 +26,36 @@
     --mono:'IBM Plex Mono','Courier New',monospace;
     --sans:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
   }
-  /* Light theme (v151.1) — warm off-white with sage/green tints. One strong
-     near-black for every primary text (headings and item names match), an
-     olive-grey for secondary text that still reads clearly. Message colours
-     keep the dark theme's hues: fills and highlights use the same red/green,
-     and only where a colour is small text is it a deeper shade of that hue. */
+  /* Light theme (v151.2) — Apple-style neutrals: white page, soft-grey fills,
+     near-white cards, one near-black for every primary text, two greys below
+     it, hairline borders. Blue (#007AFF) is the light-theme accent for focus
+     and the text cursor only. Message colours keep the dark theme's hues:
+     red = brand / Loop / editing, green = ok / Flashfood / mine, amber = warn. */
   body.light{
-    --ink:#F2F0EB;         /* app background — warm off-white, cards pop off it */
-    --surface:#FFFFFF;     /* cards, bars, rows */
-    --surface-2:#E6EDDD;   /* raised fills / inputs — pale sage green */
-    --paper:#15170F;       /* primary text — near-black, used everywhere */
-    --paper-dim:#3E4139;   /* secondary text */
+    --ink:#FFFFFF;         /* main background */
+    --surface:#FAFAFA;     /* cards / surfaces */
+    --surface-2:#F5F5F7;   /* secondary background — inputs, inactive tabs, raised fills */
+    --paper:#1D1D1F;       /* primary text */
+    --paper-dim:#6E6E73;   /* secondary text */
     --laser:#E23F29;       /* brand red — dark-theme hue */
     --ok:#2F9A5E;          /* green — dark-theme hue, deep enough to read as text */
-    --muted:#5C5E58;       /* muted text / icons — olive grey, ~6.5:1 on white */
-    --line:#C9D2BC;        /* separators / borders — sage */
+    --muted:#86868B;       /* muted text / icons */
+    --line:#E5E5EA;        /* borders / dividers */
+    --accent:#007AFF;      /* focus + caret */
+    --disabled:#F2F2F7;    /* disabled background */
     --deck:#12A150;
     --sbar:#557207;--sbar-ln:#A9C650;--sbar-bg:#F1F7DC;
   }
   body.light .modal{background:#FFFFFF}
   body.light .label-card{background:#FFFFFF}
   /* the toast is light-on-dark by design; keep it inverted in light mode */
-  body.light .toast{background:#1B1B16;color:#F5F2E9}
-  body.light .toast button{border-color:#F5F2E9;color:#F5F2E9}
+  body.light .toast{background:#1D1D1F;color:#FFFFFF}
+  body.light .toast button{border-color:#FFFFFF;color:#FFFFFF}
   body.light .pick-row{background:#FFFFFF!important}
-  body.light .pick-btns button{background:#F2F0EB!important}
+  body.light .pick-btns button{background:#F5F5F7!important}
   body.light .mic-fab{color:#fff}
   body.light .offbar{color:#fff}
-  body.light .cel,body.light .mo{background:#E6EDDD}
+  body.light .cel,body.light .mo{background:#F5F5F7}
   /* Floor-restock + handoff highlights: the dark-tuned tints elsewhere are nearly
      invisible on white, so re-tint them here at a higher alpha keeping the SAME
      meaning — green = fresh / claimed / mine, red = editing / selected / unread —
@@ -69,8 +71,8 @@
   body.light .rk-claim.rk-mine{background:rgba(48,164,74,.14);border-color:rgba(48,164,74,.6)}
   body.light .ho-note.ho-unread{background:rgba(232,68,46,.08);border-color:rgba(232,68,46,.30)}
   /* v151.1 — rules that hard-coded dark-theme colours. Each keeps its meaning. */
-  body.light .wtab{background:#E6EDDD;color:var(--muted)}
-  body.light .wtab.on,body.light .wtab.active{background:var(--surface)}
+  body.light .wtab{background:#F5F5F7;color:var(--paper-dim)}
+  body.light .wtab.on,body.light .wtab.active{background:#FFFFFF}
   body.light .pl-inputrow input,body.light .pl-iconbtn,body.light .pl-act{background:var(--surface)}
   /* restock: table headers were near-black blocks; tint them with the table colour */
   body.light .rk-thead{background:color-mix(in srgb,var(--tc) 13%,#FFFFFF)}
@@ -79,11 +81,11 @@
   body.light .rk-left strong,body.light .rk-copy strong{color:var(--paper)}
   body.light .rk-qty{color:var(--paper);border-color:var(--line)}
   body.light .rk-qty:active{color:var(--paper)}
-  body.light .rk-qty-add{color:var(--muted);border-color:#B5BFA7}
-  body.light .rk-claim{color:var(--paper-dim);border-color:#B5BFA7}
+  body.light .rk-qty-add{color:var(--muted);border-color:#D1D1D6}
+  body.light .rk-claim{color:var(--paper-dim);border-color:#D1D1D6}
   body.light .rk-claim.rk-mine{color:var(--ok)}
-  body.light .rk-st,body.light .rk-qtrig{border-color:#B5BFA7}
-  body.light .rk-owner b{background:#DDE6D2}
+  body.light .rk-st,body.light .rk-qtrig{border-color:#D1D1D6}
+  body.light .rk-owner b{background:#E5E5EA}
   body.light .rk-dock strong{color:var(--paper)}
   body.light .rk-as-b.yes.on{background:#E3F4EA}
   body.light .rk-as-b.no.on{background:#FCE9E6}
@@ -102,6 +104,19 @@
   body.light .ho-menu .dev-only,body.light .ho-menu .dev-only .ic,body.light .devsec h3{color:#9A6B0A}
   body.light .mo.local{color:#2F9A5E}
   body.light .dev-chip{color:#9A6B0A;border-color:#C9962A}
+  /* v151.2 — blue accent: focus + caret only (red keeps its meanings) */
+  body.light input,body.light textarea{caret-color:var(--accent)}
+  body.light .field input:focus,body.light .field textarea:focus{outline-color:var(--accent)}
+  body.light .lock input:focus,body.light .pastebox:focus,body.light .ocell input:focus,
+  body.light .s-code-in:focus,body.light .s-edit .s-nm:focus,
+  body.light .rk-qwrap input:focus,body.light .rk-selw select:focus,body.light .rk-sw input:focus,
+  body.light .ho-field input:focus,body.light .ho-field textarea:focus,body.light .ho-field select:focus,
+  body.light .pg-inwrap input:focus{border-color:var(--accent)}
+  body.light .rk-inwrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,122,255,.15)}
+  body.light .store-check input:focus-visible ~ .store-box{box-shadow:0 0 0 3px rgba(0,122,255,.3)}
+  /* disabled controls: pale grey fill instead of a faded copy */
+  body.light .btn:disabled,body.light .pg-save:disabled,body.light .ho-btn-primary:disabled
+    {background:var(--disabled);color:var(--muted);border-color:var(--line);opacity:1}
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;
     touch-action:manipulation}
   input,textarea,select,button{font-size:16px}   /* under 16px and iOS zooms on focus */
@@ -2158,7 +2173,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=151.1">
+  <link rel="manifest" href="./manifest.json?v=151.2">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -7015,7 +7030,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v151.1";
+const APP_VERSION = "v151.2";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -7398,7 +7413,7 @@ function commitPhrase(text){
     const resolved0 = snapSpokenName(it.heard || it.name);
     const resolved = resolved0 + (it.packWt ? " " + it.packWt : "");
     it.name = displayName(resolved0) || it.name;
-    const cc = codeForName(resolved, { storeOnly:true });   // v149: only store items autofill
+    const cc = codeForName(resolved, { storeOnly:true, src:"mic-hold" });   // v149: only store items autofill
     if(cc.name) it.name = displayName(cc.name);              // a non-store match still names it
     try{ queueError("PROBE scrap | heard:"+String(it.heard||it.name||"")+" | snap:"+String(resolved0||"")+" | disp:"+String(displayName(resolved0)||"")+" | code:"+String(cc.code||"")+"/"+String(cc.name||"")+" | name:"+String(it.name||"")); }catch(e){}
     const isBc = !!cc.code;
@@ -7440,7 +7455,7 @@ function commitSpoken(){
     const resolved0 = snapSpokenName(it.heard || it.name);
     const resolved = resolved0 + (it.packWt ? " " + it.packWt : "");
     it.name = displayName(resolved0) || it.name;
-    const cc = codeForName(resolved, { storeOnly:true });   // v149: only store items autofill
+    const cc = codeForName(resolved, { storeOnly:true, src:"mic-tap" });   // v149: only store items autofill
     if(cc.name) it.name = displayName(cc.name);              // a non-store match still names it
     if(cc.plu || cc.code) matched++;
     const isBc = !!cc.code;
@@ -7453,6 +7468,7 @@ function commitSpoken(){
       heard: it.heard || ""
     }));
     if(it.list === activeList) justAdded.add(res.row.id); else elsewhere++;
+    try{ if(micDbgOn()) queueError("PROBE scrap tap | heard:"+String(it.heard||"")+" | snap:"+String(resolved0||"")+" | code:"+String(cc.code||cc.plu||"")+"/"+String(cc.name||"")+" | row:"+String(res.row.name||"")+" #"+String(res.row.code||res.row.plu||"")+(res.merged?" (merged)":"")); }catch(e){}
   });
   renderLists();
   const first = document.querySelector(".srow.just");
@@ -7522,7 +7538,7 @@ function dictateInto(input, row, btn){
       row.heard = v;
       if(row.codeBy !== "hand"){
         const had = !!(row.plu || row.code);
-        const cc = codeForName(snap, { storeOnly:true });
+        const cc = codeForName(snap, { storeOnly:true, src:"row-mic" });
         if(cc.name) nm = displayName(cc.name);
         rowApplyCode(row, cc, had);
       }
@@ -8083,7 +8099,7 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
     // previous name) is replaced or cleared; a code picked by hand stays put.
     if(found.r.codeBy !== "hand" && found.r.name.trim()){
       const had = !!(found.r.plu || found.r.code);
-      const cc = codeForName(found.r.name, { storeOnly:true });
+      const cc = codeForName(found.r.name, { storeOnly:true, src:"rename" });
       if(had || cc.plu || cc.code){
         rowApplyCode(found.r, cc, had);   // ea/kg follows the matched item (read-only — never writes the DB)
         if(cc.code && cc.name) found.r.name = displayName(cc.name);
@@ -8560,33 +8576,66 @@ function brandAgrees(spoken, candName, candBrand){
   const cb = brandTagsOf((candBrand ? candBrand + " " : "") + (candName || ""));
   return cb.some(t=> spoken.indexOf(t) >= 0);
 }
+/* ---- v151.2 PROBE: scrap autofill trace -------------------------------
+   One "PROBE cfn" row per scrap autofill into the Errors tab (same queue as
+   the MIC rows; follows the mic-logging dev toggle). Observational only --
+   it never changes what gets filled. Remove once the cause is found.      */
+function _pt(s, n){ s = String(s==null?"":s).replace(/\s+/g," ").trim(); return s.length > n ? s.slice(0, n-1) + "~" : s; }
+function cfnProbeStart(name, sb, opts){ return { t0:Date.now(), name:name, sb:sb.join("+"), src:(opts && opts.src) || "?", eachy:hasEachHint(name) || isBarcodeException(name) }; }
+function cfnProbeKnown(k, name, sb){
+  if(!k) return "none";
+  const nfc = nameForCode(k.code);
+  return _pt(k.name,28) + "#" + k.code + " nfc:" + (_pt(nfc,28) || "-") +
+    " st:" + (isStoreCode(k.code)?1:0) +
+    " br:" + (brandAgrees(sb, nfc || k.name)?1:0) +
+    " rel:" + (sheetRel(sheetToks(name), nfc || k.name, true)?1:0) +
+    " sz:" + (sizesAgree(name, k.name + " " + (storeMeta(k.code,false).packWt||""))?1:0);
+}
+function cfnProbeBc(b, sb){
+  return b.code + ":" + _pt((b.brand?b.brand+" ":"") + b.name, 26) + (b.packWt?"/"+cleanWt(b.packWt):"") +
+    " st" + (isStoreCode(b.code)?1:0) + " br" + (brandAgrees(sb, b.name, b.brand)?1:0);
+}
+function cfnProbeEnd(P, path, o){
+  if(typeof micDbgOn === "function" && !micDbgOn()) return;
+  try{
+    queueError("PROBE cfn " + P.src + " | in:" + _pt(P.name,40) + " | brand:" + (P.sb||"-") + " | eachy:" + (P.eachy?1:0) +
+      " | k1:" + (P.k1||"-") + " | bc[" + (P.bc?P.bc.length:"-") + "]:" + (P.bc ? P.bc.slice(0,6).join(" ; ") : "-") +
+      " | k2:" + (P.k2||"-") + " | => " + path + " " + (o.code||o.plu||"blank") + " " + _pt(o.name||"",30));
+  }catch(e){}
+}
 function codeForName(name, opts){
   // v149: { storeOnly:true } (scrap) autofills ONLY store items. A confident
   // match that isn't a store item comes back as a name with no code (C).
   const storeOnly = !!(opts && opts.storeOnly);
   name = normPack(name);
   const sb = brandTagsOf(name);                       // v150: brand said, if any
+  // v151.2 PROBE: scrap only -- logs which path filled the code and why.
+  const P = storeOnly ? cfnProbeStart(name, sb, opts) : null;
+  const R = (path, o)=>{ if(P) cfnProbeEnd(P, path, o); return o; };
   const okCode = c => !storeOnly || isStoreCode(c);
   let nameOnly = "", nameOnlyWt = "";
   const eachy = hasEachHint(name) || isBarcodeException(name);
   if(eachy){
     const k = knownFor(name);
+    if(P) P.k1 = cfnProbeKnown(k, name, sb);
     // a remembered barcode must agree on size: "romaine 3pk" never reuses a 6pk
     if(k && k.code && okCode(k.code) && brandAgrees(sb, nameForCode(k.code) || k.name) &&
        sheetRel(sheetToks(name), nameForCode(k.code) || k.name, true) &&     // v150: the code's own item must be this item
        sizesAgree(name, k.name + " " + (storeMeta(k.code,false).packWt||"")))
-      return { code:k.code, plu:"", packWt:cleanWt(storeMeta(k.code,false).packWt||""), unit:"ea", name:nameForCode(k.code) };
-    let bc = strictBarcodeMatches(name).filter(b=> brandAgrees(sb, b.name, b.brand));   // v150
+      return R("history", { code:k.code, plu:"", packWt:cleanWt(storeMeta(k.code,false).packWt||""), unit:"ea", name:nameForCode(k.code) });
+    const _bcAll = strictBarcodeMatches(name);
+    if(P) P.bc = _bcAll.map(b=> cfnProbeBc(b, sb));
+    let bc = _bcAll.filter(b=> brandAgrees(sb, b.name, b.brand));   // v150
     if(storeOnly){
       const st = bc.filter(b=> isStoreCode(b.code));
       if(!st.length && bc.length === 1){ nameOnly = (bc[0].brand?bc[0].brand+" ":"")+bc[0].name; nameOnlyWt = cleanWt(bc[0].packWt||""); }
       bc = st;
     }
-    if(bc.length === 1) return { code:bc[0].code, plu:"", packWt:cleanWt(bc[0].packWt||""), unit:"ea", name:(bc[0].brand?bc[0].brand+" ":"")+bc[0].name };
-    if(bc.length > 1)   return { plu:"", code:"", packWt:"", unit:"" };   // ambiguous -> let them pick
+    if(bc.length === 1) return R("barcode", { code:bc[0].code, plu:"", packWt:cleanWt(bc[0].packWt||""), unit:"ea", name:(bc[0].brand?bc[0].brand+" ":"")+bc[0].name });
+    if(bc.length > 1)   return R("ambiguous", { plu:"", code:"", packWt:"", unit:"" });   // ambiguous -> let them pick
     // v150: a branded item is packaged -- scrap never falls back to a loose PLU
     // for it. Blank code; the code sheet lists the closest items to pick from.
-    if(storeOnly && sb.length) return { plu:"", code:"", packWt:nameOnlyWt, unit:"", name:nameOnly };
+    if(storeOnly && sb.length) return R("brand-blank", { plu:"", code:"", packWt:nameOnlyWt, unit:"", name:nameOnly });
     // hinted but no barcode on file -> fall through to PLU
   }
   const _q = coreProductQuery(name);
@@ -8598,15 +8647,16 @@ function codeForName(name, opts){
   if(_commit(_pr)){
     const _own = _pr.find(r=>r.own && r._score >= _pr[0]._score - 4);   // store's own wins ties
     const p = (_own || _pr[0]).plu, meta = storeMeta(p, true);
-    return { plu:p, code:"", packWt:cleanWt(meta.packWt||""), unit:meta.unit };
+    return R("plu", { plu:p, code:"", packWt:cleanWt(meta.packWt||""), unit:meta.unit });
   }
   if(storeOnly && !nameOnly && _commit(_all)) nameOnly = _all[0].name;
   if(!eachy){
     const k = knownFor(name);
+    if(P) P.k2 = cfnProbeKnown(k, name, sb);
     if(k && k.code && okCode(k.code) && brandAgrees(sb, nameForCode(k.code) || k.name) &&
-       sheetRel(sheetToks(name), nameForCode(k.code) || k.name, true) && !isWeighed(name)) return { code:k.code, plu:"", packWt:cleanWt(storeMeta(k.code,false).packWt||""), unit:"ea", name:nameForCode(k.code) };
+       sheetRel(sheetToks(name), nameForCode(k.code) || k.name, true) && !isWeighed(name)) return R("history2", { code:k.code, plu:"", packWt:cleanWt(storeMeta(k.code,false).packWt||""), unit:"ea", name:nameForCode(k.code) });
   }
-  return { plu:"", code:"", packWt:nameOnlyWt, unit:"", name:nameOnly };
+  return R("none", { plu:"", code:"", packWt:nameOnlyWt, unit:"", name:nameOnly });
 }
 
 /* ---- saved sessions ----
@@ -8927,7 +8977,7 @@ function setTheme(t){
   localStorage.setItem(KEY_THEME, t);
   document.body.classList.toggle("light", t === "light");
   const m = document.querySelector('meta[name="theme-color"]');
-  if(m) m.setAttribute("content", t === "light" ? "#F2F0EB" : "#14171A");
+  if(m) m.setAttribute("content", t === "light" ? "#FFFFFF" : "#14171A");
 }
 function unit(){ return localStorage.getItem(KEY_UNIT) || "kg"; }
 function setUnit(u){ localStorage.setItem(KEY_UNIT, u); }

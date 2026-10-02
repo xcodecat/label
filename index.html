@@ -26,36 +26,47 @@
     --mono:'IBM Plex Mono','Courier New',monospace;
     --sans:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
   }
-  /* Light theme (v151.2) — Apple-style neutrals: white page, soft-grey fills,
-     near-white cards, one near-black for every primary text, two greys below
-     it, hairline borders. Blue (#007AFF) is the light-theme accent for focus
-     and the text cursor only. Message colours keep the dark theme's hues:
-     red = brand / Loop / editing, green = ok / Flashfood / mine, amber = warn. */
+  /* Light theme (v151.4, "ink header") — the chrome (header + bottom nav) stays
+     the dark CatCaddy ink; only the working area goes light. Warm off-white
+     page with WHITE cards on it, so every card separates from the page (v151.2
+     was white-on-white and read washed out). Text and greys are a step darker.
+     Blue (#007AFF) stays the light-theme accent for focus + caret only. Message
+     colours keep the dark theme's hues: red = brand / Loop / editing,
+     green = ok / Flashfood / mine, amber = warn. */
   body.light{
-    --ink:#FFFFFF;         /* main background */
-    --surface:#FAFAFA;     /* cards / surfaces */
-    --surface-2:#F5F5F7;   /* secondary background — inputs, inactive tabs, raised fills */
-    --paper:#1D1D1F;       /* primary text */
-    --paper-dim:#6E6E73;   /* secondary text */
-    --laser:#E23F29;       /* brand red — dark-theme hue */
-    --ok:#2F9A5E;          /* green — dark-theme hue, deep enough to read as text */
-    --muted:#86868B;       /* muted text / icons */
-    --line:#E5E5EA;        /* borders / dividers */
+    --ink:#F3F2EF;         /* main background (page) */
+    --surface:#FFFFFF;     /* cards / surfaces */
+    --surface-2:#ECEAE5;   /* secondary background — inputs, inactive tabs, raised fills */
+    --paper:#14171A;       /* primary text — the app's own ink */
+    --paper-dim:#4F5355;   /* secondary text */
+    --laser:#E8442E;       /* brand red — same as dark */
+    --ok:#2E8F57;          /* green — dark-theme hue, deep enough to read as text */
+    --muted:#666A6C;       /* muted text / icons (4.5:1 on the page) */
+    --line:#DCD9D1;        /* borders / dividers */
     --accent:#007AFF;      /* focus + caret */
-    --disabled:#F2F2F7;    /* disabled background */
+    --disabled:#ECEAE5;    /* disabled background */
     --deck:#12A150;
     --sbar:#557207;--sbar-ln:#A9C650;--sbar-bg:#F1F7DC;
   }
   body.light .modal{background:#FFFFFF}
+  /* v151.4: ink chrome — header (wordmark, section pill, menu) and the bottom
+     nav re-declare the dark tokens, so everything inside them paints dark. */
+  body.light header,body.light nav{
+    --ink:#14171A;--surface:#1E2328;--surface-2:#272D33;--paper:#F5F2E9;--paper-dim:#B9BEC3;
+    --muted:#9AA3AB;--line:#2A3036;--laser:#E8442E}
+  body.light header{border-bottom-color:#14171A}
+  body.light nav{border-top-color:#14171A}
+  body.light header .dev-chip{color:#E7B24B;border-color:#E7B24B}
+  body.light header .ho-menu .dev-only,body.light header .ho-menu .dev-only .ic{color:#E7B24B}
   body.light .label-card{background:#FFFFFF}
   /* the toast is light-on-dark by design; keep it inverted in light mode */
   body.light .toast{background:#1D1D1F;color:#FFFFFF}
   body.light .toast button{border-color:#FFFFFF;color:#FFFFFF}
   body.light .pick-row{background:#FFFFFF!important}
-  body.light .pick-btns button{background:#F5F5F7!important}
+  body.light .pick-btns button{background:var(--surface-2)!important}
   body.light .mic-fab{color:#fff}
   body.light .offbar{color:#fff}
-  body.light .cel,body.light .mo{background:#F5F5F7}
+  body.light .cel,body.light .mo{background:var(--surface-2)}
   /* Floor-restock + handoff highlights: the dark-tuned tints elsewhere are nearly
      invisible on white, so re-tint them here at a higher alpha keeping the SAME
      meaning — green = fresh / claimed / mine, red = editing / selected / unread —
@@ -71,13 +82,22 @@
   body.light .rk-claim.rk-mine{background:rgba(48,164,74,.14);border-color:rgba(48,164,74,.6)}
   body.light .ho-note.ho-unread{background:rgba(232,68,46,.08);border-color:rgba(232,68,46,.30)}
   /* v151.1 — rules that hard-coded dark-theme colours. Each keeps its meaning. */
-  body.light .wtab{background:#F5F5F7;color:var(--paper-dim)}
+  body.light .wtab{background:var(--surface-2);color:var(--paper-dim)}
   body.light .wtab.on,body.light .wtab.active{background:#FFFFFF}
   body.light .pl-inputrow input,body.light .pl-iconbtn,body.light .pl-act{background:var(--surface)}
   /* restock: table headers were near-black blocks; tint them with the table colour */
-  body.light .rk-thead{background:color-mix(in srgb,var(--tc) 13%,#FFFFFF)}
-  body.light .rk-ttl h2{color:var(--paper);font-weight:750}
-  body.light .rk-mark{color:color-mix(in srgb,var(--tc) 62%,#000)}
+  /* v151.4: the heading was a 13% tint over rows tinted 8% — the same colour,
+     with a title smaller than the items. Now: a stronger tint + a table-colour
+     rule under it, a solid mark, a bigger title; the rows under it are plain. */
+  body.light .rk-thead{background:color-mix(in srgb,var(--tc) 24%,#FFFFFF);
+    border-bottom:2px solid color-mix(in srgb,var(--tc) 70%,#000)}
+  body.light .rk-ttl h2{color:var(--paper);font-weight:800;font-size:15px;letter-spacing:-.01em}
+  body.light .rk-ttl p{color:var(--paper-dim)}
+  body.light .rk-run{color:var(--paper-dim)}
+  body.light .rk-mark{background:color-mix(in srgb,var(--tc) 78%,#000);border-color:transparent;color:#FFFFFF}
+  body.light .rk-count{background:#FFFFFF;color:var(--paper);font-weight:700}
+  body.light .rk-caret{color:var(--paper)}
+  body.light .rk-ilist{background:#FFFFFF}
   body.light .rk-left strong,body.light .rk-copy strong{color:var(--paper)}
   body.light .rk-qty{color:var(--paper);border-color:var(--line)}
   body.light .rk-qty:active{color:var(--paper)}
@@ -2173,7 +2193,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=151.3">
+  <link rel="manifest" href="./manifest.json?v=151.4">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -7134,7 +7154,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v151.3";
+const APP_VERSION = "v151.4";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -9085,7 +9105,7 @@ function setTheme(t){
   localStorage.setItem(KEY_THEME, t);
   document.body.classList.toggle("light", t === "light");
   const m = document.querySelector('meta[name="theme-color"]');
-  if(m) m.setAttribute("content", t === "light" ? "#FFFFFF" : "#14171A");
+  if(m) m.setAttribute("content", "#14171A");   // v151.4: ink header in both themes
 }
 function unit(){ return localStorage.getItem(KEY_UNIT) || "kg"; }
 function setUnit(u){ localStorage.setItem(KEY_UNIT, u); }

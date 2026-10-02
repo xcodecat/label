@@ -2083,7 +2083,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=148">
+  <link rel="manifest" href="./manifest.json?v=149">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4489,7 +4489,7 @@ function onScanSuccess(text){
       }
       if(jumped) return;
       // otherwise fill this row with the scanned code + name
-      f.r.code = c; f.r.plu = "";
+      f.r.code = c; f.r.plu = ""; f.r.codeBy = "hand";
       const hit = catalogByCode(c);
       if(hit){ if(!f.r.name) f.r.name = hit.name; confirmCatalogCode(c); }
       const prev = sessions().find(s=> s.rows.some(rr=>(rr.code||"") === c));
@@ -6615,7 +6615,8 @@ function repairTokens(toks){
   const out = toks.slice();
   for(let i = 0; i < out.length; i++){
     const t = out[i];
-    if(t.length < 3 || VOCAB.has(t) || GENERIC.has(t) || /\d/.test(t)) continue;
+    if(t.length < 3 || VOCAB.has(t) || VOCAB.has(stem(t)) || VOCAB.has(t+"s") || VOCAB.has(t+"es") ||
+       GENERIC.has(t) || /\d/.test(t)) continue;      // v149: "heart" is known via "hearts"
     const cands = candidates(t);
     if(!cands.length) continue;
     let best = t, bestScore = nameScore(out);
@@ -6660,7 +6661,15 @@ function isProduceWord(w){
 }
 function repairName(name){
   if(!VOCAB) buildVocab();
-  let t = pluTokens(name)
+  // v149 (F): brand tags and sizes are never "repaired". "NNI" used to bend to
+  // "and", and "3pk" was dropped as a number — so "NNI lime 3pk" became "and lime".
+  const front = [], back = [];
+  let src = normPack(String(name||"")).replace(/\b(no\s*name|naturally\s*imperfect)\b/ig, " nni ");
+  src = src.replace(/\b(\d+(?:\.\d+)?)\s*(kg|g|lbs?|oz|ml|l|pk)\b/ig, (m,a,u)=>{
+    u = u.toLowerCase(); back.push(a + (u === "lbs" ? "lb" : u)); return " "; });
+  src = src.replace(/(^|[^a-z0-9])(pcbm|pco|pc|nni|fm)(?=[^a-z0-9]|$)/ig, (m,pre,b)=>{
+    const B = b.toUpperCase(); if(front.indexOf(B) < 0) front.push(B); return pre + " "; });
+  let t = pluTokens(src)
     .filter(w => !STOPWORDS.has(w) && NUMWORDS[w] === undefined && !/^\d+$/.test(w));
 
   t = t.filter(w => w.length > 1);          // "president's" -> drop the stray "s"
@@ -6679,7 +6688,7 @@ function repairName(name){
   // "organic organic bananas" -> "organic bananas"
   const seen = new Set();
   t = t.filter(w => (seen.has(w) ? false : (seen.add(w), true)));
-  return t.join(" ");
+  return front.concat(t.length ? [t.join(" ")] : [], back).join(" ");
 }
 
 /* ---- learned corrections ----
@@ -6838,6 +6847,9 @@ function parseSpoken(text, defList){
         cur = "loop"; chunk = chunk.replace(/\b(loop|scraps?)\b/g,"").trim();
       }
       chunk = chunk.replace(/^(add|put|i have|i've got|got|some|there's)\s+/,"").trim();
+      // v149: "3 pack" / "three pack" / "3 count" is a pack SIZE (3pk), never
+      // the quantity — so "three pack romaine" is 1 x Romaine 3pk.
+      chunk = normPack(chunk);
 
       // WEIGHT FIRST. This used to run after a line that stripped "kg of" and
       // "pounds of" as filler — so "3 kg of bananas" became "3 bananas", three
@@ -6870,7 +6882,7 @@ function parseSpoken(text, defList){
       // Packaging words are noise in the name, but they're evidence about the
       // unit: "1 bag of apples" is one bag, even if apples usually sell by
       // weight. An explicit count word beats what the app has learned.
-      const packed = /\b(bags?|bunch(es)?|packs?|boxes|cases?|punnets?|clamshells?)\b/.test(chunk);
+      const packed = /\b(bags?|bunch(es)?|packs?|boxes|cases?|punnets?|clamshells?)\b/.test(chunk) || /\b\d+pk\b/.test(chunk);
       chunk = chunk.replace(/\b(bags?|bunch(es)?|packs?|boxes|cases?|punnets?|clamshells?)\s+of\s+/g,"").trim();
 
       // Peel EVERY leading number off, keeping the last. Chrome sometimes
@@ -6916,7 +6928,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v148";
+const APP_VERSION = "v149";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -7299,8 +7311,8 @@ function commitPhrase(text){
     const resolved0 = snapSpokenName(it.heard || it.name);
     const resolved = resolved0 + (it.packWt ? " " + it.packWt : "");
     it.name = displayName(resolved0) || it.name;
-    const cc = codeForName(resolved);
-    if(cc.code && cc.name) it.name = displayName(cc.name);
+    const cc = codeForName(resolved, { storeOnly:true });   // v149: only store items autofill
+    if(cc.name) it.name = displayName(cc.name);              // a non-store match still names it
     try{ queueError("PROBE scrap | heard:"+String(it.heard||it.name||"")+" | snap:"+String(resolved0||"")+" | disp:"+String(displayName(resolved0)||"")+" | code:"+String(cc.code||"")+"/"+String(cc.name||"")+" | name:"+String(it.name||"")); }catch(e){}
     const isBc = !!cc.code;
     const res = addOrMerge(it.list, newRow({
@@ -7341,8 +7353,8 @@ function commitSpoken(){
     const resolved0 = snapSpokenName(it.heard || it.name);
     const resolved = resolved0 + (it.packWt ? " " + it.packWt : "");
     it.name = displayName(resolved0) || it.name;
-    const cc = codeForName(resolved);      // "organic zucchini" -> 94067, or a seen barcode
-    if(cc.code && cc.name) it.name = displayName(cc.name);
+    const cc = codeForName(resolved, { storeOnly:true });   // v149: only store items autofill
+    if(cc.name) it.name = displayName(cc.name);              // a non-store match still names it
     if(cc.plu || cc.code) matched++;
     const isBc = !!cc.code;
     const res = addOrMerge(it.list, newRow({
@@ -7416,8 +7428,19 @@ function dictateInto(input, row, btn){
     input.value = clean.replace(/\b\w/g, c=>c.toUpperCase());
     _mic.done(input.value);
     if(row){
-      row.name = input.value;
-      if(!row.plu && !row.code){ const cc = codeForName(clean); row.plu = cc.plu; row.code = cc.code; }
+      // v149: the row mic resolves exactly like the scrap mic, and a new name
+      // re-checks the code (an auto-filled one is replaced; a hand-picked one stays).
+      const snap = snapSpokenName(normPack(v.toLowerCase()));
+      let nm = displayName(snap) || clean;
+      row.heard = v;
+      if(row.codeBy !== "hand"){
+        const had = !!(row.plu || row.code);
+        const cc = codeForName(snap, { storeOnly:true });
+        if(cc.name) nm = displayName(cc.name);
+        rowApplyCode(row, cc, had);
+      }
+      row.name = nm.replace(/\b\w/g, c=>c.toUpperCase());
+      input.value = row.name;
       renderLists();
     } else {
       const plu = document.getElementById(input.id === "fName" ? "fPlu" : "mPlu");
@@ -7886,13 +7909,13 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
     const found = rowById(box.dataset.id); if(!found) return;
     const { r, list } = found;
 
-    if(e.target.closest(".s-name")){ if(!r._new) r._snap = { name:r.name, plu:r.plu, code:r.code, qty:r.qty, kg:r.kg, packWt:r.packWt }; openRow = r.id; renderLists(); return; }
+    if(e.target.closest(".s-name")){ if(!r._new) r._snap = { name:r.name, plu:r.plu, code:r.code, qty:r.qty, kg:r.kg, packWt:r.packWt, codeBy:r.codeBy||"" }; openRow = r.id; renderLists(); return; }
     if(e.target.classList.contains("s-ok")){
       // you just told me what that mangled phrase actually meant — remember it
       if(r.heard && r.name.trim()){
         rememberAlias(r.heard, r.name.trim());
         const h = pluFor(r.name);
-        if(h && !r.plu && !r.code) r.plu = h;
+        if(h && !r.plu && !r.code && isStorePlu(h)) r.plu = h;   // v149: store items only
       }
       openRow = null; renderLists(); return;
     }
@@ -7965,15 +7988,16 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
     if(!e.target.classList.contains("s-nm")) return;
     const box = e.target.closest(".srow"); if(!box) return;
     const found = rowById(box.dataset.id); if(!found) return;
-    if(!found.r.plu && !found.r.code && found.r.name.trim()){
-      const cc = codeForName(found.r.name);
-      found.r.plu = cc.plu; found.r.code = cc.code;
-      if(cc.code){ found.r.kg = false; found.r.packWt = cc.packWt || found.r.packWt || ""; if(cc.name) found.r.name = displayName(cc.name); }
-      else if(cc.plu){   // PLU match: ea/kg follows the matched item (read-only — never writes the DB)
-        found.r.kg = !(cc.unit === "ea" || cc.unit === "each");
-        found.r.qty = found.r.kg ? kg3(parseFloat(found.r.qty)||0) : Math.max(1, Math.round(parseFloat(found.r.qty)||1));
+    // v149 (D): a new name re-checks the code. An auto-filled code (voice or a
+    // previous name) is replaced or cleared; a code picked by hand stays put.
+    if(found.r.codeBy !== "hand" && found.r.name.trim()){
+      const had = !!(found.r.plu || found.r.code);
+      const cc = codeForName(found.r.name, { storeOnly:true });
+      if(had || cc.plu || cc.code){
+        rowApplyCode(found.r, cc, had);   // ea/kg follows the matched item (read-only — never writes the DB)
+        if(cc.code && cc.name) found.r.name = displayName(cc.name);
+        renderLists();
       }
-      if(cc.plu || cc.code) renderLists();
     }
   });
   host.addEventListener("input", e=>{
@@ -7998,6 +8022,7 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
       const v = e.target.value.replace(/\D/g,"");
       if(v.length >= 6){ found.r.code = v; found.r.plu = ""; }
       else { found.r.plu = v; found.r.code = ""; }
+      found.r.codeBy = v ? "hand" : "";   // typed by hand: a rename won't overwrite it
     }
   });
 });
@@ -8006,6 +8031,114 @@ document.getElementById("btnScrapClear").addEventListener("click", ()=>{
    a pack count (3pk/6 pk), a weight in the name (1lb, 2.27kg), or the word
    "pack". A few (e.g. "cauliflower organic") don't, but they still carry a real
    barcode in the DB, so any code-bearing match is surfaced regardless. */
+/* ---- v149: pack counts, store-only autofill, one-letter store fixes ----
+   A spoken "3 pack" / "three pack" / "3 count" / "3 ct" is a PACK SIZE, never
+   the quantity, and pk and ct are the same thing. Everything downstream sees
+   one canonical token: "3pk". (A "one pack" is just "pack" — no size.)     */
+const PACK_NUM = {two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,
+  eleven:11,twelve:12,fifteen:15,sixteen:16,eighteen:18,twenty:20};
+const RE_PACK = new RegExp("\\b(\\d+|one|" + Object.keys(PACK_NUM).join("|") +
+  ")\\s*-?\\s*(?:packs?|pks?|counts?|cts?|cnt)\\b(?:\\s+of\\b)?", "gi");
+function normPack(s){
+  return String(s||"").replace(RE_PACK, (m, n)=>{
+    const v = /^\d+$/.test(n) ? parseInt(n,10) : (PACK_NUM[n.toLowerCase()] || 1);
+    return v > 1 ? " " + v + "pk " : " pack ";
+  }).replace(/\s{2,}/g," ").trim();
+}
+/* Sizes a name states (weights + pack counts), normalised for comparison. */
+function sizeToks(s){
+  const n = normPack(s).toLowerCase(), out = [];
+  const re = /\b(\d+(?:\.\d+)?)\s?(kg|g|lbs?|oz|ml|l|pk)\b/g; let m;
+  while((m = re.exec(n))) out.push(String(parseFloat(m[1])) + (m[2]==="lbs" ? "lb" : m[2]));
+  return out;
+}
+/* Every size the query names must be on the candidate too. */
+function sizesAgree(q, cand){
+  const a = sizeToks(q); if(!a.length) return true;
+  const b = new Set(sizeToks(cand)); return a.every(x=>b.has(x));
+}
+/* "Store item" = the same truth the Add search uses for its store grouping. */
+function isStoreCode(c){
+  c = String(c||"").replace(/\D/g,""); if(!c) return false;
+  if(!_flagsReady) applyStoreOverrides();
+  const n = c.replace(/^0+/,"");
+  if(storeBcNorm().has(n) || dbStoreCodes.has(c)) return true;
+  for(const k of dbStoreCodes){ if(String(k).replace(/^0+/,"") === n) return true; }
+  return false;
+}
+function isStorePlu(p){
+  p = String(p||""); if(!p) return false;
+  if(!_flagsReady) applyStoreOverrides();
+  const d = dbPluMap()[p];
+  if(d){ const sv = storeVal(d.store); if(sv !== null) return sv; }
+  if(typeof STORE_ITEMS !== "undefined" && STORE_ITEMS.some(x=>x.t==="plu" && String(x.k)===p)) return true;
+  return Array.isArray(PLU) && PLU.some(e=>String(e.plu)===p && e.own);
+}
+/* Token sets of every store item, for the one-letter fix below. */
+let _stIdx = null, _stIdxAt = 0;
+function storeIndex(){
+  const now = Date.now();
+  if(_stIdx && now - _stIdxAt < 30000) return _stIdx;
+  const names = [];
+  // brand rides along so "NNI line" can only become a NNI item
+  if(typeof STORE_ITEMS !== "undefined") STORE_ITEMS.forEach(x=>{ if(x.n) names.push((x.b ? x.b + " " : "") + x.n); });
+  try{ const bm = dbBcMap(); for(const k in bm) if(bm[k].name && isStoreCode(k)) names.push((bm[k].brand ? bm[k].brand + " " : "") + bm[k].name); }catch(e){}
+  try{ const pm = dbPluMap(); for(const k in pm) if(pm[k].name && isStorePlu(k)) names.push((pm[k].brand ? pm[k].brand + " " : "") + pm[k].name); }catch(e){}
+  if(Array.isArray(PLU)) PLU.forEach(e=>{ if(e.own && e.name) names.push(e.name); });
+  const sets = [], vocab = new Set();
+  names.forEach(nm=>{
+    const t = pluTokens(nm).filter(w=>w.length >= 2 && !/\d/.test(w)).map(stem);
+    if(!t.length) return;
+    sets.push(new Set(t)); t.forEach(w=>vocab.add(w));
+  });
+  _stIdx = { sets, vocab }; _stIdxAt = now;
+  return _stIdx;
+}
+/* "line" -> "lime", "bear" -> "pear": ONE unknown word, ONE letter off, and
+   only when the corrected name lands on a real store item (every word of it
+   is in that item). Two possible fixes = no fix. Returns "" when unsure.   */
+function storeOneEdit(core, brands){
+  const bt = (brands || []).map(b=> String(b).toLowerCase()).filter(Boolean);
+  const words = String(core||"").toLowerCase().split(/\s+/).filter(Boolean);
+  if(!words.length) return "";
+  const { sets, vocab } = storeIndex();
+  const known = w => vocab.has(w) || vocab.has(stem(w));
+  const unk = [];
+  words.forEach((w,i)=>{ if(w.length >= 3 && !/\d/.test(w) && !known(w) && !STOPWORDS.has(w) && !GENERIC.has(w)) unk.push(i); });
+  if(unk.length !== 1) return "";
+  if(words.some((w,i)=> i !== unk[0] && w.length >= 3 && !/\d/.test(w) && !known(w))) return "";
+  const i = unk[0], w = words[i], fixes = new Set();
+  vocab.forEach(v=>{
+    if(v.length < 4 || Math.abs(v.length - w.length) > 1 || _lev(w, v) !== 1) return;
+    const ts = words.map((x,j)=> j === i ? v : stem(x)).concat(bt);
+    if(sets.some(st=> ts.every(t=>st.has(t)))) fixes.add(v);
+  });
+  if(fixes.size !== 1) return "";
+  const out = words.slice(); out[i] = [...fixes][0];
+  return out.join(" ");
+}
+/* Whole-name version: brand + fixed words + sizes, or "" if nothing to fix. */
+function oneEditName(name){
+  const nm = (typeof nmNormalize === "function") ? nmNormalize(normPack(name)) : { core:name, tags:[] };
+  const brand = nm.tags.filter(t=> nmTagKind(t) === "brand");
+  const f = storeOneEdit(String(coreProductQuery(name)).toLowerCase(), brand);
+  if(!f) return "";
+  return brand.concat([f], sizeToks(name)).join(" ");
+}
+/* Put a resolved code onto a scrap row (auto-filled, so a rename can redo it). */
+function rowApplyCode(r, cc, hadAuto){
+  r.plu = cc.plu || ""; r.code = cc.code || ""; r.codeBy = "";
+  if(cc.code){
+    r.kg = false; r.qty = Math.max(1, Math.round(parseFloat(r.qty)||1));
+    r.packWt = cleanWt(cc.packWt || "");
+  } else if(cc.plu){
+    r.kg = !(cc.unit === "ea" || cc.unit === "each");
+    r.qty = r.kg ? kg3(parseFloat(r.qty)||0) : Math.max(1, Math.round(parseFloat(r.qty)||1));
+    r.packWt = cleanWt(cc.packWt || "");
+  } else if(hadAuto || cc.packWt){
+    r.packWt = cleanWt(cc.packWt || "");
+  }
+}
 function looksLikeBarcodeItem(name){
   const n = String(name||"").toLowerCase();
   if(/(^|[^a-z])(pc|pco|pcbm|nni|fm)([^a-z]|$)/.test(n)) return true;
@@ -8079,7 +8212,7 @@ function snapToKnown(core){
 // Correct a spoken name: fix "each"/"peach" mishearing, snap the product words
 // to a real DB name, and keep brand + weight + each-hints attached.
 function snapSpokenName(raw){
-  let n = String(raw||"").toLowerCase().trim();
+  let n = normPack(String(raw||"")).toLowerCase().trim();   // v149: "3 pack" -> "3pk"
   const w = n.split(/\s+/).filter(Boolean);
   let extraEach = false;
   if(w.length >= 2 && /^peach(es)?$/.test(w[w.length-1]) && w.slice(0,-1).some(x=>isProduceWord(x))){ extraEach = true; w.pop(); n = w.join(" "); }
@@ -8092,7 +8225,7 @@ function snapSpokenName(raw){
   if(/\beach\b/.test(n) || extraEach) kws.push("each");
   if(/\bpack\b/.test(n)) kws.push("pack");
   const core = coreProductQuery(n);
-  const snapped = snapToKnown(core) || core;
+  const snapped = snapToKnown(core) || storeOneEdit(core, brand) || core;   // v149: "line" -> "lime" (store items only)
   const parts = [];
   brand.forEach(b=> parts.push(b));
   parts.push(snapped);
@@ -8105,6 +8238,7 @@ function snapSpokenName(raw){
 function displayName(s){ return String(s||"").replace(/\b(bag|each)\b/ig," ").replace(/\s{2,}/g," ").trim(); }
 function bcMatches(name){
   if(!name || !name.trim() || typeof searchEntries !== "function") return [];
+  name = normPack(name);                     // v149: "3 pack" / "3 count" -> "3pk"
   // strip size/pack/keywords for the name match, but keep the brand; the weight
   // and pack count are used only to narrow below (they live in their own fields).
   const q = String(name)
@@ -8116,12 +8250,12 @@ function bcMatches(name){
   const hasWt = /\b\d+(?:\.\d+)?\s*(kg|g|ml|l|oz|lb|lbs)\b/i.test(name);
   const wantWt = hasWt ? cleanWt(name).toLowerCase() : "";
   const pkM = name.match(/\b(\d+)\s?(pk|ct)\b/i);
-  const wantPk = pkM ? (pkM[1]+pkM[2].toLowerCase()) : "";
+  const wantPk = pkM ? pkM[1] : "";          // v149 (B): 3pk and 3ct are the same size
   if(wantWt || wantPk){
     ents = ents.filter(e=>{
       const hay = (String(e.name||"")+" "+String(e.packWt||"")+" "+String(e.size||"")).toLowerCase();
       const wtOk = !wantWt || hay.indexOf(wantWt)>=0 || cleanWt(String(e.packWt||"")).toLowerCase()===wantWt;
-      const pkOk = !wantPk || new RegExp("\\b"+wantPk.replace(/(pk|ct)$/,"")+"\\s?"+wantPk.slice(-2)+"\\b","i").test(hay);
+      const pkOk = !wantPk || new RegExp("\\b"+wantPk+"\\s*-?\\s*(pk|pks|ct|cnt|count|pack)\\b","i").test(hay);
       return wtOk && pkOk;
     });
   }
@@ -8137,9 +8271,15 @@ function barcodeSuggest(name){
 }
 /* ---- code sheet: PLU, barcode, or one we've seen before ---- */
 function openCodeSheet(r, list){
+  // v149: a misheard short word ("NNI Line") searched for "line" and listed
+  // nothing. If the name finds nothing, search its one-letter store fix instead.
+  let qn = r.name;
+  if(qn.trim() && !barcodeSuggest(qn).length && !pluPairs(coreProductQuery(qn)).length){
+    const alt = oneEditName(qn); if(alt) qn = alt;
+  }
   const known = r.name.trim() ? knownFor(r.name) : null;
-  let pairs = r.name.trim() ? pluPairs(coreProductQuery(r.name)) : [];
-  { const _cw = coreProductQuery(r.name).toLowerCase().split(/\s+/).filter(Boolean);
+  let pairs = qn.trim() ? pluPairs(coreProductQuery(qn)) : [];
+  { const _cw = coreProductQuery(qn).toLowerCase().split(/\s+/).filter(Boolean);
     if(_cw.length > 1){
       const inc = (pp,w) => String(pp.name||"").toLowerCase().indexOf(w) >= 0;
       const all = pairs.filter(pp => _cw.every(w => inc(pp,w)));
@@ -8160,16 +8300,20 @@ function openCodeSheet(r, list){
         <button data-code="${esc(known.code)}"><b>${esc(known.code)}</b><span>use this barcode</span></button>
       </div></div>`;
   }
-  barcodeSuggest(r.name).forEach(b=>{
+  // v149 (C): store items first and badged "store"; non-store items are still
+  // listed (pickable) but carry no badge.
+  const _bs = barcodeSuggest(qn).map(b=>Object.assign({}, b, { _st: isStoreCode(b.code) }));
+  _bs.sort((a,b)=> (b._st?1:0) - (a._st?1:0));
+  _bs.forEach(b=>{
     html += `<div class="pick-row">
-      <div class="pn">${nmNameHtml((b.brand?b.brand+" ":"")+b.name)}${b.packWt?'<span class="eachtag">'+esc(cleanWt(b.packWt))+'</span>':''}<span class="own">barcode</span></div>
+      <div class="pn">${nmNameHtml((b.brand?b.brand+" ":"")+b.name)}${b.packWt?'<span class="eachtag">'+esc(cleanWt(b.packWt))+'</span>':''}${b._st?'<span class="own">store</span>':''}</div>
       <div class="pick-btns">
         <button data-code="${esc(b.code)}"><b>${esc(b.code)}</b><span>use barcode</span></button>
       </div></div>`;
   });
   html += pairs.map(p=>`
     <div class="pick-row">
-      <div class="pn">${esc(p.name)}${p.own?'<span class="own">store</span>':''}</div>
+      <div class="pn">${esc(p.name)}${(isStorePlu(p.conv)||isStorePlu(p.org))?'<span class="own">store</span>':''}</div>
       <div class="pick-btns">
         ${p.conv?`<button data-plu="${esc(p.conv)}"><b>${esc(p.conv)}</b><span>regular</span></button>`:""}
         ${p.org?`<button class="org" data-plu="${esc(p.org)}"><b>${esc(p.org)}</b><span>organic</span></button>`:""}
@@ -8184,7 +8328,7 @@ function openCodeSheet(r, list){
     b.addEventListener("click", ()=>{
       closePick();
       if(b.dataset.plu){
-        r.plu = b.dataset.plu; r.code = "";
+        r.plu = b.dataset.plu; r.code = ""; r.codeBy = "hand";
         const meta = storeMeta(r.plu, true);
         r.kg = !(meta.unit === "ea" || meta.unit === "each");   // produce weighs unless marked each
         r.packWt = cleanWt(meta.packWt || "");
@@ -8193,7 +8337,7 @@ function openCodeSheet(r, list){
         renderLists();
       }
       else if(b.dataset.code){
-        r.code = b.dataset.code; r.plu = ""; r.kg = false;   // a barcode is always each
+        r.code = b.dataset.code; r.plu = ""; r.kg = false; r.codeBy = "hand";   // a barcode is always each
         const meta = storeMeta(r.code, false);
         r.packWt = cleanWt(meta.packWt || r.packWt || "");
         const nm = nameForCode(r.code); if(nm) r.name = displayName(nm);
@@ -8278,32 +8422,46 @@ function storeMeta(key, isPlu){
   const e = (isPlu ? dbPluMap() : dbBcMap())[key] || {};
   return { unit:String(e.unit||"").toLowerCase(), packWt:e.packWt||"" };
 }
-function codeForName(name){
+function codeForName(name, opts){
+  // v149: { storeOnly:true } (scrap) autofills ONLY store items. A confident
+  // match that isn't a store item comes back as a name with no code (C).
+  const storeOnly = !!(opts && opts.storeOnly);
+  name = normPack(name);
+  const okCode = c => !storeOnly || isStoreCode(c);
+  let nameOnly = "", nameOnlyWt = "";
   const eachy = hasEachHint(name) || isBarcodeException(name);
   if(eachy){
     const k = knownFor(name);
-    if(k && k.code) return { code:k.code, plu:"", packWt:cleanWt(storeMeta(k.code,false).packWt||""), unit:"ea", name:nameForCode(k.code) };
-    const bc = strictBarcodeMatches(name);
+    // a remembered barcode must agree on size: "romaine 3pk" never reuses a 6pk
+    if(k && k.code && okCode(k.code) && sizesAgree(name, k.name + " " + (storeMeta(k.code,false).packWt||"")))
+      return { code:k.code, plu:"", packWt:cleanWt(storeMeta(k.code,false).packWt||""), unit:"ea", name:nameForCode(k.code) };
+    let bc = strictBarcodeMatches(name);
+    if(storeOnly){
+      const st = bc.filter(b=> isStoreCode(b.code));
+      if(!st.length && bc.length === 1){ nameOnly = (bc[0].brand?bc[0].brand+" ":"")+bc[0].name; nameOnlyWt = cleanWt(bc[0].packWt||""); }
+      bc = st;
+    }
     if(bc.length === 1) return { code:bc[0].code, plu:"", packWt:cleanWt(bc[0].packWt||""), unit:"ea", name:(bc[0].brand?bc[0].brand+" ":"")+bc[0].name };
     if(bc.length > 1)   return { plu:"", code:"", packWt:"", unit:"" };   // ambiguous -> let them pick
     // hinted but no barcode on file -> fall through to PLU
   }
   const _q = coreProductQuery(name);
   const _words = _q.split(/\s+/).filter(Boolean).length;
-  const _pr = pluSearch(_q);
-  if(_pr.length && _pr[0]._score >= 95){
-    const _tied = _pr.length >= 2 && _pr[1]._score >= _pr[0]._score - 6;
-    if(_words >= 2 || !_tied){                       // specific enough to commit to a PLU
-      const _own = _pr.find(r=>r.own && r._score >= _pr[0]._score - 4);   // store's own wins ties
-      const p = (_own || _pr[0]).plu, meta = storeMeta(p, true);
-      return { plu:p, code:"", packWt:cleanWt(meta.packWt||""), unit:meta.unit };
-    }
+  const _all = pluSearch(_q);
+  const _pr = storeOnly ? _all.filter(r=> isStorePlu(r.plu)) : _all;
+  const _commit = (list)=> list.length && list[0]._score >= 95 &&
+    (_words >= 2 || !(list.length >= 2 && list[1]._score >= list[0]._score - 6));   // specific enough to commit
+  if(_commit(_pr)){
+    const _own = _pr.find(r=>r.own && r._score >= _pr[0]._score - 4);   // store's own wins ties
+    const p = (_own || _pr[0]).plu, meta = storeMeta(p, true);
+    return { plu:p, code:"", packWt:cleanWt(meta.packWt||""), unit:meta.unit };
   }
+  if(storeOnly && !nameOnly && _commit(_all)) nameOnly = _all[0].name;
   if(!eachy){
     const k = knownFor(name);
-    if(k && k.code && !isWeighed(name)) return { code:k.code, plu:"", packWt:cleanWt(storeMeta(k.code,false).packWt||""), unit:"ea", name:nameForCode(k.code) };
+    if(k && k.code && okCode(k.code) && !isWeighed(name)) return { code:k.code, plu:"", packWt:cleanWt(storeMeta(k.code,false).packWt||""), unit:"ea", name:nameForCode(k.code) };
   }
-  return { plu:"", code:"", packWt:"", unit:"" };
+  return { plu:"", code:"", packWt:nameOnlyWt, unit:"", name:nameOnly };
 }
 
 /* ---- saved sessions ----

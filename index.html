@@ -26,38 +26,36 @@
     --mono:'IBM Plex Mono','Courier New',monospace;
     --sans:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
   }
-  /* Light theme (v151.4, "ink header") — the chrome (header + bottom nav) stays
-     the dark CatCaddy ink; only the working area goes light. Warm off-white
-     page with WHITE cards on it, so every card separates from the page (v151.2
-     was white-on-white and read washed out). Text and greys are a step darker.
-     Blue (#007AFF) stays the light-theme accent for focus + caret only. Message
-     colours keep the dark theme's hues: red = brand / Loop / editing,
-     green = ok / Flashfood / mine, amber = warn. */
+  /* Light theme (v151.5, Notion-style). Page #F7F7F5 with white cards, Notion's
+     near-black #37352F for important text and grey #787774 for secondary text,
+     hairline #E9E9E7 borders, #F1F1EF fills. Notion blue #2383E2 = navigation +
+     date picker + focus/caret; red keeps brand / actions / Loop / delete,
+     green = ok / Flashfood / mine, amber = warn. Header + bottom nav are a pale
+     blue-grey tinted bar (option A) so they still read as chrome. */
   body.light{
-    --ink:#F3F2EF;         /* main background (page) */
+    --ink:#F7F7F5;         /* main background (page) */
     --surface:#FFFFFF;     /* cards / surfaces */
-    --surface-2:#ECEAE5;   /* secondary background — inputs, inactive tabs, raised fills */
-    --paper:#14171A;       /* primary text — the app's own ink */
-    --paper-dim:#4F5355;   /* secondary text */
+    --surface-2:#F1F1EF;   /* inputs, inactive tabs, raised fills */
+    --paper:#37352F;       /* important text */
+    --paper-dim:#5F5E5B;   /* secondary text, stronger */
     --laser:#E8442E;       /* brand red — same as dark */
     --ok:#2E8F57;          /* green — dark-theme hue, deep enough to read as text */
-    --muted:#666A6C;       /* muted text / icons (4.5:1 on the page) */
-    --line:#DCD9D1;        /* borders / dividers */
-    --accent:#007AFF;      /* focus + caret */
-    --disabled:#ECEAE5;    /* disabled background */
+    --muted:#787774;       /* secondary text / icons */
+    --line:#E9E9E7;        /* borders / dividers */
+    --accent:#2383E2;      /* Notion blue: nav, date picker, focus, caret */
+    --disabled:#F1F1EF;    /* disabled background */
     --deck:#12A150;
     --sbar:#557207;--sbar-ln:#A9C650;--sbar-bg:#F1F7DC;
   }
   body.light .modal{background:#FFFFFF}
-  /* v151.4: ink chrome — header (wordmark, section pill, menu) and the bottom
-     nav re-declare the dark tokens, so everything inside them paints dark. */
+  /* v151.5: tinted chrome (option A) — header + bottom nav on a pale blue-grey
+     bar; the active section pill and the active nav tab are Notion blue. */
   body.light header,body.light nav{
-    --ink:#14171A;--surface:#1E2328;--surface-2:#272D33;--paper:#F5F2E9;--paper-dim:#B9BEC3;
-    --muted:#9AA3AB;--line:#2A3036;--laser:#E8442E}
-  body.light header{border-bottom-color:#14171A}
-  body.light nav{border-top-color:#14171A}
-  body.light header .dev-chip{color:#E7B24B;border-color:#E7B24B}
-  body.light header .ho-menu .dev-only,body.light header .ho-menu .dev-only .ic{color:#E7B24B}
+    --ink:#EEF3F9;--surface:#FFFFFF;--surface-2:#E3EBF5;--paper:#37352F;--paper-dim:#5F5E5B;
+    --muted:#6B7A8C;--line:#D9E3EF}
+  body.light .sections button.on{background:var(--accent);color:#fff}
+  body.light nav button.active{color:var(--accent)}
+  body.light nav button.active .navdot{background:var(--accent)}
   body.light .label-card{background:#FFFFFF}
   /* the toast is light-on-dark by design; keep it inverted in light mode */
   body.light .toast{background:#1D1D1F;color:#FFFFFF}
@@ -85,19 +83,18 @@
   body.light .wtab{background:var(--surface-2);color:var(--paper-dim)}
   body.light .wtab.on,body.light .wtab.active{background:#FFFFFF}
   body.light .pl-inputrow input,body.light .pl-iconbtn,body.light .pl-act{background:var(--surface)}
-  /* restock: table headers were near-black blocks; tint them with the table colour */
-  /* v151.4: the heading was a 13% tint over rows tinted 8% — the same colour,
-     with a title smaller than the items. Now: a stronger tint + a table-colour
-     rule under it, a solid mark, a bigger title; the rows under it are plain. */
-  body.light .rk-thead{background:color-mix(in srgb,var(--tc) 24%,#FFFFFF);
-    border-bottom:2px solid color-mix(in srgb,var(--tc) 70%,#000)}
-  body.light .rk-ttl h2{color:var(--paper);font-weight:800;font-size:15px;letter-spacing:-.01em}
-  body.light .rk-ttl p{color:var(--paper-dim)}
-  body.light .rk-run{color:var(--paper-dim)}
-  body.light .rk-mark{background:color-mix(in srgb,var(--tc) 78%,#000);border-color:transparent;color:#FFFFFF}
-  body.light .rk-count{background:#FFFFFF;color:var(--paper);font-weight:700}
-  body.light .rk-caret{color:var(--paper)}
-  body.light .rk-ilist{background:#FFFFFF}
+  /* v151.5: restock headings follow the dark theme's layout in light colours —
+     white bar with the table colour as a 3px left edge, outlined letter mark,
+     black title, rows under it a faint tint of the table colour. */
+  body.light .rk-thead{background:#FFFFFF;border-bottom:1px solid var(--line)}
+  body.light .rk-ttl h2{color:var(--paper);font-weight:700;font-size:13px}
+  body.light .rk-ttl p{color:var(--muted)}
+  body.light .rk-run{color:var(--muted)}
+  body.light .rk-mark{background:color-mix(in srgb,var(--tc) 12%,#FFFFFF);
+    border-color:color-mix(in srgb,var(--tc) 55%,#FFFFFF);color:color-mix(in srgb,var(--tc) 62%,#000)}
+  body.light .rk-count{background:var(--surface-2);color:var(--paper-dim);font-weight:600}
+  body.light .rk-caret{color:var(--muted)}
+  body.light .rk-ilist{background:color-mix(in srgb,var(--tc) 5%,#FFFFFF)}
   body.light .rk-left strong,body.light .rk-copy strong{color:var(--paper)}
   body.light .rk-qty{color:var(--paper);border-color:var(--line)}
   body.light .rk-qty:active{color:var(--paper)}
@@ -109,7 +106,7 @@
   body.light .rk-dock strong{color:var(--paper)}
   body.light .rk-as-b.yes.on{background:#E3F4EA}
   body.light .rk-as-b.no.on{background:#FCE9E6}
-  body.light .rk-addbar.rk-offline .rk-fabcount{color:#A8700C}
+  body.light .rk-addbar.rk-offline.open .rk-fabcount{color:#A8700C}
   /* badges: same meaning + hue, light-on-white version (like SBar's) */
   body.light .nm-bdg.brand{color:#C3301B;border-color:#F0B6AC;background:#FDECE9}
   body.light .nm-bdg.pack,body.light .nm-bdg.wt,body.light .wtag,body.light .pick-row .pn .eachtag
@@ -124,7 +121,14 @@
   body.light .ho-menu .dev-only,body.light .ho-menu .dev-only .ic,body.light .devsec h3{color:#9A6B0A}
   body.light .mo.local{color:#2F9A5E}
   body.light .dev-chip{color:#9A6B0A;border-color:#C9962A}
-  /* v151.2 — blue accent: focus + caret only (red keeps its meanings) */
+  /* v151.5: inventory + is red like every other + (light only) */
+  body.light .mic-fab.shoot{background:var(--laser);border-color:var(--laser);color:#fff}
+  /* v151.5: invoice date button + date picker in Notion blue (light only) */
+  body.light .inv-dt{color:var(--accent);border-color:#BFD9F5;background:#EEF5FD}
+  body.light .inv-dt svg{color:var(--accent)}
+  body.light .ic-d.sel{background:var(--accent);border-color:var(--accent)}
+  body.light .ic-d.today{border-color:var(--accent)}
+  /* v151.2 — blue accent: focus + caret (red keeps its meanings) */
   body.light input,body.light textarea{caret-color:var(--accent)}
   body.light .field input:focus,body.light .field textarea:focus{outline-color:var(--accent)}
   body.light .lock input:focus,body.light .pastebox:focus,body.light .ocell input:focus,
@@ -132,8 +136,8 @@
   body.light .rk-qwrap input:focus,body.light .rk-selw select:focus,body.light .rk-sw input:focus,
   body.light .ho-field input:focus,body.light .ho-field textarea:focus,body.light .ho-field select:focus,
   body.light .pg-inwrap input:focus{border-color:var(--accent)}
-  body.light .rk-inwrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,122,255,.15)}
-  body.light .store-check input:focus-visible ~ .store-box{box-shadow:0 0 0 3px rgba(0,122,255,.3)}
+  body.light .rk-inwrap:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(35,131,226,.15)}
+  body.light .store-check input:focus-visible ~ .store-box{box-shadow:0 0 0 3px rgba(35,131,226,.3)}
   /* disabled controls: pale grey fill instead of a faded copy */
   body.light .btn:disabled,body.light .pg-save:disabled,body.light .ho-btn-primary:disabled
     {background:var(--disabled);color:var(--muted);border-color:var(--line);opacity:1}
@@ -300,7 +304,7 @@
     background-repeat:no-repeat;background-position:13px center;background-size:16px 16px;
     padding-left:38px!important}
   body.light #search,body.light #saleSearch,body.light #prodSearch,body.light #ordSearch,body.light #rkAsSearch{
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236E6E73' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='16.5' y1='16.5' x2='21' y2='21'/%3E%3C/svg%3E")}
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23787774' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cline x1='16.5' y1='16.5' x2='21' y2='21'/%3E%3C/svg%3E")}
   .sbox button:not(.clr)::before{content:"";position:absolute;left:-5px;top:50%;transform:translateY(-50%);
     width:1px;height:20px;background:var(--line);border-radius:1px;pointer-events:none}
   .sbox button.live{color:var(--laser);animation:micpulse 1s ease-in-out infinite}
@@ -736,8 +740,6 @@
     color:var(--muted);position:sticky;top:0;background:var(--surface-2);z-index:2;
     border-bottom:1px solid var(--line)}
   .ohead span:not(:first-child){text-align:right}
-  .inv-date{font-family:var(--mono);font-size:14px;color:var(--muted);
-    margin:2px 0 8px;letter-spacing:.04em}
   .pgrow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
   /* v151: one heading per invoice in the day view */
   .inv-hd{margin:0 0 10px;padding:8px 10px 0;background:var(--surface);border:1px solid var(--line);border-radius:8px}
@@ -1237,18 +1239,21 @@
   .rk-fabwrap{position:fixed;left:16px;right:16px;bottom:calc(66px + env(safe-area-inset-bottom));
     z-index:45;display:flex;flex-direction:column;align-items:flex-end;gap:12px;pointer-events:none}
   .rk-fabwrap>*{pointer-events:auto}
-  .rk-micfab{width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;background:var(--laser);
-    color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;
-    transition:transform .12s,background .15s}
-  .rk-micfab svg{width:24px;height:24px}
+  /* v151.5: voice is grey + 48px like Loop's mic (green while live); search is the red 56px button */
+  .rk-micfab{width:48px;height:48px;margin-right:4px;border-radius:50%;border:1px solid var(--line);cursor:pointer;
+    background:var(--surface-2);color:var(--paper);box-shadow:0 6px 18px rgba(0,0,0,.45);display:flex;
+    align-items:center;justify-content:center;transition:transform .12s,background .15s}
+  .rk-micfab svg{width:22px;height:22px}
   .rk-micfab:active{transform:scale(.94)}
-  .rk-micfab.live{background:var(--ok);color:#0d1a12}
+  .rk-micfab.live{background:var(--ok);color:#0d1a12;border-color:var(--ok)}
   .rk-micfab.live svg{animation:rkmicpulse 1s ease-in-out infinite}
   @keyframes rkmicpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
   .rk-addbar{align-self:flex-end;height:56px;width:56px;border-radius:28px;background:var(--surface);
     border:1px solid var(--line);box-shadow:0 6px 18px rgba(0,0,0,.42);display:flex;align-items:center;
     overflow:hidden;position:relative;
     transition:width .34s cubic-bezier(.22,.61,.36,1),border-radius .34s,border-color .2s}
+  .rk-addbar:not(.open){background:var(--laser);border-color:var(--laser)}
+  .rk-addbar:not(.open) .rk-fab,.rk-addbar:not(.open) .rk-fabcount{color:#fff}
   .rk-addbar.open{width:100%;border-radius:16px;border-color:var(--laser)}
   .rk-addbar.rk-nosnap{transition:none}
   .rk-addbar.rk-offline{border-color:#E0A43B;box-shadow:0 0 0 2px rgba(224,164,59,.25),0 6px 18px rgba(0,0,0,.42)}
@@ -1263,7 +1268,7 @@
   .rk-fabmag{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
   .rk-fab.rk-has .rk-fabmag{width:14px;height:14px;opacity:.7;margin-bottom:1px}
   .rk-fabcount{font-family:var(--mono);font-size:12px;font-weight:700;line-height:1;color:var(--paper)}
-  .rk-addbar.rk-offline .rk-fabcount{color:#E0A43B}
+  .rk-addbar.rk-offline.open .rk-fabcount{color:#E0A43B}
   /* v145: quick-add row rebuilt. The text box is the ONLY flexible item and may
      shrink to nothing (min-width:0 — an <input>'s default min is ~174px, which
      pushed the check into the corner at 360px). Every other item is fixed; the
@@ -2193,7 +2198,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=151.4">
+  <link rel="manifest" href="./manifest.json?v=151.5">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -7154,7 +7159,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v151.4";
+const APP_VERSION = "v151.5";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -9104,8 +9109,9 @@ function theme(){ return localStorage.getItem(KEY_THEME) || "dark"; }
 function setTheme(t){
   localStorage.setItem(KEY_THEME, t);
   document.body.classList.toggle("light", t === "light");
-  const m = document.querySelector('meta[name="theme-color"]');
-  if(m) m.setAttribute("content", "#14171A");   // v151.4: ink header in both themes
+  // v151.5: the page carries TWO theme-color metas — set both so the status bar matches the header
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>
+    m.setAttribute("content", t === "light" ? "#EEF3F9" : "#14171A"));
 }
 function unit(){ return localStorage.getItem(KEY_UNIT) || "kg"; }
 function setUnit(u){ localStorage.setItem(KEY_UNIT, u); }
@@ -11561,11 +11567,10 @@ function renderOrder(){
   renderStepper();
 
   const dps = dayPages(activeDay, activeKind);      // [{inv, p}] across the day's invoices
-  const dayHdr = `<div class="inv-date">${esc(dayNice(activeDay))}</div>`;
 
   if(!dps.length){
     document.getElementById("ordVerdict").innerHTML = "";
-    body.innerHTML = dayHdr +
+    body.innerHTML =
       `<div class="ord-none">No ${activeKind} page for this day yet.<br>Tap \uFF0B to add one.</div>`;
     return;
   }
@@ -11603,7 +11608,7 @@ function renderOrder(){
   }).join("");
 
   body.innerHTML =
-    dayHdr + heads +
+    heads +
     (bad ? `<p class="cd-src">${bad} row(s) didn't read cleanly — tap a page to check them
             against the photo.</p>` : "") +
     '<div class="otable">' +

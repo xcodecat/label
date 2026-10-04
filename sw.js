@@ -10,12 +10,14 @@
    went on serving the first index.html it ever saw — every update invisible
    until you cleared site data. The comment next to the fetch handler said the
    shell "barely changes", which was wrong the day it was written. */
-const CACHE = "catcaddy-v151.5-2026-10-03";
+const CACHE = "catcaddy-v151.6-2026-10-03";
 const SHELL = [
   "./",
   "./index.html",
   "./logo.png",
   "./icon-192.png",
+  "./icon-512.png",            // v151.6: Chrome re-checks these two against the
+  "./icon-maskable-512.png",   // installed app; keep them available offline
   "./cat-idle.webp",
   "./cat_no_obvious_headshake.gif",
   "./cat_smile_instant.gif",
@@ -99,7 +101,10 @@ self.addEventListener("fetch", e=>{
             caches.open(CACHE).then(c=>c.put(req, copy));
           }
           return r;
-        }).catch(()=> hit || caches.match("./index.html"));
+        // v151.6: offline + not cached → fail cleanly. Never hand back index.html
+        // for an image or the manifest: Chrome would read that HTML as the app's
+        // icon/manifest during its update check and could flag a "changed" app.
+        }).catch(()=> hit || Response.error());
         return hit || fresh;
       })
     );

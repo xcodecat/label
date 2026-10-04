@@ -10,14 +10,22 @@
    went on serving the first index.html it ever saw — every update invisible
    until you cleared site data. The comment next to the fetch handler said the
    shell "barely changes", which was wrong the day it was written. */
-const CACHE = "catcaddy-v151.6-2026-10-03";
+const CACHE = "catcaddy-v151.7-2026-10-04";
 const SHELL = [
   "./",
   "./index.html",
   "./logo.png",
   "./icon-192.png",
-  "./icon-512.png",            // v151.6: Chrome re-checks these two against the
-  "./icon-maskable-512.png",   // installed app; keep them available offline
+  "./icon-512.png",
+  "./icon-maskable-512.png",
+  // v151.7: the manifest now points at versioned icon URLs so Chrome refetches
+  // them and rebuilds the home-screen icon from the real maskable PNG (a phone
+  // had fallen back to the plain icon → One UI's light legacy plate). Cache
+  // keys include the query, so precache these exact URLs too. Bump the ?v here
+  // and in manifest.json together ONLY when the icon art actually changes.
+  "./icon-192.png?v=151.7",
+  "./icon-512.png?v=151.7",
+  "./icon-maskable-512.png?v=151.7",
   "./cat-idle.webp",
   "./cat_no_obvious_headshake.gif",
   "./cat_smile_instant.gif",

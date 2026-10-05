@@ -2198,7 +2198,7 @@
        older one is still alive it hands Chrome the OLD manifest — no id, still
        called "Label" — so Chrome keeps recognising the app it already has. A
        different URL is a different cache entry, so this one cannot be stale. -->
-  <link rel="manifest" href="./manifest.json?v=151.7">
+  <link rel="manifest" href="./manifest.json?v=151.8">
   <meta name="theme-color" content="#14171A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -7159,7 +7159,7 @@ let rec = null, micOn = false, heardText = "";
 let micMode = "scrap";
 /* Single source of truth for the build number. Bump on EVERY change so the
    About screen always tells the user whether they're on the latest. */
-const APP_VERSION = "v151.7";
+const APP_VERSION = "v151.8";
 /* ---- tap vs hold ----
    A produce room is loud, so the short press stays exactly as it was: one
    burst, one commit, nothing running while a forklift goes past. Holding is
@@ -8797,20 +8797,43 @@ function codeForName(name, opts){
    in with your inventory. Loop and Flashfood now keep their own history: one
    table per save, named by the time, grouped under the date, collapsed by
    default so a long day doesn't become a wall of scrolling.
-   They're kept 24 hours and then dropped — this is a working list, not a
-   permanent record. Sync sends them to the Sheet, which IS permanent.      */
+   v151.8: NOTHING here is ever deleted automatically. They used to be dropped
+   after 24 hours whether or not they had reached the Sheet, so a list whose
+   sync silently failed was lost for good. Only the user's own Delete removes
+   one now (Restore moves it back onto the working list).
+
+   v151.8: device backup. Every write here is mirrored into KEY_SCRAP_BAK, an
+   on-phone archive keyed by session id. Deleting or restoring a saved list
+   does NOT remove its backup copy; the archive only forgets a list once it's
+   more than SCRAP_BAK_DAYS old. Archive failures (e.g. storage full) never
+   block the real save.                                                     */
 const KEY_SESS = "label_sessions_v1";
-const DAY_MS = 24 * 60 * 60 * 1000;
+const KEY_SCRAP_BAK = "label_scrap_backup_v1";
+const SCRAP_BAK_DAYS = 30;
 
 function sessions(){
   let all = [];
   try{ all = JSON.parse(localStorage.getItem(KEY_SESS) || "[]"); }catch(e){}
-  const cut = Date.now() - DAY_MS;
-  const live = all.filter(x=>x.ts > cut);
-  if(live.length !== all.length) localStorage.setItem(KEY_SESS, JSON.stringify(live));
-  return live;
+  return Array.isArray(all) ? all : [];
 }
-function saveSessions(v){ localStorage.setItem(KEY_SESS, JSON.stringify(v)); }
+function scrapBackup(){
+  try{ const b = JSON.parse(localStorage.getItem(KEY_SCRAP_BAK) || "[]"); return Array.isArray(b) ? b : []; }
+  catch(e){ return []; }
+}
+function backupSessions(v){
+  try{
+    const cut = Date.now() - SCRAP_BAK_DAYS * 24 * 60 * 60 * 1000;
+    const byId = new Map(scrapBackup().map(x=>[x.id, x]));
+    (v||[]).forEach(x=>{ if(x && x.id) byId.set(x.id, JSON.parse(JSON.stringify(x))); });   // upsert, latest edit wins
+    const keep = [...byId.values()].filter(x=> (x.ts||0) > cut).sort((a,b)=>(b.ts||0)-(a.ts||0));
+    localStorage.setItem(KEY_SCRAP_BAK, JSON.stringify(keep));
+  }catch(e){ /* backup is best-effort; the saved list itself is already written */ }
+}
+function saveSessions(v){
+  localStorage.setItem(KEY_SESS, JSON.stringify(v));
+  backupSessions(v);
+}
+backupSessions(sessions());   // seed the archive with whatever is on the phone today
 
 document.getElementById("btnScrapSave").addEventListener("click", ()=>{
   const rows = lists[activeList].filter(r=>r.name.trim());
